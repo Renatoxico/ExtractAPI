@@ -5,7 +5,6 @@ import com.example.API.model.ExpenseType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.security.PublicKey;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,12 +17,14 @@ public class ExtractService {
     private final FileService fs;
     private final DebitService debitService;
     private final CreditService creditService;
+    private final List<Expense> expenses;
 
 
-    public ExtractService(FileService fs, DebitService debitService, CreditService creditService) {
+    public ExtractService(FileService fs, DebitService debitService, CreditService creditService, List<Expense> expenses) {
         this.fs = fs;
         this.debitService = debitService;
         this.creditService = creditService;
+        this.expenses = expenses;
     }
 
     public String processDocument(MultipartFile iFile, String type){
@@ -39,12 +40,11 @@ public class ExtractService {
     }
 
     public String processDocument2(MultipartFile iFile){
+        //MAINTAINS EXTRACTION LOGIC TO 1 CLASS
         String fileStr = fs.getContent(iFile);
         return getExtractDetails(fileStr);
 
     }
-
-    private List<Expense> expenses;
 
     public String getExtractDetails(String ext){
         List<ExpenseType> types = ExpenseType.load();
@@ -72,13 +72,16 @@ public class ExtractService {
             String desc = matcher.group(2);
             String amount = matcher.group(3);
 
-            mapToObj(Double.parseDouble(amount), desc);
+            String x =  amount.replace(",", ".");
+
+            mapToObj(Double.parseDouble(x), desc);
             ext = ext.substring(0, matcher.start()) + ext.substring(matcher.end());
 
             output.append("Data: ").append(data)
                     .append(", Descrição: ").append(desc)
                     .append(", R$: ").append(amount)
                     .append("\n");
+            matcher = pat.matcher(ext);
         }
     }
 
@@ -95,7 +98,9 @@ public class ExtractService {
             String desc = parts[1];
             String amount = matcher.group(2);
 
-            mapToObj(Double.parseDouble(amount), desc);
+            String x =  amount.replace(",", ".");
+
+            mapToObj(Double.parseDouble(x), desc);
             ext = ext.substring(0, matcher.start()) + ext.substring(matcher.end());
 
             output.append("Data: ").append("01/").append(data)

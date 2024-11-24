@@ -1,5 +1,6 @@
 package com.example.API.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ExpenseType {
@@ -28,7 +29,7 @@ public class ExpenseType {
     }
 
     public static List<ExpenseType> load () {
-        List<ExpenseType> types = List.of();
+        List<ExpenseType> types = new ArrayList<>();
         types.add(new ExpenseType("Streaming", "netflix"));
         types.add(new ExpenseType("Streaming", "hbo"));
         types.add(new ExpenseType("Streaming", "globo"));
