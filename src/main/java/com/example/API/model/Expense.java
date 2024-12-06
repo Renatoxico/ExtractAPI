@@ -5,12 +5,15 @@ public class Expense {
 
     private String transactionName = "";
 
-    private Integer transactionType = 0;
+    private String transactionType = "";
 
-    public Expense (Double value, String name, Integer type){
+    private String date = "";
+
+    public Expense (Double value, String name, String date, String type){
         this.transactionName = name;
         this.transactionType = type;
         this.value = value;
+        this.date = date;
     }
 
     public Double getValue() {
@@ -29,11 +32,19 @@ public class Expense {
         this.transactionName = transactionName;
     }
 
-    public Integer getTransactionType() {
+    public String getTransactionType() {
         return transactionType;
     }
 
-    public void setTransactionType(Integer transactionType) {
+    public void setTransactionType(String transactionType) {
         this.transactionType = transactionType;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public void setDate(String date) {
+        this.date = date;
     }
 }

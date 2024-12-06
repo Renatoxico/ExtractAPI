@@ -5,6 +5,7 @@ import com.example.API.model.ExpenseType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +28,7 @@ public class ExtractService {
         this.expenses = expenses;
     }
 
-    public String processDocument(MultipartFile iFile, String type){
+    public List<Expense> processDocument(MultipartFile iFile, String type){
 
         String fileStr = fs.getContent(iFile);
         //List<ExpenseType> types = ExpenseType.load();
@@ -35,34 +36,40 @@ public class ExtractService {
         return switch (type) {
             case "debit" -> debitService.getExtractDetails(fileStr);
             case "credit" -> creditService.getExtractDetails(fileStr);
-            default -> "Invalid Extract type";
+            default -> null;
         };
     }
 
-    public String processDocument2(MultipartFile iFile){
+    public List<Expense> processDocument2(MultipartFile iFile, List<Expense> expensesObj){
         //MAINTAINS EXTRACTION LOGIC TO 1 CLASS
         String fileStr = fs.getContent(iFile);
-        return getExtractDetails(fileStr);
+        fileStr = fileStr.substring(fileStr.indexOf("SALDO EM"));
+        fileStr = fileStr.substring(fileStr.indexOf("\r\n"));
+        /*fileStr = fileStr.replace("PIX ENVIADO", "");*/
+        return getExtractDetails(fileStr, expensesObj);
 
     }
 
-    public String getExtractDetails(String ext){
+    public List<Expense> getExtractDetails(String ext, List<Expense> expensesObj){
         List<ExpenseType> types = ExpenseType.load();
         StringBuilder res = new StringBuilder();
-        List<String> patterns = List.of("(\\d{2}/\\d{2})\\s+.+?\\s+PIX\\s+([A-Z\\s]+)\\s+\\d+\\s+\\d+\\s+\\d+\\s+(\\d+,\\d{2})"
+        List<String> patterns = List.of(
+                //"(\\d{2}/\\d{2})\\s+([A-Za-z0-9\\s]+?)\\s+(\\d{1,3}(?:\\.\\d{3})*,\\d{2}-)"
+                "(\\d{2}/\\d{2})\\s+.+?\\s+PIX\\s+([A-Z\\s]+)\\s+\\d+\\s+\\d+\\s+\\d+\\s+(\\d+,\\d{2})"
                 ,"(\\d{2}/\\d{2}) \\d{4}\\.\\d{4} ([a-zA-Z0-9\\.\\s]+) (\\d+,\\d{2})"
                 ,"(\\d{2}/\\d{2})\\s+([^0-9]+?)\\s+(\\d+,[0-9]{2})"
                 ,"(\\d{2}/\\d{2})\\s+([A-Za-z0-9 E*]+)\\s+\\d+/\\d+\\s+([0-9]+,[0-9]{2})"
                 //"(\\d{2}/\\d{2}) [A-Z\\s]+ ([A-Z\\s]+) (\\d+,\\d{2})"
         );
-        patterns.forEach(pattern -> mapExpenses(pattern, ext, res));
+        patterns.forEach(pattern -> mapExpenses(pattern, ext, res, expensesObj));
 
-        mapExpensesNoDate("([A-Za-z0-9\\s]+) - (\\d{1,5},\\d{2}) \\d{12}-\\d{12}-", ext, res);
-        Map<String, Double> x = classify(expenses, types);// obj with classified results
-        return res.toString();
+        //mapExpensesNoDate("([A-Za-z0-9\\s]+) - (\\d{1,5},\\d{2}) \\d{12}-\\d{12}-", ext, res);
+        Map<String, Double> x = classify(expensesObj, types);// obj with classified results
+        //return res.toString();
+        return expensesObj;
     }
 
-    public void mapExpenses(String pattern, String str, StringBuilder output) {
+    public void mapExpenses(String pattern, String str, StringBuilder output, List<Expense> expensesObj) {
         String ext = str.replaceAll("\\r\\n+", " ");
         Pattern pat = Pattern.compile(pattern);
         Matcher matcher = pat.matcher(ext);
@@ -72,10 +79,12 @@ public class ExtractService {
             String desc = matcher.group(2);
             String amount = matcher.group(3);
 
-            String x =  amount.replace(",", ".");
-
-            mapToObj(Double.parseDouble(x), desc);
+            String x =  amount.replace("-", "");
+            x = x.replace(".", "");
+            x = x.replace(",", ".");
+            expensesObj.add(new Expense(Double.parseDouble(x), desc, data, ""));
             ext = ext.substring(0, matcher.start()) + ext.substring(matcher.end());
+            str = ext;
 
             output.append("Data: ").append(data)
                     .append(", Descrição: ").append(desc)
@@ -99,8 +108,7 @@ public class ExtractService {
             String amount = matcher.group(2);
 
             String x =  amount.replace(",", ".");
-
-            mapToObj(Double.parseDouble(x), desc);
+            mapToObj(Double.parseDouble(x), desc, "01/" + data);
             ext = ext.substring(0, matcher.start()) + ext.substring(matcher.end());
 
             output.append("Data: ").append("01/").append(data)
@@ -110,8 +118,8 @@ public class ExtractService {
         }
     }
 
-    public void mapToObj (Double amount, String transaction){
-        expenses.add(new Expense(amount, transaction, 0));
+    public void mapToObj (Double amount, String transaction, String data){
+        expenses.add(new Expense(amount, transaction, data, ""));
     }
 
     public Map<String, Double> classify(List<Expense> expenses, List<ExpenseType> types){
@@ -123,6 +131,8 @@ public class ExtractService {
             for (ExpenseType type : types){
                 if(expense.getTransactionName().toLowerCase().contains(type.getToken())){
                     groupedExpenses.put(type.getType(), groupedExpenses.getOrDefault(type.getType(), 0.0) + expense.getValue());
+                    //expense.setTransactionName(type.getToken());
+                    expense.setTransactionType(type.getType());
                     matched = true;
                 }
             }
@@ -134,5 +144,17 @@ public class ExtractService {
             groupedExpenses.put("NOT-CLASSIFIED", nonClassifiedTotal);
         }
         return groupedExpenses;
+    }
+
+    public List<Expense> batchProcess (MultipartFile [] files ){
+        List<Expense> expensesObj = new ArrayList<Expense>();
+        for(MultipartFile ext : files){
+            processDocument2(ext, expensesObj);
+        }
+        return expensesObj;
+    }
+
+    public void expenseClear () {
+        expenses.clear();
     }
 }
