@@ -1,10 +1,7 @@
 package com.example.API.controller;
 
 import com.example.API.model.Expense;
-import com.example.API.service.DebitService;
-import com.example.API.service.ExtractService;
-import com.example.API.service.FileService;
-import com.example.API.service.PythonProcessingService;
+import com.example.API.service.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -24,11 +21,13 @@ public class ExtractController {
     private static final Logger LOG = LoggerFactory.getLogger(ExtractController.class);
     private final ExtractService exService;
     private final PythonProcessingService pyProcessor;
+    private final ObjectifierService objService;
     private static final String PATH = System.getProperty("user.dir") + "\\tmp\\";
 
-    public ExtractController(ExtractService exService, DebitService debitService, FileService fs, PythonProcessingService pyProcessor) {
+    public ExtractController(ExtractService exService, DebitService debitService, FileService fs, PythonProcessingService pyProcessor, ObjectifierService objService) {
         this.exService = exService;
         this.pyProcessor = pyProcessor;
+        this.objService = objService;
     }
 
     @PostMapping("/single/")
@@ -69,6 +68,7 @@ public class ExtractController {
         }
         String filepath = saveFileTemp(iFile);
         String pdfText = pyProcessor.convertPDFtoJSON(filepath);
+        objService.process(pdfText);
         return ResponseEntity.ok(pdfText);
     }
 
