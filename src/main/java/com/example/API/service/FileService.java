@@ -50,25 +50,15 @@ public class FileService {
     }
 
     public void readPDF(PDDocument doc){
-        StringBuilder x = new StringBuilder();
+        StringBuilder  x = new StringBuilder();
         StringBuilder xxx = new StringBuilder();
+        doc.removePage(0);
         for(PDPage page : doc.getPages()){
             try {
                 PDFStreamParser parser = new PDFStreamParser(page);
                 List<Object> aux = parser.parse();
                 xxx.append(parsePDF(aux));
-                for(Object token : aux){
-                    if (token instanceof Operator){
-                        Operator op = (Operator) token;
-                        x.append(op.getName());
-                    } else if (token instanceof COSString){
-                        COSString str = (COSString) token;
-                        x.append(str);
-                    }
-                    else {
-                        x.append(token);
-                    }
-                }
+                x.append(aux.toString());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -77,7 +67,7 @@ public class FileService {
     }
 
     public String parsePDF (List<Object> aux) {
-        StringBuilder xxx = new StringBuilder();
+        StringBuilder str = new StringBuilder();
         for(Object token : aux){
             if(token.toString().contains("Movimenta")){
                 token.toString();
@@ -86,24 +76,24 @@ public class FileService {
                 case COSFloat f -> {
                     float fValue = f.floatValue();
                     if (fValue < -30) {
-                        xxx.append(newLine);
+                        str.append(newLine);
                     } else if (fValue  > 10000) {
-                        xxx.append(" ");
+                        str.append(" ");
                     } else if (fValue  > 0 && fValue  < 5) {
-                        xxx.append(" ");
+                        str.append(" ");
                     }
 
                 }
                 case COSArray a -> {
                     for (COSBase cosBase : a){
                         switch (cosBase) {
-                            case COSString a_String -> xxx.append(a_String.getString());
+                            case COSString a_String -> str.append(a_String.getString());
                             case COSInteger a_int -> {
                                 if (a_int.intValue() < -200) {
-                                    xxx.append(" ");
+                                    str.append(" ");
                                 }
                                 if (a_int.intValue() == 0) {
-                                    xxx.append(" ");
+                                    str.append(" ");
                                 }
                             }
                             default -> {
@@ -117,10 +107,10 @@ public class FileService {
                 }
                 case COSInteger i -> {
                     if (i.intValue() == 34 ) {
-                        xxx.append(newLine);
+                        str.append(newLine);
                     }
                     if (i.intValue() == 0 ) {
-                        xxx.append(" ");
+                        str.append(" ");
                     }
                 }
                 default -> {
@@ -128,6 +118,6 @@ public class FileService {
                 }
             }
         }
-        return xxx.toString();
+        return str.toString();
     }
 }

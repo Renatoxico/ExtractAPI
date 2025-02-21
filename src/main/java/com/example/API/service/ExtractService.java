@@ -42,9 +42,9 @@ public class ExtractService {
 
     public List<Expense> processDocument2(MultipartFile iFile, List<Expense> expensesObj){
         //MAINTAINS EXTRACTION LOGIC TO 1 CLASS
-        String fileStr = fs.getContent(iFile);
-        fileStr = fileStr.substring(fileStr.indexOf("SALDO EM"));
-        fileStr = fileStr.substring(fileStr.indexOf("\r\n"));
+        String fileStr = fs.getContent(iFile);//crazy shit is going on here nigga, you gotta pay attention
+//        fileStr = fileStr.substring(fileStr.indexOf("SALDO EM"));
+//        fileStr = fileStr.substring(fileStr.indexOf("\r\n"));
         /*fileStr = fileStr.replace("PIX ENVIADO", "");*/
         return getExtractDetails(fileStr, expensesObj);
 
