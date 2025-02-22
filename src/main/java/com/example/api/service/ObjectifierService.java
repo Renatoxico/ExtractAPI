@@ -1,12 +1,14 @@
-package com.example.API.service;
+package com.example.api.service;
 
-import ch.qos.logback.core.net.SyslogOutputStream;
-import com.example.API.model.Expense;
+import com.example.api.model.Expense;
+import com.example.api.repo.ExpenseRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -16,14 +18,18 @@ public class ObjectifierService {
     private static final Logger LOG = LoggerFactory.getLogger(ObjectifierService.class);
     private static final Pattern datePattern = Pattern.compile("\\b(\\d{2}/\\d{2}(?:/\\d{4})?)\\b");
     private static final Pattern valuePattern = Pattern.compile("(-?\\d{1,3}(?:\\.\\d{3})*,\\d{2})");
+    private static final SecureRandom random = new SecureRandom();
+    private final ExpenseRepository expenseRepo;
 
-    public void process (String inputText) {
+    public ObjectifierService(ExpenseRepository expenseRepo) {
+        this.expenseRepo = expenseRepo;
+    }
+
+    public void process (String sessionId, String inputText) {
         String[] expensesDoc = splitByLine(inputText);
         List<String> filteredExpenses = getFilterCharges(expensesDoc);
-        List<Expense> expensesObj = objectifyExtract(filteredExpenses);
-        for (Expense e : expensesObj) {
-            LOG.info(e.toString());
-        }
+        List<Expense> expensesObj = objectifyExtract(sessionId,filteredExpenses);
+        expenseRepo.saveAll(expensesObj);
     }
 
     public String[] splitByLine (String extractText) {
@@ -32,7 +38,7 @@ public class ObjectifierService {
 
     }
 
-    public List<Expense> objectifyExtract (List<String> expenses) {
+    public List<Expense> objectifyExtract (String sessionId,List<String> expenses) {
         List<Expense> expensesObj = new ArrayList<>();
 
         expenses.forEach(line -> {
@@ -50,7 +56,7 @@ public class ObjectifierService {
                         .replace("|", "")
                         .trim();
 
-                mapToObj(expensesObj, value, description, date);
+                mapToObj(sessionId, expensesObj, value, description, date);
             }
         });
         return expensesObj;
@@ -59,19 +65,25 @@ public class ObjectifierService {
     public List<String> getFilterCharges (String[] inputText ) {
         List<String> filteredCharges = new ArrayList<>();
 
-        for (int i = 0; i < inputText.length; i++) {
-            Matcher dateMatcher = datePattern.matcher(inputText[i]);
-            Matcher valueMatcher = valuePattern.matcher(inputText[i]);
+        for (String line : inputText) {
+            Matcher dateMatcher = datePattern.matcher(line);
+            Matcher valueMatcher = valuePattern.matcher(line);
 
-            if (dateMatcher.find() && valueMatcher.find() && inputText[i].charAt(0) == '|') {
+            if (dateMatcher.find() && valueMatcher.find() && line.charAt(0) == '|') {
                 //line has necessary items
-                filteredCharges.add(inputText[i]);
+                filteredCharges.add(line);
             }
         }
         return filteredCharges;
     }
 
-    public void mapToObj (List<Expense> expenses, Double amount, String transaction, String data){
-        expenses.add(new Expense(amount, transaction, data, ""));
+    public void mapToObj (String sessionId, List<Expense> expenses, Double amount, String transaction, String data){
+        expenses.add(new Expense(sessionId, amount, transaction, data, ""));
+    }
+
+    public String generateId () {
+        byte[] randomBytes = new byte[8];
+        random.nextBytes(randomBytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes).toLowerCase();
     }
 }

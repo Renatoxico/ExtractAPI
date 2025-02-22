@@ -1,7 +1,7 @@
-package com.example.API.controller;
+package com.example.api.controller;
 
-import com.example.API.model.Expense;
-import com.example.API.service.*;
+import com.example.api.model.Expense;
+import com.example.api.service.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -68,7 +68,8 @@ public class ExtractController {
         }
         String filepath = saveFileTemp(iFile);
         String pdfText = pyProcessor.convertPDFtoJSON(filepath);
-        objService.process(pdfText);
+        String sessionId = objService.generateId();
+        objService.process(sessionId, pdfText);
         return ResponseEntity.ok(pdfText);
     }
 

@@ -1,7 +1,7 @@
-package com.example.API.service;
+package com.example.api.service;
 
-import com.example.API.model.Expense;
-import com.example.API.model.ExpenseType;
+import com.example.api.model.Expense;
+import com.example.api.model.ExpenseType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -82,7 +82,7 @@ public class ExtractService {
             String x =  amount.replace("-", "");
             x = x.replace(".", "");
             x = x.replace(",", ".");
-            expensesObj.add(new Expense(Double.parseDouble(x), desc, data, ""));
+            expensesObj.add(new Expense("something", Double.parseDouble(x), desc, data, ""));
             ext = ext.substring(0, matcher.start()) + ext.substring(matcher.end());
             str = ext;
 
@@ -119,7 +119,7 @@ public class ExtractService {
     }
 
     public void mapToObj (Double amount, String transaction, String data){
-        expenses.add(new Expense(amount, transaction, data, ""));
+        expenses.add(new Expense("something",amount, transaction, data, ""));
     }
 
     public Map<String, Double> classify(List<Expense> expenses, List<ExpenseType> types){

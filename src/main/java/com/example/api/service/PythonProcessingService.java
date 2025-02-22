@@ -1,4 +1,4 @@
-package com.example.API.service;
+package com.example.api.service;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;

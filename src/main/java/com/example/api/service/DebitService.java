@@ -1,7 +1,7 @@
-package com.example.API.service;
+package com.example.api.service;
 
-import com.example.API.model.Expense;
-import com.example.API.model.ExpenseType;
+import com.example.api.model.Expense;
+import com.example.api.model.ExpenseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -41,7 +41,7 @@ public class DebitService {
             String amount = matcher.group(3);
 
             String x =  amount.replace(",", ".");
-            output.add(new Expense(Double.parseDouble(x), desc, data, ""));
+            output.add(new Expense("something",Double.parseDouble(x), desc, data, ""));
 
         }
     }

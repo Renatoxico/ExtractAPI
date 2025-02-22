@@ -1,6 +1,6 @@
-package com.example.API.service;
+package com.example.api.service;
 
-import com.example.API.model.Expense;
+import com.example.api.model.Expense;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -43,6 +43,6 @@ public class CreditService {
     }
 
     public void mapToObj (Double amount, String transaction, String data){
-        expenses.add(new Expense(amount, transaction, data, ""));
+        expenses.add(new Expense("something", amount, transaction, data, ""));
     }
 }

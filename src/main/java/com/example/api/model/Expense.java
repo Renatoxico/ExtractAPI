@@ -1,19 +1,41 @@
-package com.example.API.model;
+package com.example.api.model;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "tbExpense")
 public class Expense {
-    private Double value = 0.00;
 
-    private String transactionName = "";
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    private String transactionType = "";
+    private Double value;
 
-    private String date = "";
+    private String transactionName;
 
-    public Expense (Double value, String name, String date, String type){
+    private String transactionType;
+
+    private String date;
+
+    private String sessionId;
+
+    public Expense (String sessionId, Double value, String name, String date, String type){
         this.transactionName = name;
         this.transactionType = type;
         this.value = value;
         this.date = date;
+        this.sessionId = sessionId;
+    }
+
+    public Expense() {}
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Double getValue() {
@@ -46,6 +68,14 @@ public class Expense {
 
     public void setDate(String date) {
         this.date = date;
+    }
+
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
     }
 
     @Override

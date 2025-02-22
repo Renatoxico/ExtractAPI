@@ -1,4 +1,4 @@
-package com.example.API.model;
+package com.example.api.model;
 
 import java.util.ArrayList;
 import java.util.List;
