@@ -1,13 +1,8 @@
 package com.example.api.service;
 
 import com.example.api.model.ValidationResponse;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Service
 public class ValidationService {

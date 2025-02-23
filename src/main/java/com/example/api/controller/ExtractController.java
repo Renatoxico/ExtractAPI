@@ -1,6 +1,5 @@
 package com.example.api.controller;
 
-import com.example.api.model.Expense;
 import com.example.api.model.ValidationResponse;
 import com.example.api.service.*;
 import org.slf4j.Logger;
@@ -14,7 +13,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
 
 @RestController
 @RequestMapping("/extract")
@@ -56,7 +54,6 @@ public class ExtractController {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
     }
     /*TODO
         CREATE METHOD FOR SEARCHING SESSION_ID

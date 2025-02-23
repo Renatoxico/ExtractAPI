@@ -26,6 +26,7 @@ public class ObjectifierService {
     }
 
     public void process (String sessionId, String inputText) {
+        LOG.info("Enter ObjectifierService.process");
         String[] expensesDoc = splitByLine(inputText);
         List<String> filteredExpenses = getFilterCharges(expensesDoc);
         List<Expense> expensesObj = objectifyExtract(sessionId,filteredExpenses);
@@ -33,14 +34,15 @@ public class ObjectifierService {
     }
 
     public String[] splitByLine (String extractText) {
+        LOG.info("Enter ObjectifierService.splitByLine");
         extractText = extractText.replace("\\n", "\n");
         return extractText.split("\\n");
 
     }
 
     public List<Expense> objectifyExtract (String sessionId,List<String> expenses) {
+        LOG.info("Enter ObjectifierService.objectifyExtract");
         List<Expense> expensesObj = new ArrayList<>();
-
         expenses.forEach(line -> {
             Matcher dateMatcher = datePattern.matcher(line);
             Matcher valueMatcher = valuePattern.matcher(line);
@@ -68,6 +70,7 @@ public class ObjectifierService {
     }
     
     public List<String> getFilterCharges (String[] inputText ) {
+        LOG.info("Enter ObjectifierService.getFilterCharges");
         List<String> filteredCharges = new ArrayList<>();
 
         for (String line : inputText) {
@@ -98,6 +101,8 @@ public class ObjectifierService {
     public String generateId () {
         byte[] randomBytes = new byte[8];
         random.nextBytes(randomBytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes).toLowerCase();
+        String session_id = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes).toLowerCase();
+        LOG.info("Generated Session_id: {}", session_id);
+        return session_id;
     }
 }
