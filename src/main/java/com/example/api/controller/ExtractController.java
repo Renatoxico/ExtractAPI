@@ -62,15 +62,22 @@ public class ExtractController {
     }
 
     @PostMapping("/")
-    public ResponseEntity<?> pythonProcessor(@RequestParam("file") MultipartFile iFile){
-        if (iFile.isEmpty()){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing data in request");
+    public ResponseEntity<?> pythonProcessor(@RequestParam("file") MultipartFile[] files){
+        LOG.info("Python Processor API");
+        if (files.length<1){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No files.");
         }
-        String filepath = saveFileTemp(iFile);
-        String pdfText = pyProcessor.convertPDFtoJSON(filepath);
+        if (files.length>6){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Too many files");
+        }
         String sessionId = objService.generateId();
-        objService.process(sessionId, pdfText);
-        return ResponseEntity.ok(pdfText);
+
+        for (MultipartFile file : files) {
+            String filepath = saveFileTemp(file);
+            String pdfText = pyProcessor.convertPDFtoJSON(filepath);
+            objService.process(sessionId, pdfText);
+        }
+        return ResponseEntity.ok(sessionId);
     }
 
     private String saveFileTemp(MultipartFile file){

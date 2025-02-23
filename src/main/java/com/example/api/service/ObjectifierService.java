@@ -52,11 +52,16 @@ public class ObjectifierService {
                         .replace(",", "."); // Convert to double format
                 double value = Double.parseDouble(valueStr);
                 value = Math.abs(value);
-                String description = line.substring(dateMatcher.end(), valueMatcher.start())
-                        .replace("|", "")
-                        .trim();
-
-                mapToObj(sessionId, expensesObj, value, description, date);
+                if (!(valueMatcher.start()< dateMatcher.end())) {
+                    String description = line.substring(dateMatcher.end(), valueMatcher.start())
+                            .replace("|", "")
+                            .trim();
+                    if (!description.isEmpty()
+                            && value != 0
+                            && !(description.contains("CREDITO") || description.contains("FATURA"))){
+                        mapToObj(sessionId, expensesObj, value, description, date);
+                    }
+                }
             }
         });
         return expensesObj;
@@ -69,9 +74,18 @@ public class ObjectifierService {
             Matcher dateMatcher = datePattern.matcher(line);
             Matcher valueMatcher = valuePattern.matcher(line);
 
-            if (dateMatcher.find() && valueMatcher.find() && line.charAt(0) == '|') {
+            if (dateMatcher.find() && valueMatcher.find()) {
                 //line has necessary items
-                filteredCharges.add(line);
+                //filteredCharges.add(line);
+                String firstMatch = line.substring(0, valueMatcher.end());
+                String secondMatch = line.substring(valueMatcher.end());
+
+                if (dateMatcher.find() && valueMatcher.find()) {
+                    filteredCharges.add(firstMatch);
+                    filteredCharges.add(secondMatch);
+                }
+                else
+                    filteredCharges.add(line);
             }
         }
         return filteredCharges;
