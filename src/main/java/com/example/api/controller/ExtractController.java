@@ -1,6 +1,7 @@
 package com.example.api.controller;
 
 import com.example.api.model.Expense;
+import com.example.api.model.ValidationResponse;
 import com.example.api.service.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,59 +20,25 @@ import java.util.List;
 @RequestMapping("/extract")
 public class ExtractController {
     private static final Logger LOG = LoggerFactory.getLogger(ExtractController.class);
-    private final ExtractService exService;
     private final PythonProcessingService pyProcessor;
     private final ObjectifierService objService;
+    private final ValidationService validationService;
     private static final String PATH = System.getProperty("user.dir") + "\\tmp\\";
 
-    public ExtractController(ExtractService exService, DebitService debitService, FileService fs, PythonProcessingService pyProcessor, ObjectifierService objService) {
-        this.exService = exService;
+    public ExtractController( ValidationService validationService, PythonProcessingService pyProcessor, ObjectifierService objService) {
         this.pyProcessor = pyProcessor;
         this.objService = objService;
-    }
-
-    @PostMapping("/single/")
-    public ResponseEntity<?> processExtract(@RequestParam("ext") MultipartFile ext, @RequestParam("type") String type){
-        LOG.info("Single file processing");
-        if (ext.isEmpty() || type == null || type.isBlank()){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing data in request");
-        }
-        try {
-            //String output = exService.processDocument(ext, type);
-            //return ResponseEntity.ok(output);
-            return ResponseEntity.ok(exService.processDocument(ext, type));
-        } catch (RuntimeException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @PostMapping("/batch/")
-    public ResponseEntity<?> processBatchExtract(@RequestParam MultipartFile[] files){
-        LOG.info("Batch processing");
-        if (files.length<1){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No files.");
-        }
-        try {
-            List<Expense> output = exService.batchProcess(files);
-            exService.expenseClear();
-            return ResponseEntity.ok(output);
-        } catch (RuntimeException e) {
-            throw new RuntimeException(e);
-            //return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to process request.");
-        }
+        this.validationService = validationService;
     }
 
     @PostMapping("/")
     public ResponseEntity<?> pythonProcessor(@RequestParam("file") MultipartFile[] files){
         LOG.info("Python Processor API");
-        if (files.length<1){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No files.");
-        }
-        if (files.length>6){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Too many files");
-        }
         String sessionId = objService.generateId();
-
+        ValidationResponse isValid = validationService.validateFiles(files);
+        if (!isValid.getStatus()){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(isValid.getMessage());
+        }
         for (MultipartFile file : files) {
             String filepath = saveFileTemp(file);
             String pdfText = pyProcessor.convertPDFtoJSON(filepath);
