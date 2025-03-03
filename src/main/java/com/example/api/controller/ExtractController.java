@@ -1,5 +1,6 @@
 package com.example.api.controller;
 
+import com.example.api.model.ExpensesGroupedDTO;
 import com.example.api.model.ValidationResponse;
 import com.example.api.service.*;
 import org.slf4j.Logger;
@@ -13,6 +14,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 
 @RestController
 @RequestMapping("/extract")
@@ -43,6 +45,15 @@ public class ExtractController {
             objService.process(sessionId, pdfText);
         }
         return ResponseEntity.ok(sessionId);
+    }
+
+    @GetMapping("/summary/{sessionId}")
+    public ResponseEntity<?> getExpenseSummery(@PathVariable String sessionId) {
+        if(sessionId.isEmpty() || sessionId.isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No sessionId");
+        }
+        List<ExpensesGroupedDTO> expensesGrouped = objService.getExpenseSummary(sessionId);
+        return ResponseEntity.status(HttpStatus.OK).body(expensesGrouped);
     }
 
     private String saveFileTemp(MultipartFile file){

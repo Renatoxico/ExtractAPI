@@ -1,6 +1,7 @@
 package com.example.api.service;
 
 import com.example.api.model.Expense;
+import com.example.api.model.ExpensesGroupedDTO;
 import com.example.api.repo.ExpenseRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 public class ObjectifierService {
@@ -92,6 +94,14 @@ public class ObjectifierService {
             }
         }
         return filteredCharges;
+    }
+
+    public List<ExpensesGroupedDTO> getExpenseSummary (String sessionId) {
+        List<Object[]> mid = expenseRepo.getGroupedExpenses(sessionId);
+        List<ExpensesGroupedDTO> fin = mid.stream()
+                .map(obj -> new ExpensesGroupedDTO((String) obj[0], (Double) obj[1], (Long) obj[2]))
+                .collect(Collectors.toList());
+        return fin;
     }
 
     public void mapToObj (String sessionId, List<Expense> expenses, Double amount, String transaction, String data){
