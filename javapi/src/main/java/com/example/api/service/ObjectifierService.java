@@ -1,16 +1,16 @@
 package com.example.api.service;
 
 import com.example.api.model.Expense;
+import com.example.api.model.ExpenseDTO;
 import com.example.api.model.ExpensesGroupedDTO;
 import com.example.api.repo.ExpenseRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -104,6 +104,29 @@ public class ObjectifierService {
         return fin;
     }
 
+    public Map<String,Object> getFullReport (String sessionId) {
+        Map<String,Object> res = new HashMap<>();
+        List<Object[]> mid = expenseRepo.getGroupedExpenses(sessionId);
+        res.put("Smart Group Expense list", mid.stream().map(
+                obj -> new ExpensesGroupedDTO((String) obj[0], (Double) obj[1], (Long) obj[2])
+        ).collect(Collectors.toList()));
+        mid.clear();
+
+        mid = expenseRepo.getTopExpenses(sessionId);
+        res.put("Top 10 Expenses",mid.stream().map(
+                obj -> new ExpensesGroupedDTO((String) obj[0], (Double) obj[1], (Long) obj[2])
+        ).collect(Collectors.toList()));
+        mid.clear();
+
+        mid = expenseRepo.getAllExpenses(sessionId);
+        res.put("All Expenses", mid.stream().map(
+                obj -> new ExpenseDTO((String) obj[0], (Double) obj[2], (String) obj[1])
+        ).collect(Collectors.toList()));
+        mid.clear();
+
+        return res;
+    }
+
     public void mapToObj (String sessionId, List<Expense> expenses, Double amount, String transaction, String data){
         expenses.add(new Expense(sessionId, amount, transaction, data, ""));
     }
@@ -115,4 +138,5 @@ public class ObjectifierService {
         LOG.info("Generated Session_id: {}", session_id);
         return session_id;
     }
+
 }

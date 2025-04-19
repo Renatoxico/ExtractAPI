@@ -3,6 +3,7 @@ package com.example.api.controller;
 import com.example.api.model.ExpensesGroupedDTO;
 import com.example.api.model.ValidationResponse;
 import com.example.api.service.*;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/extract")
@@ -29,6 +31,12 @@ public class ExtractController {
         this.pyProcessor = pyProcessor;
         this.objService = objService;
         this.validationService = validationService;
+    }
+
+    @GetMapping("/")
+    public ResponseEntity<?> home(HttpServletRequest request) {
+        String ip = request.getRemoteAddr();
+        return ResponseEntity.ok("Ip Address: " + ip);
     }
 
     @PostMapping("/")
@@ -49,10 +57,10 @@ public class ExtractController {
 
     @GetMapping("/summary/{sessionId}")
     public ResponseEntity<?> getExpenseSummery(@PathVariable String sessionId) {
-        if(sessionId.isEmpty() || sessionId.isBlank()) {
+        if(sessionId == null || sessionId.isBlank()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No sessionId");
         }
-        List<ExpensesGroupedDTO> expensesGrouped = objService.getExpenseSummary(sessionId);
+        Map<String,Object> expensesGrouped = objService.getFullReport(sessionId);
         return ResponseEntity.status(HttpStatus.OK).body(expensesGrouped);
     }
 
@@ -66,7 +74,4 @@ public class ExtractController {
             throw new RuntimeException(e);
         }
     }
-    /*TODO
-        CREATE METHOD FOR SEARCHING SESSION_ID
-     */
 }
