@@ -59,6 +59,7 @@ public class ObjectifierService {
                 if (!(valueMatcher.start()< dateMatcher.end())) {
                     String description = line.substring(dateMatcher.end(), valueMatcher.start())
                             .replace("|", "")
+                            .replaceAll("\\d{4,}", "")
                             .trim();
                     if (!description.isEmpty()
                             && value != 0
@@ -96,30 +97,44 @@ public class ObjectifierService {
         return filteredCharges;
     }
 
-    public List<ExpensesGroupedDTO> getExpenseSummary (String sessionId) {
-        List<Object[]> mid = expenseRepo.getGroupedExpenses(sessionId);
-        List<ExpensesGroupedDTO> fin = mid.stream()
-                .map(obj -> new ExpensesGroupedDTO((String) obj[0], (Double) obj[1], (Long) obj[2]))
-                .collect(Collectors.toList());
-        return fin;
-    }
+//    public List<ExpensesGroupedDTO> getExpenseSummary (String sessionId) {
+//        List<Object[]> mid = expenseRepo.getGroupedExpenses(sessionId);
+//        List<ExpensesGroupedDTO> fin = mid.stream()
+//                .map(obj -> new ExpensesGroupedDTO((String) obj[0], (Double) obj[1], (Long) obj[2]))
+//                .collect(Collectors.toList());
+//        return fin;
+//    }
 
     public Map<String,Object> getFullReport (String sessionId) {
         Map<String,Object> res = new HashMap<>();
         List<Object[]> mid = expenseRepo.getGroupedExpenses(sessionId);
-        res.put("Smart Group Expense list", mid.stream().map(
-                obj -> new ExpensesGroupedDTO((String) obj[0], (Double) obj[1], (Long) obj[2])
+        res.put("SmartGroupExpenselist", mid.stream().map(
+                obj -> {
+                    BigDecimal val = (BigDecimal) obj[1];
+                    Double value = val.doubleValue();
+                    return new ExpensesGroupedDTO((String) obj[0], val, (Long) obj[2]);
+                }
         ).collect(Collectors.toList()));
         mid.clear();
 
         mid = expenseRepo.getTopExpenses(sessionId);
-        res.put("Top 10 Expenses",mid.stream().map(
-                obj -> new ExpensesGroupedDTO((String) obj[0], (Double) obj[1], (Long) obj[2])
+        res.put("Top10Expenses",mid.stream().map(
+                obj -> {
+                    BigDecimal val = (BigDecimal) obj[1];
+                    Double value = val.doubleValue();
+                    return new ExpensesGroupedDTO((String) obj[0], val, (Long) obj[2]);
+                }
         ).collect(Collectors.toList()));
         mid.clear();
 
         mid = expenseRepo.getAllExpenses(sessionId);
-        res.put("All Expenses", mid.stream().map(
+        res.put("AllExpenses", mid.stream().map(
+                obj -> new ExpenseDTO((String) obj[0], (Double) obj[2], (String) obj[1])
+        ).collect(Collectors.toList()));
+        mid.clear();
+
+        mid = expenseRepo.getBiggestExpense(sessionId);
+        res.put("BiggestSingularExpense", mid.stream().map(
                 obj -> new ExpenseDTO((String) obj[0], (Double) obj[2], (String) obj[1])
         ).collect(Collectors.toList()));
         mid.clear();

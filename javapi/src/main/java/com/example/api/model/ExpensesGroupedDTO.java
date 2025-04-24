@@ -1,10 +1,11 @@
 package com.example.api.model;
 
 
+import java.math.BigDecimal;
 
 public class ExpensesGroupedDTO {
     private String expenseName;
-    private Double total;
+    private BigDecimal total;
     private Long instances;
 
     public Long getInstances() {
@@ -15,11 +16,11 @@ public class ExpensesGroupedDTO {
         this.instances = instances;
     }
 
-    public Double getTotal() {
+    public BigDecimal getTotal() {
         return total;
     }
 
-    public void setTotal(Double total) {
+    public void setTotal(BigDecimal total) {
         this.total = total;
     }
 
@@ -31,7 +32,7 @@ public class ExpensesGroupedDTO {
         this.expenseName = expenseName;
     }
 
-    public ExpensesGroupedDTO (String expenseName, Double total, Long instances) {
+    public ExpensesGroupedDTO (String expenseName, BigDecimal total, Long instances) {
         this.expenseName = expenseName;
         this.total = total;
         this.instances = instances;

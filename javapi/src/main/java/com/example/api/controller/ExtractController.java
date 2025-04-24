@@ -39,6 +39,7 @@ public class ExtractController {
         return ResponseEntity.ok("Ip Address: " + ip);
     }
 
+    @CrossOrigin(origins = "http://localhost:5173")
     @PostMapping("/")
     public ResponseEntity<?> pythonProcessor(@RequestParam("file") MultipartFile[] files){
         LOG.info("Python Processor API");
@@ -52,7 +53,9 @@ public class ExtractController {
             String pdfText = pyProcessor.convertPDFtoJSON(filepath);
             objService.process(sessionId, pdfText);
         }
-        return ResponseEntity.ok(sessionId);
+        Map<String,Object> expensesGrouped = objService.getFullReport(sessionId);
+        expensesGrouped.put("sessionToken", sessionId);
+        return ResponseEntity.ok(expensesGrouped);
     }
 
     @GetMapping("/summary/{sessionId}")
@@ -61,6 +64,7 @@ public class ExtractController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No sessionId");
         }
         Map<String,Object> expensesGrouped = objService.getFullReport(sessionId);
+        expensesGrouped.put("sessionToken", sessionId);
         return ResponseEntity.status(HttpStatus.OK).body(expensesGrouped);
     }
 

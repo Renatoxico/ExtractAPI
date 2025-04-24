@@ -17,7 +17,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             	VALUE
             FROM TB_EXPENSE
             WHERE SESSION_ID = :sessionId
-            ORDER BY DATE
+            ORDER BY VALUE DESC
             """, nativeQuery = true)
     List<Object[]> getAllExpenses(@Param("sessionId") String sessionId);
 
@@ -39,12 +39,13 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             		WHEN UPPER(TRANSACTION_NAME) LIKE '%AMAZON%PRIME%' THEN 'STREAMING SERVICE'
             		ELSE TRANSACTION_NAME
             	END AS EXPENSE_NAME,
-            	VALUE
+            	ROUND(CAST(VALUE AS NUMERIC), 2) VALUE
             FROM TB_EXPENSE
             WHERE SESSION_ID = :sessionId)
             SELECT EXPENSE_NAME, SUM(VALUE) TOTAL, COUNT(1) INSTANCES
             FROM CLEANED_EXPENSES
             GROUP BY EXPENSE_NAME
+            HAVING COUNT(1) > 1
             ORDER BY TOTAL DESC, INSTANCES DESC, EXPENSE_NAME
             """, nativeQuery = true)
     List<Object[]> getGroupedExpenses(@Param("sessionId") String sessionId);
@@ -67,7 +68,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
                         		WHEN UPPER(TRANSACTION_NAME) LIKE '%AMAZON%PRIME%' THEN 'STREAMING SERVICE'
                         		ELSE TRANSACTION_NAME
                         	END AS EXPENSE_NAME,
-                        	VALUE
+                        	ROUND(CAST(VALUE AS NUMERIC), 2) VALUE
                         FROM TB_EXPENSE
                         WHERE SESSION_ID = :sessionId)
                         SELECT EXPENSE_NAME, SUM(VALUE) TOTAL, COUNT(1) INSTANCES
@@ -77,4 +78,16 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
                         LIMIT 10
             """, nativeQuery = true)
     List<Object[]> getTopExpenses(@Param("sessionId")String sessionId);
+
+    @Query(value = """
+            SELECT
+            	TRANSACTION_NAME,
+            	DATE,
+            	VALUE
+            FROM TB_EXPENSE
+            WHERE SESSION_ID = :sessionId
+            ORDER BY VALUE DESC
+            LIMIT 1
+            """, nativeQuery = true)
+    List<Object[]> getBiggestExpense(@Param("sessionId") String sessionId);
 }
