@@ -1,10 +1,13 @@
-HELP.md
-target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+# General OS-specific files
+.DS_Store
+Thumbs.db
 
-### STS ###
+# IDE-specific files
+.idea/
+*.iws
+*.iml
+*.ipr
+.sts4-cache
 .apt_generated
 .classpath
 .factorypath
@@ -12,23 +15,56 @@ target/
 .settings
 .properties
 .springBeans
-.sts4-cache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
 .vscode/
+
+# Node.js dependencies and build outputs
+node_modules/
+.svelte-kit/
+.build/
+.output/
+.vercel/
+.netlify/
+.wrangler/
+
+# Python-specific files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+.env.*
+!.env.example
+!.env.test
+
+# Java-specific files
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+HELP.md
+
+# Maven-specific files
+.mvn/
+*.log
+
+# Svelte/Vite-specific files
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*.bak
+*.orig
+*.rej
+
+# Prettier and npm-specific files
+.prettierignore
+.prettierrc
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+bun.lock
+bun.lockb
+.npmrc
