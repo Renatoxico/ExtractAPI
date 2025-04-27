@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  extract-fe:
+    build: 
+      context: ./extract-fe
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"  # Svelte default
+    volumes:
+      - ./extract-fe:/app
+      - /app/node_modules
+    working_dir: /app
+    command: npm run dev -- --host
+    depends_on:
+      - backend-java
+    environment:
+      - NODE_ENV=development
+    restart: always
+    networks:
+      - app-network
+
+  backend-java:
+    build: 
+      context: ./javapi
+      dockerfile: Dockerfile
+    ports:
+      - "9090:9090"  # Updated to match the Spring Boot app's port
+    volumes:
+      - ./javapi:/app
+    working_dir: /app
+    #command: ./mvnw spring-boot:run
+    command: ./mvnw compile spring-boot:run
+    depends_on:
+      - backend-python
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://aws-0-sa-east-1.pooler.supabase.com:6543/postgres
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+    restart: always
+    networks:
+      - app-network
+      - default
+
+  backend-python:
+    build: ./py-extractor
+    ports:
+      - "5000:5000"
+    restart: always
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

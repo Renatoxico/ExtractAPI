@@ -1,15 +1,17 @@
 package com.example.api.model;
 
+import java.math.BigDecimal;
+
 public class ExpenseDTO {
     private String expenseName;
-    private Double value;
+    private BigDecimal value;
     private String date;
 
     public String getExpenseName() {
         return expenseName;
     }
 
-    public ExpenseDTO(String expenseName, Double value, String date) {
+    public ExpenseDTO(String expenseName, BigDecimal value, String date) {
         this.expenseName = expenseName;
         this.value = value;
         this.date = date;
@@ -19,11 +21,11 @@ public class ExpenseDTO {
         this.expenseName = expenseName;
     }
 
-    public Double getValue() {
+    public BigDecimal getValue() {
         return value;
     }
 
-    public void setValue(Double value) {
+    public void setValue(BigDecimal value) {
         this.value = value;
     }
 

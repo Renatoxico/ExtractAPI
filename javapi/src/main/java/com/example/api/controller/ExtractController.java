@@ -49,8 +49,8 @@ public class ExtractController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(isValid.getMessage());
         }
         for (MultipartFile file : files) {
-            String filepath = saveFileTemp(file);
-            String pdfText = pyProcessor.convertPDFtoJSON(filepath);
+            //String filepath = saveFileTemp(file);
+            String pdfText = pyProcessor.convertPDFtoJSON(file);
             objService.process(sessionId, pdfText);
         }
         Map<String,Object> expensesGrouped = objService.getFullReport(sessionId);

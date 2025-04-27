@@ -54,15 +54,15 @@ public class ObjectifierService {
                 String valueStr = valueMatcher.group(1)
                         .replace(".", "")//remove BR decimal
                         .replace(",", "."); // Convert to double format
-                double value = Double.parseDouble(valueStr);
-                value = Math.abs(value);
+                BigDecimal value = new BigDecimal(valueStr);
+                value = value.abs();
                 if (!(valueMatcher.start()< dateMatcher.end())) {
                     String description = line.substring(dateMatcher.end(), valueMatcher.start())
                             .replace("|", "")
                             .replaceAll("\\d{4,}", "")
                             .trim();
                     if (!description.isEmpty()
-                            && value != 0
+                            && value.compareTo(BigDecimal.ZERO) != 0
                             && !(description.contains("CREDITO") || description.contains("FATURA"))){
                         mapToObj(sessionId, expensesObj, value, description, date);
                     }
@@ -129,20 +129,20 @@ public class ObjectifierService {
 
         mid = expenseRepo.getAllExpenses(sessionId);
         res.put("AllExpenses", mid.stream().map(
-                obj -> new ExpenseDTO((String) obj[0], (Double) obj[2], (String) obj[1])
+                obj -> new ExpenseDTO((String) obj[0], (BigDecimal) obj[2], (String) obj[1])
         ).collect(Collectors.toList()));
         mid.clear();
 
         mid = expenseRepo.getBiggestExpense(sessionId);
         res.put("BiggestSingularExpense", mid.stream().map(
-                obj -> new ExpenseDTO((String) obj[0], (Double) obj[2], (String) obj[1])
+                obj -> new ExpenseDTO((String) obj[0], (BigDecimal) obj[2], (String) obj[1])
         ).collect(Collectors.toList()));
         mid.clear();
 
         return res;
     }
 
-    public void mapToObj (String sessionId, List<Expense> expenses, Double amount, String transaction, String data){
+    public void mapToObj (String sessionId, List<Expense> expenses, BigDecimal amount, String transaction, String data){
         expenses.add(new Expense(sessionId, amount, transaction, data, ""));
     }
 

@@ -332,7 +332,7 @@
                 <input type="file" accept="application/pdf" multiple on:change={handleFileChange} />
                 <span>Choose Files</span>
             </label>
-            <button type="submit">Submit</button>
+            <button type="submit">Processar</button>
         </div>
     </form>
 

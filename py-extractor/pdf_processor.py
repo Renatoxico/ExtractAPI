@@ -1,5 +1,5 @@
 import os
-from docling.document_converter import DocumentConverter
+#from docling.document_converter import DocumentConverter
 import pdfplumber
 
 def validate_file(filepath):
@@ -19,7 +19,7 @@ def validate_file(filepath):
     return "File is valid."
 
 def process_file(source):
-    # source = "C:\\Users\\renalt\\OneDrive\\Documents\\Side Hustle\\extracts\\deb-oct.pdf"  # document per local path or URL
+    #source = "C:\\Users\\diasr\\OneDrive\\Documents\\wrk sht\\fevererio25.pdf"  # document per local path or URL
     # Validate the file
     validation_result = validate_file(source)
     if validation_result != "File is valid.":

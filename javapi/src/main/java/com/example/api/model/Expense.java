@@ -2,6 +2,8 @@ package com.example.api.model;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "tbExpense")
 public class Expense {
@@ -10,7 +12,7 @@ public class Expense {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Double value;
+    private BigDecimal value;
 
     private String transactionName;
 
@@ -20,7 +22,7 @@ public class Expense {
 
     private String sessionId;
 
-    public Expense (String sessionId, Double value, String name, String date, String type){
+    public Expense (String sessionId, BigDecimal value, String name, String date, String type){
         this.transactionName = name;
         this.transactionType = type;
         this.value = value;
@@ -38,11 +40,11 @@ public class Expense {
         this.id = id;
     }
 
-    public Double getValue() {
+    public BigDecimal getValue() {
         return value;
     }
 
-    public void setValue(Double value) {
+    public void setValue(BigDecimal value) {
         this.value = value;
     }
 
