@@ -13,7 +13,7 @@ def validate_file(filepath):
     
     # Check if the file is bigger than 3MB
     # 1MB = 1024 * 1024 bytes
-    if os.path.getsize(filepath) > 3 * 1024 * 1024:
+    if os.path.getsize(filepath) > 1 * 1024 * 1024:
         return "File is larger than 3MB."
     
     return "File is valid."
