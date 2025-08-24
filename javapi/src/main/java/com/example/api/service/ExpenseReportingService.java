@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,45 +19,47 @@ import java.util.stream.Collectors;
 public class ExpenseReportingService {
     private static final Logger LOG = LoggerFactory.getLogger(ExpenseReportingService.class);
     private final ExpenseRepository expenseRepo;
+    private static final SecureRandom random = new SecureRandom();
 
     public ExpenseReportingService(ExpenseRepository expenseRepo) {
         this.expenseRepo = expenseRepo;
     }
 
-    public Map<String,Object> getFullReport (String sessionId) {
-        Map<String,Object> res = new HashMap<>();
-        List<Object[]> mid = expenseRepo.getGroupedExpenses(sessionId);
-        res.put("SmartGroupExpenselist", mid.stream().map(
-                obj -> {
-                    BigDecimal val = (BigDecimal) obj[1];
-                    Double value = val.doubleValue();
-                    return new ExpensesGroupedDTO((String) obj[0], val, (Long) obj[2]);
-                }
-        ).collect(Collectors.toList()));
-        mid.clear();
+    public String generateId () {
+        byte[] randomBytes = new byte[8];
+        random.nextBytes(randomBytes);
+        String session_id = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes).toLowerCase();
+        LOG.info("Generated Session_id: {}", session_id);
+        return session_id;
+    }
 
-        mid = expenseRepo.getTopExpenses(sessionId);
-        res.put("Top10Expenses",mid.stream().map(
-                obj -> {
-                    BigDecimal val = (BigDecimal) obj[1];
-                    Double value = val.doubleValue();
-                    return new ExpensesGroupedDTO((String) obj[0], val, (Long) obj[2]);
-                }
-        ).collect(Collectors.toList()));
-        mid.clear();
+    public Map<String, Object> getFullReport(String sessionId) {
+        Map<String, Object> res = new HashMap<>();
 
-        mid = expenseRepo.getAllExpenses(sessionId);
-        res.put("AllExpenses", mid.stream().map(
-                obj -> new ExpenseDTO((String) obj[0], (BigDecimal) obj[2], (String) obj[1])
-        ).collect(Collectors.toList()));
-        mid.clear();
+        res.put("SmartGroupExpenselist", mapGroupedExpenses(expenseRepo.getGroupedExpenses(sessionId)));
+        res.put("Top10Expenses", mapGroupedExpenses(expenseRepo.getTopExpenses(sessionId)));
+        res.put("AllExpenses", mapAllExpenses(expenseRepo.getAllExpenses(sessionId)));
 
-        mid = expenseRepo.getBiggestExpense(sessionId);
-        res.put("BiggestSingularExpense", mid.stream().map(
-                obj -> new ExpenseDTO((String) obj[0], (BigDecimal) obj[2], (String) obj[1])
-        ).collect(Collectors.toList()));//this shouldn't be a list
-        mid.clear();
+        List<Object[]> biggest = expenseRepo.getBiggestExpense(sessionId);
+        if (!biggest.isEmpty()) {
+            Object[] obj = biggest.getFirst();
+            res.put("BiggestSingularExpense", new ExpenseDTO((String) obj[0], (BigDecimal) obj[2], (String) obj[1]));
+        } else {
+            res.put("BiggestSingularExpense", null);
+        }
 
         return res;
+    }
+
+    private List<ExpensesGroupedDTO> mapGroupedExpenses(List<Object[]> list) {
+        return list.stream()
+                .map(obj -> new ExpensesGroupedDTO((String) obj[0], (BigDecimal) obj[1], (Long) obj[2]))
+                .collect(Collectors.toList());
+    }
+
+    private List<ExpenseDTO> mapAllExpenses(List<Object[]> list) {
+        return list.stream()
+                .map(obj -> new ExpenseDTO((String) obj[0], (BigDecimal) obj[2], (String) obj[1]))
+                .collect(Collectors.toList());
     }
 }

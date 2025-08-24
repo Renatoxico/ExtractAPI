@@ -1,26 +1,21 @@
 package com.example.api.service;
 
 import com.example.api.model.Expense;
-import com.example.api.model.ExpenseDTO;
-import com.example.api.model.ExpensesGroupedDTO;
 import com.example.api.repo.ExpenseRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.security.SecureRandom;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 public class ObjectifierService {
     private static final Logger LOG = LoggerFactory.getLogger(ObjectifierService.class);
     private static final Pattern datePattern = Pattern.compile("\\b(\\d{2}/\\d{2}(?:/\\d{4})?)\\b");
     private static final Pattern valuePattern = Pattern.compile("(-?\\d{1,3}(?:\\.\\d{3})*,\\d{2})");
-    private static final SecureRandom random = new SecureRandom();
     private final ExpenseRepository expenseRepo;
 
     public ObjectifierService(ExpenseRepository expenseRepo) {
@@ -107,14 +102,6 @@ public class ObjectifierService {
 
     public void mapToObj (String sessionId, List<Expense> expenses, BigDecimal amount, String transaction, String data){
         expenses.add(new Expense(sessionId, amount, transaction, data, ""));
-    }
-
-    public String generateId () {
-        byte[] randomBytes = new byte[8];
-        random.nextBytes(randomBytes);
-        String session_id = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes).toLowerCase();
-        LOG.info("Generated Session_id: {}", session_id);
-        return session_id;
     }
 
 }

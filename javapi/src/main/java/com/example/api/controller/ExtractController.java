@@ -26,7 +26,7 @@ public class ExtractController {
     private final ValidationService validationService;
     private static final String PATH = System.getProperty("user.dir") + "\\tmp\\";
 
-    public ExtractController(ValidationService validationService, PythonProcessingService pyProcessor, ObjectifierService objService, AiProcessorService aiProcessor, ExpenseReportingService reportsService) {
+    public ExtractController(ValidationService validationService, PythonProcessingService pyProcessor, ObjectifierService objService, ExpenseReportingService reportsService) {
         this.pyProcessor = pyProcessor;
         this.objService = objService;
         this.validationService = validationService;
@@ -43,7 +43,7 @@ public class ExtractController {
     @PostMapping("/")
     public ResponseEntity<?> pythonProcessor(@RequestParam("file") MultipartFile[] files){
         LOG.info("Python Processor API");
-        String sessionId = objService.generateId();
+        String sessionId = reportsService.generateId();
         ValidationResponse isValid = validationService.validateFiles(files);
         if (!isValid.getStatus()){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(isValid.getMessage());
