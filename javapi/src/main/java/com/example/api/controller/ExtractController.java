@@ -1,6 +1,5 @@
 package com.example.api.controller;
 
-import com.example.api.model.ExpensesGroupedDTO;
 import com.example.api.model.ValidationResponse;
 import com.example.api.service.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,7 +14,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -51,6 +49,7 @@ public class ExtractController {
         for (MultipartFile file : files) {
             //String filepath = saveFileTemp(file);
             String pdfText = pyProcessor.convertPDFtoJSON(file);
+            //AI CALL HERE??
             objService.process(sessionId, pdfText);
         }
         Map<String,Object> expensesGrouped = objService.getFullReport(sessionId);

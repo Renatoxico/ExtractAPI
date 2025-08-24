@@ -6,10 +6,11 @@ WORKDIR /app
 
 # Copy the Maven wrapper and project files into the container
 COPY . .
-
+RUN sed -i 's/\r$//' mvnw
+RUN chmod +x ./mvnw
+RUN chmod +x ./
 #RUN ./mvnw clean package -DskipTests
 RUN ./mvnw dependency:go-offline
-COPY src ./src
 
 # Expose the port the app runs on
 EXPOSE 9090

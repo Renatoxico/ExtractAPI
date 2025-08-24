@@ -8,7 +8,7 @@ from pdf_processor import validate_file, process_file
 #logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
-port = int(os.environ.get('PORT', 5000))
+port = int(os.environ.get('PORT', 9000))
 
 @app.route("/")
 def home():

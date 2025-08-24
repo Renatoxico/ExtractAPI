@@ -48,7 +48,7 @@ services:
   backend-python:
     build: ./py-extractor
     ports:
-      - "5000:5000"
+      - "9000:9000"
     restart: always
     networks:
       - app-network

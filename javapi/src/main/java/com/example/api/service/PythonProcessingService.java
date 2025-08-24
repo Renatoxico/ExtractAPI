@@ -16,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class PythonProcessingService {
     private static final Logger LOG = LoggerFactory.getLogger(PythonProcessingService.class);
-    private static final String URL = "http://backend-python:5000/process";
+    private static final String URL = "http://backend-python:9000/process";
 
     public String convertPDFtoJSON(MultipartFile file) {
         RestTemplate restTemplate = new RestTemplate();

@@ -136,7 +136,7 @@ public class ObjectifierService {
         mid = expenseRepo.getBiggestExpense(sessionId);
         res.put("BiggestSingularExpense", mid.stream().map(
                 obj -> new ExpenseDTO((String) obj[0], (BigDecimal) obj[2], (String) obj[1])
-        ).collect(Collectors.toList()));
+        ).collect(Collectors.toList()));//this shouldn't be a list
         mid.clear();
 
         return res;
