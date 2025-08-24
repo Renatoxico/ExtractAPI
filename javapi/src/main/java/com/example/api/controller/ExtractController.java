@@ -22,13 +22,15 @@ public class ExtractController {
     private static final Logger LOG = LoggerFactory.getLogger(ExtractController.class);
     private final PythonProcessingService pyProcessor;
     private final ObjectifierService objService;
+    private final ExpenseReportingService reportsService;
     private final ValidationService validationService;
     private static final String PATH = System.getProperty("user.dir") + "\\tmp\\";
 
-    public ExtractController( ValidationService validationService, PythonProcessingService pyProcessor, ObjectifierService objService) {
+    public ExtractController(ValidationService validationService, PythonProcessingService pyProcessor, ObjectifierService objService, AiProcessorService aiProcessor, ExpenseReportingService reportsService) {
         this.pyProcessor = pyProcessor;
         this.objService = objService;
         this.validationService = validationService;
+        this.reportsService = reportsService;
     }
 
     @GetMapping("/")
@@ -49,10 +51,9 @@ public class ExtractController {
         for (MultipartFile file : files) {
             //String filepath = saveFileTemp(file);
             String pdfText = pyProcessor.convertPDFtoJSON(file);
-            //AI CALL HERE??
             objService.process(sessionId, pdfText);
         }
-        Map<String,Object> expensesGrouped = objService.getFullReport(sessionId);
+        Map<String,Object> expensesGrouped = reportsService.getFullReport(sessionId);
         expensesGrouped.put("sessionToken", sessionId);
         return ResponseEntity.ok(expensesGrouped);
     }
@@ -62,7 +63,7 @@ public class ExtractController {
         if(sessionId == null || sessionId.isBlank()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No sessionId");
         }
-        Map<String,Object> expensesGrouped = objService.getFullReport(sessionId);
+        Map<String,Object> expensesGrouped = reportsService.getFullReport(sessionId);
         expensesGrouped.put("sessionToken", sessionId);
         return ResponseEntity.status(HttpStatus.OK).body(expensesGrouped);
     }

@@ -61,9 +61,9 @@ public class ObjectifierService {
                             .replace("|", "")
                             .replaceAll("\\d{4,}", "")
                             .trim();
-                    if (!description.isEmpty()
-                            && value.compareTo(BigDecimal.ZERO) != 0
-                            && !(description.contains("CREDITO") || description.contains("FATURA"))){
+                    if (!description.isEmpty()//no blank expenses
+                            && value.compareTo(BigDecimal.ZERO) != 0//no expenses without value
+                            && !(description.contains("CREDITO") || description.contains("FATURA"))){//ignore balance value
                         mapToObj(sessionId, expensesObj, value, description, date);
                     }
                 }
@@ -104,43 +104,6 @@ public class ObjectifierService {
 //                .collect(Collectors.toList());
 //        return fin;
 //    }
-
-    public Map<String,Object> getFullReport (String sessionId) {
-        Map<String,Object> res = new HashMap<>();
-        List<Object[]> mid = expenseRepo.getGroupedExpenses(sessionId);
-        res.put("SmartGroupExpenselist", mid.stream().map(
-                obj -> {
-                    BigDecimal val = (BigDecimal) obj[1];
-                    Double value = val.doubleValue();
-                    return new ExpensesGroupedDTO((String) obj[0], val, (Long) obj[2]);
-                }
-        ).collect(Collectors.toList()));
-        mid.clear();
-
-        mid = expenseRepo.getTopExpenses(sessionId);
-        res.put("Top10Expenses",mid.stream().map(
-                obj -> {
-                    BigDecimal val = (BigDecimal) obj[1];
-                    Double value = val.doubleValue();
-                    return new ExpensesGroupedDTO((String) obj[0], val, (Long) obj[2]);
-                }
-        ).collect(Collectors.toList()));
-        mid.clear();
-
-        mid = expenseRepo.getAllExpenses(sessionId);
-        res.put("AllExpenses", mid.stream().map(
-                obj -> new ExpenseDTO((String) obj[0], (BigDecimal) obj[2], (String) obj[1])
-        ).collect(Collectors.toList()));
-        mid.clear();
-
-        mid = expenseRepo.getBiggestExpense(sessionId);
-        res.put("BiggestSingularExpense", mid.stream().map(
-                obj -> new ExpenseDTO((String) obj[0], (BigDecimal) obj[2], (String) obj[1])
-        ).collect(Collectors.toList()));//this shouldn't be a list
-        mid.clear();
-
-        return res;
-    }
 
     public void mapToObj (String sessionId, List<Expense> expenses, BigDecimal amount, String transaction, String data){
         expenses.add(new Expense(sessionId, amount, transaction, data, ""));
