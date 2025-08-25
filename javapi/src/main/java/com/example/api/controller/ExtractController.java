@@ -1,5 +1,6 @@
 package com.example.api.controller;
 
+import com.example.api.model.ExpenseDTO;
 import com.example.api.model.ValidationResponse;
 import com.example.api.service.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -59,7 +61,7 @@ public class ExtractController {
     }
 
     @GetMapping("/summary/{sessionId}")
-    public ResponseEntity<?> getExpenseSummery(@PathVariable String sessionId) {
+    public ResponseEntity<?> getExpenseSummary(@PathVariable String sessionId) {
         if(sessionId == null || sessionId.isBlank()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No sessionId");
         }
@@ -68,6 +70,14 @@ public class ExtractController {
         return ResponseEntity.status(HttpStatus.OK).body(expensesGrouped);
     }
 
+    @GetMapping("/report/{sessionId}")
+    public ResponseEntity<?> getExpenseReport(@PathVariable String sessionId) {
+        if(sessionId == null || sessionId.isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No sessionId");
+        }
+        String expensesGrouped = reportsService.getAiEnrichedReport(sessionId);
+        return ResponseEntity.status(HttpStatus.OK).body(expensesGrouped);
+    }
     private String saveFileTemp(MultipartFile file){
         try {
             Files.createDirectories(Paths.get(PATH));

@@ -7,6 +7,15 @@ public class ExpensesGroupedDTO {
     private String expenseName;
     private BigDecimal total;
     private Long instances;
+    private String category;
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
 
     public Long getInstances() {
         return instances;
@@ -32,9 +41,10 @@ public class ExpensesGroupedDTO {
         this.expenseName = expenseName;
     }
 
-    public ExpensesGroupedDTO (String expenseName, BigDecimal total, Long instances) {
+    public ExpensesGroupedDTO (String expenseName, BigDecimal total, Long instances, String category) {
         this.expenseName = expenseName;
         this.total = total;
         this.instances = instances;
+        this.category = category;
     }
 }

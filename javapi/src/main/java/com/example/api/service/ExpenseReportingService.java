@@ -3,6 +3,8 @@ package com.example.api.service;
 import com.example.api.model.ExpenseDTO;
 import com.example.api.model.ExpensesGroupedDTO;
 import com.example.api.repo.ExpenseRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -20,9 +22,11 @@ public class ExpenseReportingService {
     private static final Logger LOG = LoggerFactory.getLogger(ExpenseReportingService.class);
     private final ExpenseRepository expenseRepo;
     private static final SecureRandom random = new SecureRandom();
+    private final AiProcessorService aiProcessorService;
 
-    public ExpenseReportingService(ExpenseRepository expenseRepo) {
+    public ExpenseReportingService(ExpenseRepository expenseRepo, AiProcessorService aiProcessorService) {
         this.expenseRepo = expenseRepo;
+        this.aiProcessorService = aiProcessorService;
     }
 
     public String generateId () {
@@ -43,7 +47,7 @@ public class ExpenseReportingService {
         List<Object[]> biggest = expenseRepo.getBiggestExpense(sessionId);
         if (!biggest.isEmpty()) {
             Object[] obj = biggest.getFirst();
-            res.put("BiggestSingularExpense", new ExpenseDTO((String) obj[0], (BigDecimal) obj[2], (String) obj[1]));
+            res.put("BiggestSingularExpense", new ExpenseDTO((String) obj[0], (BigDecimal) obj[2], (String) obj[1],(String) obj[3]));
         } else {
             res.put("BiggestSingularExpense", null);
         }
@@ -51,15 +55,27 @@ public class ExpenseReportingService {
         return res;
     }
 
+    public String getAiEnrichedReport(String sessionId) {
+        List<ExpenseDTO> enrichedExpenses = mapAllExpenses(expenseRepo.getAllExpenses(sessionId));
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            String jsonString = mapper.writeValueAsString(enrichedExpenses);
+            String aux = aiProcessorService.processWithAI(jsonString);
+            return aux;
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private List<ExpensesGroupedDTO> mapGroupedExpenses(List<Object[]> list) {
         return list.stream()
-                .map(obj -> new ExpensesGroupedDTO((String) obj[0], (BigDecimal) obj[1], (Long) obj[2]))
+                .map(obj -> new ExpensesGroupedDTO((String) obj[0], (BigDecimal) obj[1], (Long) obj[2], (String) obj[3]))
                 .collect(Collectors.toList());
     }
 
     private List<ExpenseDTO> mapAllExpenses(List<Object[]> list) {
         return list.stream()
-                .map(obj -> new ExpenseDTO((String) obj[0], (BigDecimal) obj[2], (String) obj[1]))
+                .map(obj -> new ExpenseDTO((String) obj[0], (BigDecimal) obj[2], (String) obj[1], (String) obj[3]))
                 .collect(Collectors.toList());
     }
 }

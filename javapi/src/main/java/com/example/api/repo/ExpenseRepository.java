@@ -14,7 +14,8 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             SELECT
             	TRANSACTION_NAME,
             	DATE,
-            	VALUE
+            	VALUE,
+            	TRANSACTION_TYPE
             FROM TB_EXPENSE
             WHERE SESSION_ID = :sessionId
             ORDER BY VALUE DESC
@@ -39,12 +40,13 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             		WHEN UPPER(TRANSACTION_NAME) LIKE '%AMAZON%PRIME%' THEN 'STREAMING SERVICE'
             		ELSE TRANSACTION_NAME
             	END AS EXPENSE_NAME,
-            	ROUND(CAST(VALUE AS NUMERIC), 2) VALUE
+            	ROUND(CAST(VALUE AS NUMERIC), 2) VALUE,
+            	TRANSACTION_TYPE
             FROM TB_EXPENSE
             WHERE SESSION_ID = :sessionId)
-            SELECT EXPENSE_NAME, SUM(VALUE) TOTAL, COUNT(1) INSTANCES
+            SELECT EXPENSE_NAME, SUM(VALUE) TOTAL, COUNT(1) INSTANCES, TRANSACTION_TYPE
             FROM CLEANED_EXPENSES
-            GROUP BY EXPENSE_NAME
+            GROUP BY EXPENSE_NAME, TRANSACTION_TYPE
             HAVING COUNT(1) > 1
             ORDER BY TOTAL DESC, INSTANCES DESC, EXPENSE_NAME
             """, nativeQuery = true)
@@ -68,12 +70,13 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
                         		WHEN UPPER(TRANSACTION_NAME) LIKE '%AMAZON%PRIME%' THEN 'STREAMING SERVICE'
                         		ELSE TRANSACTION_NAME
                         	END AS EXPENSE_NAME,
-                        	ROUND(CAST(VALUE AS NUMERIC), 2) VALUE
+                        	ROUND(CAST(VALUE AS NUMERIC), 2) VALUE,
+                        	TRANSACTION_TYPE
                         FROM TB_EXPENSE
                         WHERE SESSION_ID = :sessionId)
-                        SELECT EXPENSE_NAME, SUM(VALUE) TOTAL, COUNT(1) INSTANCES
+                        SELECT EXPENSE_NAME, SUM(VALUE) TOTAL, COUNT(1) INSTANCES, TRANSACTION_TYPE
                         FROM CLEANED_EXPENSES
-                        GROUP BY EXPENSE_NAME
+                        GROUP BY EXPENSE_NAME, TRANSACTION_TYPE
                         ORDER BY TOTAL DESC, INSTANCES DESC, EXPENSE_NAME
                         LIMIT 10
             """, nativeQuery = true)
@@ -83,7 +86,8 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             SELECT
             	TRANSACTION_NAME,
             	DATE,
-            	VALUE
+            	VALUE,
+            	TRANSACTION_TYPE
             FROM TB_EXPENSE
             WHERE SESSION_ID = :sessionId
             ORDER BY VALUE DESC

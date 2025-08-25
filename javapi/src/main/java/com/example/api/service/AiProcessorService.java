@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.http.HttpClient;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,7 +23,6 @@ public class AiProcessorService {
             - E-commerce
             - Supermercado / Alimentação
             - Combustível / Transporte
-            - Transporte público / Mobilidade
             - Farmácia / Saúde
             - Cartão de crédito / Pagamentos bancários
             - Lazer / Entretenimento
@@ -56,9 +56,11 @@ public class AiProcessorService {
         try {
             ResponseEntity<Map> res = restTemplate.exchange(URL, HttpMethod.POST, req, Map.class);
             if(res.getStatusCode() == HttpStatus.OK && res.getBody() != null){
-                Object llmResponse = res.getBody().get("response");
+                ArrayList<Object> llmResponse;
+                llmResponse = (ArrayList<Object>) res.getBody().get("choices");
                 if (llmResponse != null){
-                    return llmResponse.toString();
+                    LOG.info(llmResponse.get(0).toString());
+                    return llmResponse.get(0).toString();
                 }
             }
         } catch (Exception e) {
