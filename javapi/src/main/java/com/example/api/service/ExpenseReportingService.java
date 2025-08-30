@@ -1,10 +1,12 @@
 package com.example.api.service;
 
+import com.example.api.model.CategoryMapper;
 import com.example.api.model.ExpenseDTO;
 import com.example.api.model.ExpensesGroupedDTO;
 import com.example.api.repo.ExpenseRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -56,15 +58,21 @@ public class ExpenseReportingService {
     }
 
     public String getAiEnrichedReport(String sessionId) {
-        List<ExpenseDTO> enrichedExpenses = mapAllExpenses(expenseRepo.getAllExpenses(sessionId));
+        List<CategoryMapper> enrichedExpenses = getExpenseNames();
         ObjectMapper mapper = new ObjectMapper();
+        mapper.enable(SerializationFeature.INDENT_OUTPUT);
         try {
             String jsonString = mapper.writeValueAsString(enrichedExpenses);
-            String aux = aiProcessorService.processWithAI(jsonString);
-            return aux;
+            return aiProcessorService.processWithAI(enrichedExpenses);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public List<CategoryMapper> getExpenseNames() {
+        List<CategoryMapper> expenses = expenseRepo.getExpenseNames().stream()
+                .map(obj -> new CategoryMapper((String) obj[0], (String) obj[1])).toList();
+        return expenses;
     }
 
     private List<ExpensesGroupedDTO> mapGroupedExpenses(List<Object[]> list) {

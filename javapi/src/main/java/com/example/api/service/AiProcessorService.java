@@ -1,68 +1,110 @@
 package com.example.api.service;
 
+import com.example.api.model.CategoryMapper;
+import com.example.api.model.ExpenseDTO;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.net.http.HttpClient;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
 public class AiProcessorService {
     private static final Logger LOG = LoggerFactory.getLogger(AiProcessorService.class);
-    private static final String URL = "http://192.168.15.9:11434/v1/completions";
-
+//    private static final String URL = "http://192.168.15.9:11434/v1/completions";
+    private static final String URL = "http://192.168.15.9:11434/api/generate";
     private static final String PROMPT_TEMPLATE = """
-            Usando apenas estas categorias:
-            - iFood / Delivery
-            - Streaming
-            - E-commerce
-            - Supermercado / Alimentação
-            - Combustível / Transporte
-            - Farmácia / Saúde
-            - Cartão de crédito / Pagamentos bancários
-            - Lazer / Entretenimento
-            - Assinaturas / Softwares
-            - Viagens / Hospedagem
-            - Serviços / Contas (internet, energia, telefone)
-            - Educação / Cursos / Livros
-            - Roupas / Vestuário
-            - Outros / Diversos
-            Preencha o JSON abaixo no campo "categoria" onde está vazio. \s
-            Não invente categorias; se não souber, use "Outros / Diversos". \s
-            O output deve ser apenas JSON, no mesmo formato do input, pronto para uso.
-        %s
-        """;
+            Preciso que você categorize/classifique cada uma delas em apenas uma das categorias a seguir:
+     
+                1. Supermercado
+                2. Restaurante / Lanches
+                3. Combustível / Transporte (Inclui coisas como Posto de abastecer, Uber, 99Taxi, Lyft blabla car e etc)
+                4. Lazer / Entretenimento / Pets
+                5. Saúde / Farmácia
+                6. Moradia / Contas (Inclui boletos aqui, contas de luz/energia/agua/gas)
+                7. Investimentos / Aplicações financeiras
+                8. Roupas / Acessórios
+                9. E-commerce (Coisas como compras on-line)
+                10. Outros / Diversos (Qualquer coisa que não tiver certza, usa essa classificação)
+       
+                Como retorno, por favor escreva exatamente o nome da despesa, seguido de um caractere pipe `|`, seguido pela categoria escolhida.
+                Algumas despesas podem estar abreviadas ou faltando espaço, tente perceber e categorizar apropriadamente esses casos também.
+                Por favor categorize cada uma das despesas, preciso de uma lista 1:1
+       
+                Exemplo do formato esperado:
+       
+                PAGAMENTO DE BOLETO ROCA ADMINISTRADORA DE IM|Supermercado / Alimentação
+                PIX ENVIADO Companhia Paulista de For|Combustível / Transporte
+                PIX ENVIADO Amazon Servicos de Varejo|E-commerce
+       
+                Despesas:
+            """;
 
-    public String processWithAI(String pdfText) {
+    public String processWithAI(List<CategoryMapper> expenses) {
         RestTemplate restTemplate = new RestTemplate();
         //setting prompt
-        String prompt = String.format(PROMPT_TEMPLATE, pdfText);
+        StringBuilder prompt = new StringBuilder();
+        prompt.append(PROMPT_TEMPLATE);
+
+        for(CategoryMapper expense : expenses){
+            prompt.append(expense.getExpenseName()).append(" | \n");
+        }
+        Map<String, Object> options = new HashMap<>();
+        options.put("num_ctx", 4096);
+        options.put("num_predict", 4096);
+        options.put("temperature", 0);
 
         Map<String, Object> body = new HashMap<>();
-        body.put("model", "mistral");
+        body.put("model", "gemma3:4b");
         body.put("prompt", prompt);
-        body.put("temperature", 0.0);
-        body.put("max_tokens",2000);
+        body.put("stream", true);
+//        body.put("format", "json");
+        body.put("options", options);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+
         HttpEntity<Map<String, Object>> req = new HttpEntity<>(body, headers);
 
+        if (false){
+            return prompt.toString();
+        }
         try {
-            ResponseEntity<Map> res = restTemplate.exchange(URL, HttpMethod.POST, req, Map.class);
-            if(res.getStatusCode() == HttpStatus.OK && res.getBody() != null){
-                ArrayList<Object> llmResponse;
-                llmResponse = (ArrayList<Object>) res.getBody().get("choices");
-                if (llmResponse != null){
-                    LOG.info(llmResponse.get(0).toString());
-                    return llmResponse.get(0).toString();
+            LOG.info("Calling LLM API");
+            ResponseExtractor<String> extractor = response -> {
+                StringBuilder resp = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.getBody(), StandardCharsets.UTF_8))) {
+                    String line;
+                    while((line = reader.readLine()) != null) {
+                        if (line.trim().isEmpty()) continue;
+                        Map<?, ?> chunk = new ObjectMapper().readValue(line, Map.class);
+                        Object jsonResp = chunk.get("response");
+                        if (jsonResp != null) resp.append(jsonResp.toString());
+                        //resp.append(line).append("\n");
+                        //System.out.println(line);
+                    }
+                    return resp.toString();
                 }
-            }
+            };
+
+            String fullResponse = restTemplate.execute(URL, HttpMethod.POST, request -> {
+                request.getHeaders().putAll(req.getHeaders());
+                new ObjectMapper().writeValue(request.getBody(), req.getBody());
+            }, extractor );
+            LOG.info("LLM API call completed");
+            //LOG.info("Full response: {}", fullResponse);
+            return fullResponse;
         } catch (Exception e) {
             LOG.error("error calling LLM", e);
         }

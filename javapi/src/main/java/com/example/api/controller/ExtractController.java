@@ -38,6 +38,7 @@ public class ExtractController {
     @GetMapping("/")
     public ResponseEntity<?> home(HttpServletRequest request) {
         String ip = request.getRemoteAddr();
+        LOG.info("Home API called from IP: " + ip);
         return ResponseEntity.ok("Ip Address: " + ip);
     }
 

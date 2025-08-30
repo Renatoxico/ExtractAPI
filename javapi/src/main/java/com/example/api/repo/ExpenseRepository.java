@@ -15,12 +15,21 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             	TRANSACTION_NAME,
             	DATE,
             	VALUE,
-            	TRANSACTION_TYPE
+            	COALESCE(TRANSACTION_TYPE, '') AS TRANSACTION_TYPE
             FROM TB_EXPENSE
             WHERE SESSION_ID = :sessionId
             ORDER BY VALUE DESC
             """, nativeQuery = true)
     List<Object[]> getAllExpenses(@Param("sessionId") String sessionId);
+
+    @Query(value = """
+            SELECT DISTINCT (TRANSACTION_NAME),
+            TRANSACTION_TYPE
+            FROM TB_EXPENSE
+            ORDER BY TRANSACTION_NAME
+            LIMIT 50
+            """, nativeQuery = true)
+    List<Object[]> getExpenseNames();
 
     @Query(value = """
             WITH CLEANED_EXPENSES AS (SELECT
@@ -44,7 +53,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             	TRANSACTION_TYPE
             FROM TB_EXPENSE
             WHERE SESSION_ID = :sessionId)
-            SELECT EXPENSE_NAME, SUM(VALUE) TOTAL, COUNT(1) INSTANCES, TRANSACTION_TYPE
+            SELECT EXPENSE_NAME, SUM(VALUE) TOTAL, COUNT(1) INSTANCES, COALESCE(TRANSACTION_TYPE, '') AS TRANSACTION_TYPE
             FROM CLEANED_EXPENSES
             GROUP BY EXPENSE_NAME, TRANSACTION_TYPE
             HAVING COUNT(1) > 1
@@ -74,7 +83,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
                         	TRANSACTION_TYPE
                         FROM TB_EXPENSE
                         WHERE SESSION_ID = :sessionId)
-                        SELECT EXPENSE_NAME, SUM(VALUE) TOTAL, COUNT(1) INSTANCES, TRANSACTION_TYPE
+                        SELECT EXPENSE_NAME, SUM(VALUE) TOTAL, COUNT(1) INSTANCES, COALESCE(TRANSACTION_TYPE, '') AS TRANSACTION_TYPE
                         FROM CLEANED_EXPENSES
                         GROUP BY EXPENSE_NAME, TRANSACTION_TYPE
                         ORDER BY TOTAL DESC, INSTANCES DESC, EXPENSE_NAME
@@ -87,7 +96,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             	TRANSACTION_NAME,
             	DATE,
             	VALUE,
-            	TRANSACTION_TYPE
+            	COALESCE(TRANSACTION_TYPE, '') AS TRANSACTION_TYPE
             FROM TB_EXPENSE
             WHERE SESSION_ID = :sessionId
             ORDER BY VALUE DESC
