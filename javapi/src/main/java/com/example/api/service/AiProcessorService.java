@@ -30,7 +30,7 @@ public class AiProcessorService {
                 4. Lazer / Entretenimento / Pets
                 5. Saúde / Farmácia
                 6. Moradia / Contas (Inclui boletos aqui, contas de luz/energia/agua/gas)
-                7. Investimentos / Aplicações financeiras
+                7. Investimentos ( Inclui Aplicações financeiras)
                 8. Roupas / Acessórios
                 9. E-commerce (Coisas como compras on-line, Amazon, Mercado Livre, Aliexpress e etc)
                 10. Outros / Diversos (Qualquer coisa que não tiver certza, usa essa classificação)

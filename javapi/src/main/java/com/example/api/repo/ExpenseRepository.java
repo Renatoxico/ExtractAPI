@@ -110,6 +110,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             SELECT SUM(TE.VALUE ), TE.TRANSACTION_TYPE
             FROM TB_EXPENSE TE
             WHERE SESSION_ID = :sessionId
+            AND TE.TRANSACTION_TYPE IS NOT NULL AND TE.TRANSACTION_TYPE <> ''
             GROUP BY TE.TRANSACTION_TYPE
             ORDER BY 1
             """, nativeQuery = true)
