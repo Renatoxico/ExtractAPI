@@ -2,10 +2,12 @@ package com.example.api.service;
 
 import com.example.api.model.CategoryMapper;
 import com.example.api.model.ExpenseDTO;
+import com.example.api.model.ExpensesCategories;
 import com.example.api.model.ExpensesGroupedDTO;
 import com.example.api.repo.ExpenseRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -42,6 +44,7 @@ public class ExpenseReportingService {
         res.put("SmartGroupExpenselist", mapGroupedExpenses(expenseRepo.getGroupedExpenses(sessionId)));
         res.put("Top10Expenses", mapGroupedExpenses(expenseRepo.getTopExpenses(sessionId)));
         res.put("AllExpenses", mapAllExpenses(expenseRepo.getAllExpenses(sessionId)));
+        res.put("ExpensesByCategory", mapByCategory(expenseRepo.getExpensesByType(sessionId)));
 
         List<Object[]> biggest = expenseRepo.getBiggestExpense(sessionId);
         if (!biggest.isEmpty()) {
@@ -54,11 +57,14 @@ public class ExpenseReportingService {
         return res;
     }
 
-    public void getAiEnrichedReport() {
+    @Scheduled(cron = "0 */5 * * * *")
+    public void enrichCategories() {
+        LOG.info("Starting scheduled AI enrichment task...");
         List<CategoryMapper> enrichedExpenses = getExpenseNames();
         try {
             enrichedExpenses = aiProcessorService.processWithAI(enrichedExpenses);
             for (CategoryMapper cm : enrichedExpenses) {
+                LOG.info("Updating {} to category {}", cm.getExpenseName(), cm.getTransactionType());
                 expenseRepo.updateTransactionType(cm.getExpenseName(), cm.getTransactionType());
             }
         } catch (Exception e) {
@@ -81,6 +87,12 @@ public class ExpenseReportingService {
     private List<ExpenseDTO> mapAllExpenses(List<Object[]> list) {
         return list.stream()
                 .map(obj -> new ExpenseDTO((String) obj[0], (BigDecimal) obj[2], (String) obj[1], (String) obj[3]))
+                .collect(Collectors.toList());
+    }
+
+    private List<ExpensesCategories> mapByCategory(List<Object[]> list) {
+        return list.stream()
+                .map(obj -> new ExpensesCategories((BigDecimal) obj[0], (String) obj[1]))
                 .collect(Collectors.toList());
     }
 }

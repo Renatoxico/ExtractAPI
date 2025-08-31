@@ -27,6 +27,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             SELECT DISTINCT (TRANSACTION_NAME),
             TRANSACTION_TYPE
             FROM TB_EXPENSE
+            WHERE TRANSACTION_TYPE IS NULL OR TRANSACTION_TYPE = ''
             ORDER BY TRANSACTION_NAME
             LIMIT 25
             """, nativeQuery = true)
@@ -104,6 +105,15 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             LIMIT 1
             """, nativeQuery = true)
     List<Object[]> getBiggestExpense(@Param("sessionId") String sessionId);
+
+    @Query(value = """
+            SELECT SUM(TE.VALUE ), TE.TRANSACTION_TYPE
+            FROM TB_EXPENSE TE
+            WHERE SESSION_ID = :sessionId
+            GROUP BY TE.TRANSACTION_TYPE
+            ORDER BY 1
+            """, nativeQuery = true)
+    List<Object[]> getExpensesByType(@Param("sessionId") String sessionId);
 
     @Modifying
     @Transactional

@@ -73,7 +73,7 @@ public class ExtractController {
 
     @GetMapping("/classify/")
     public ResponseEntity<?> getExpenseReport() {
-        reportsService.getAiEnrichedReport();
+        reportsService.enrichCategories();
         return ResponseEntity.status(HttpStatus.OK).body("AI Classification done");
     }
     private String saveFileTemp(MultipartFile file){

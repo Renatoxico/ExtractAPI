@@ -32,7 +32,7 @@ public class AiProcessorService {
                 6. Moradia / Contas (Inclui boletos aqui, contas de luz/energia/agua/gas)
                 7. Investimentos / Aplicações financeiras
                 8. Roupas / Acessórios
-                9. E-commerce (Coisas como compras on-line)
+                9. E-commerce (Coisas como compras on-line, Amazon, Mercado Livre, Aliexpress e etc)
                 10. Outros / Diversos (Qualquer coisa que não tiver certza, usa essa classificação)
        
                 Como retorno, por favor escreva exatamente o nome da despesa, seguido de um caractere pipe `|`, seguido pela categoria escolhida.
