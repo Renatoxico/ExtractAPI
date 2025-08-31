@@ -1,6 +1,6 @@
 package com.example.api.controller;
 
-import com.example.api.model.ExpenseDTO;
+
 import com.example.api.model.ValidationResponse;
 import com.example.api.service.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -71,13 +71,10 @@ public class ExtractController {
         return ResponseEntity.status(HttpStatus.OK).body(expensesGrouped);
     }
 
-    @GetMapping("/report/{sessionId}")
-    public ResponseEntity<?> getExpenseReport(@PathVariable String sessionId) {
-        if(sessionId == null || sessionId.isBlank()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No sessionId");
-        }
-        String expensesGrouped = reportsService.getAiEnrichedReport(sessionId);
-        return ResponseEntity.status(HttpStatus.OK).body(expensesGrouped);
+    @GetMapping("/classify/")
+    public ResponseEntity<?> getExpenseReport() {
+        reportsService.getAiEnrichedReport();
+        return ResponseEntity.status(HttpStatus.OK).body("AI Classification done");
     }
     private String saveFileTemp(MultipartFile file){
         try {

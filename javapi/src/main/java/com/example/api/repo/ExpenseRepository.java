@@ -1,8 +1,9 @@
 package com.example.api.repo;
 
 import com.example.api.model.Expense;
-import com.example.api.model.ExpensesGroupedDTO;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -27,7 +28,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             TRANSACTION_TYPE
             FROM TB_EXPENSE
             ORDER BY TRANSACTION_NAME
-            LIMIT 50
+            LIMIT 25
             """, nativeQuery = true)
     List<Object[]> getExpenseNames();
 
@@ -103,4 +104,9 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             LIMIT 1
             """, nativeQuery = true)
     List<Object[]> getBiggestExpense(@Param("sessionId") String sessionId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE TB_EXPENSE SET TRANSACTION_TYPE = :type WHERE TRANSACTION_NAME = :name", nativeQuery = true)
+    void updateTransactionType(@Param("name") String name, @Param("type") String type);
 }

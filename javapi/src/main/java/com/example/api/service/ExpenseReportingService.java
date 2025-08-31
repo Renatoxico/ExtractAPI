@@ -4,9 +4,6 @@ import com.example.api.model.CategoryMapper;
 import com.example.api.model.ExpenseDTO;
 import com.example.api.model.ExpensesGroupedDTO;
 import com.example.api.repo.ExpenseRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -57,14 +54,14 @@ public class ExpenseReportingService {
         return res;
     }
 
-    public String getAiEnrichedReport(String sessionId) {
+    public void getAiEnrichedReport() {
         List<CategoryMapper> enrichedExpenses = getExpenseNames();
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.enable(SerializationFeature.INDENT_OUTPUT);
         try {
-            String jsonString = mapper.writeValueAsString(enrichedExpenses);
-            return aiProcessorService.processWithAI(enrichedExpenses);
-        } catch (JsonProcessingException e) {
+            enrichedExpenses = aiProcessorService.processWithAI(enrichedExpenses);
+            for (CategoryMapper cm : enrichedExpenses) {
+                expenseRepo.updateTransactionType(cm.getExpenseName(), cm.getTransactionType());
+            }
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

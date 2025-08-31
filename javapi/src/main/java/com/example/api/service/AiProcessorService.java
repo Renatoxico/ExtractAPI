@@ -1,7 +1,6 @@
 package com.example.api.service;
 
 import com.example.api.model.CategoryMapper;
-import com.example.api.model.ExpenseDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +11,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,7 +20,6 @@ import java.util.Map;
 @Service
 public class AiProcessorService {
     private static final Logger LOG = LoggerFactory.getLogger(AiProcessorService.class);
-//    private static final String URL = "http://192.168.15.9:11434/v1/completions";
     private static final String URL = "http://192.168.15.9:11434/api/generate";
     private static final String PROMPT_TEMPLATE = """
             Preciso que você categorize/classifique cada uma delas em apenas uma das categorias a seguir:
@@ -51,48 +48,37 @@ public class AiProcessorService {
                 Despesas:
             """;
 
-    public String processWithAI(List<CategoryMapper> expenses) {
+    public List<CategoryMapper> processWithAI(List<CategoryMapper> expenses) {
         RestTemplate restTemplate = new RestTemplate();
-        //setting prompt
         StringBuilder prompt = new StringBuilder();
         prompt.append(PROMPT_TEMPLATE);
 
         for(CategoryMapper expense : expenses){
             prompt.append(expense.getExpenseName()).append(" | \n");
         }
-        Map<String, Object> options = new HashMap<>();
-        options.put("num_ctx", 4096);
-        options.put("num_predict", 4096);
-        options.put("temperature", 0);
 
-        Map<String, Object> body = new HashMap<>();
-        body.put("model", "gemma3:4b");
-        body.put("prompt", prompt);
-        body.put("stream", true);
-//        body.put("format", "json");
-        body.put("options", options);
+        Map<String, Object> body = getRequestBody(prompt.toString());
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         HttpEntity<Map<String, Object>> req = new HttpEntity<>(body, headers);
-
-        if (false){
-            return prompt.toString();
-        }
         try {
             LOG.info("Calling LLM API");
             ResponseExtractor<String> extractor = response -> {
                 StringBuilder resp = new StringBuilder();
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.getBody(), StandardCharsets.UTF_8))) {
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(
+                                response.getBody(), StandardCharsets.UTF_8)
+                        )
+                ) {
                     String line;
                     while((line = reader.readLine()) != null) {
                         if (line.trim().isEmpty()) continue;
                         Map<?, ?> chunk = new ObjectMapper().readValue(line, Map.class);
                         Object jsonResp = chunk.get("response");
-                        if (jsonResp != null) resp.append(jsonResp.toString());
-                        //resp.append(line).append("\n");
-                        //System.out.println(line);
+                        if (jsonResp != null)
+                            resp.append(jsonResp.toString());
                     }
                     return resp.toString();
                 }
@@ -104,11 +90,38 @@ public class AiProcessorService {
             }, extractor );
             LOG.info("LLM API call completed");
             //LOG.info("Full response: {}", fullResponse);
-            return fullResponse;
+            if (fullResponse != null) {
+                return mapCategories(fullResponse);
+            }
         } catch (Exception e) {
             LOG.error("error calling LLM", e);
         }
+        return expenses; // fallback empty JSON array
+    }
 
-        return "[]"; // fallback empty JSON array
+    private Map<String, Object> getRequestBody(String prompt){
+        Map<String, Object> options = new HashMap<>();
+        options.put("num_ctx", 4096);
+        options.put("num_predict", 4096);
+        options.put("temperature", 0);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("model", "gemma3:4b");
+        body.put("prompt", prompt);
+        body.put("stream", true);
+        body.put("options", options);
+        return body;
+    }
+
+    private List<CategoryMapper> mapCategories(String aiResponse){
+        List<CategoryMapper> res = new ArrayList<>();
+        String[] lines = aiResponse.split("\\r?\\n");
+        for(String line : lines){
+            if(line.isBlank() || !line.contains("|")) continue;
+            String[] parts = line.split("\\|");
+            if(parts.length != 2) continue;
+            res.add(new CategoryMapper(parts[0].trim(), parts[1].trim()));
+        }
+        return res;
     }
 }
