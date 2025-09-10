@@ -17,9 +17,11 @@ public class ObjectifierService {
     private static final Pattern datePattern = Pattern.compile("\\b(\\d{2}/\\d{2}(?:/\\d{4})?)\\b");
     private static final Pattern valuePattern = Pattern.compile("(-?\\d{1,3}(?:\\.\\d{3})*,\\d{2})");
     private final ExpenseRepository expenseRepo;
+    private final ValidationService validationService;
 
-    public ObjectifierService(ExpenseRepository expenseRepo) {
+    public ObjectifierService(ExpenseRepository expenseRepo, ValidationService validationService) {
         this.expenseRepo = expenseRepo;
+        this.validationService = validationService;
     }
 
     public void process (String sessionId, String inputText) {
@@ -27,6 +29,7 @@ public class ObjectifierService {
         String[] expensesDoc = splitByLine(inputText);
         List<String> filteredExpenses = getFilterCharges(expensesDoc);
         List<Expense> expensesObj = objectifyExtract(sessionId,filteredExpenses);
+        expensesObj = validationService.validateExpenses(expensesObj);
         expenseRepo.saveAll(expensesObj);
     }
 
@@ -58,7 +61,8 @@ public class ObjectifierService {
                             .trim();
                     if (!description.isEmpty()//no blank expenses
                             && value.compareTo(BigDecimal.ZERO) != 0//no expenses without value
-                            && !(description.contains("CREDITO") || description.contains("FATURA"))){//ignore balance value
+                            && description.matches(".*[a-zA-Z].*") //must have letters
+                            && !(description.contains("CREDITO") || description.contains("FATURA") || description.contains("SALDO"))){//ignore balance value
                         mapToObj(sessionId, expensesObj, value, description, date);
                     }
                 }

@@ -120,4 +120,13 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     @Transactional
     @Query(value = "UPDATE TB_EXPENSE SET TRANSACTION_TYPE = :type WHERE TRANSACTION_NAME = :name", nativeQuery = true)
     void updateTransactionType(@Param("name") String name, @Param("type") String type);
+
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE TB_EXPENSE TE SET TRANSACTION_TYPE = (SELECT DISTINCT(TE2.TRANSACTION_TYPE)  FROM TB_EXPENSE TE2 WHERE TE2.TRANSACTION_NAME = TE.TRANSACTION_NAME AND te2.TRANSACTION_TYPE <> '' LIMIT 1)
+            WHERE TE.TRANSACTION_TYPE = ''
+            AND EXISTS (SELECT 1 FROM TB_EXPENSE TE2 WHERE TE2.TRANSACTION_NAME = TE.TRANSACTION_NAME AND te2.TRANSACTION_TYPE <> '')
+            """, nativeQuery = true)
+    void updateMatchedExpenses();
 }

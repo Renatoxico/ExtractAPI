@@ -22,27 +22,28 @@ public class AiProcessorService {
     private static final Logger LOG = LoggerFactory.getLogger(AiProcessorService.class);
     private static final String URL = "http://192.168.15.9:11434/api/generate";
     private static final String PROMPT_TEMPLATE = """
-            Preciso que você categorize/classifique cada uma delas em apenas uma das categorias a seguir:
+            Preciso que você categorize/classifique algumas despesas financeiras, utilize as categorias abaixo:
+            Observação: o que esta entre parênteses é apenas para te ajudar a entender melhor a categoria, não deve ser incluído na resposta.
      
                 1. Supermercado
-                2. Restaurante / Lanches
-                3. Combustível / Transporte (Inclui coisas como Posto de abastecer, Uber, 99Taxi, Lyft blabla car e etc)
+                2. Restaurante / Lanches ( Inclui coisas como iFood [IFD*], UberEats, Rappi e etc)
+                3. Transporte (Inclui coisas como Posto de abastecer, Uber, 99Taxi, Lyft blabla car e etc)
                 4. Lazer / Entretenimento / Pets
                 5. Saúde / Farmácia
-                6. Moradia / Contas (Inclui boletos aqui, contas de luz/energia/agua/gas)
+                6. Moradia / Contas ( Inclui boletos aqui, contas de luz/energia/agua/gas)
                 7. Investimentos ( Inclui Aplicações financeiras)
                 8. Roupas / Acessórios
                 9. E-commerce (Coisas como compras on-line, Amazon, Mercado Livre, Aliexpress e etc)
                 10. Outros / Diversos (Qualquer coisa que não tiver certza, usa essa classificação)
        
-                Como retorno, por favor escreva exatamente o nome da despesa, seguido de um caractere pipe `|`, seguido pela categoria escolhida.
+                Como retorno, por favor escreva exatamente o nome da despesa, seguido de um caractere pipe `|`, seguido pela categoria apropriada.
                 Algumas despesas podem estar abreviadas ou faltando espaço, tente perceber e categorizar apropriadamente esses casos também.
                 Por favor categorize cada uma das despesas, preciso de uma lista 1:1
        
                 Exemplo do formato esperado:
        
-                PAGAMENTO DE BOLETO ROCA ADMINISTRADORA DE IM|Supermercado / Alimentação
-                PIX ENVIADO Companhia Paulista de For|Combustível / Transporte
+                PAGAMENTO DE BOLETO ROCA ADMINISTRADORA DE IM|Moradia / Contas
+                PIX ENVIADO Companhia Paulista de For|Transporte
                 PIX ENVIADO Amazon Servicos de Varejo|E-commerce
        
                 Despesas:

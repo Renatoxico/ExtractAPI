@@ -1,8 +1,11 @@
 package com.example.api.service;
 
+import com.example.api.model.Expense;
 import com.example.api.model.ValidationResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @Service
 public class ValidationService {
@@ -43,5 +46,17 @@ public class ValidationService {
         }
 
         return res;
+    }
+
+    public List<Expense> validateExpenses (List<Expense> expenses) {
+        expenses.removeIf(expense -> expense.getValue().doubleValue()<=0);
+        //expenses.removeIf(expense -> !expense.getTransactionName().matches(".*[a-zA-Z].*"));
+        expenses.removeIf(expense -> expense.getTransactionName().isEmpty());
+        expenses.forEach(expense -> {
+            expense.setTransactionName(expense.getTransactionName().replaceAll("\\d{2}/\\d{2}", "").trim());
+            expense.setTransactionName(expense.getTransactionName().replaceAll("\\s+", " ").trim());
+        });
+
+        return expenses;
     }
 }

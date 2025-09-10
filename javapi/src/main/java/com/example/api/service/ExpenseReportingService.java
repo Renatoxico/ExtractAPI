@@ -7,7 +7,6 @@ import com.example.api.model.ExpensesGroupedDTO;
 import com.example.api.repo.ExpenseRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -23,11 +22,9 @@ public class ExpenseReportingService {
     private static final Logger LOG = LoggerFactory.getLogger(ExpenseReportingService.class);
     private final ExpenseRepository expenseRepo;
     private static final SecureRandom random = new SecureRandom();
-    private final AiProcessorService aiProcessorService;
 
-    public ExpenseReportingService(ExpenseRepository expenseRepo, AiProcessorService aiProcessorService) {
+    public ExpenseReportingService(ExpenseRepository expenseRepo) {
         this.expenseRepo = expenseRepo;
-        this.aiProcessorService = aiProcessorService;
     }
 
     public String generateId () {
@@ -55,21 +52,6 @@ public class ExpenseReportingService {
         }
 
         return res;
-    }
-
-    @Scheduled(cron = "0 */5 * * * *")
-    public void enrichCategories() {
-        LOG.info("Starting scheduled AI enrichment task...");
-        List<CategoryMapper> enrichedExpenses = getExpenseNames();
-        try {
-            enrichedExpenses = aiProcessorService.processWithAI(enrichedExpenses);
-            for (CategoryMapper cm : enrichedExpenses) {
-                LOG.info("Updating {} to category {}", cm.getExpenseName(), cm.getTransactionType());
-                expenseRepo.updateTransactionType(cm.getExpenseName(), cm.getTransactionType());
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public List<CategoryMapper> getExpenseNames() {
