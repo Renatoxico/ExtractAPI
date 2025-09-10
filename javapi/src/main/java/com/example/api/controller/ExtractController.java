@@ -71,11 +71,6 @@ public class ExtractController {
         return ResponseEntity.status(HttpStatus.OK).body(expensesGrouped);
     }
 
-    @GetMapping("/classify/")
-    public ResponseEntity<?> getExpenseReport() {
-        reportsService.enrichCategories();
-        return ResponseEntity.status(HttpStatus.OK).body("AI Classification done");
-    }
     private String saveFileTemp(MultipartFile file){
         try {
             Files.createDirectories(Paths.get(PATH));
