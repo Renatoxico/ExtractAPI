@@ -1,24 +1,24 @@
 version: '3.8'
 
 services:
-  extract-fe:
-    build: 
-      context: ./extract-fe
-      dockerfile: Dockerfile
-    ports:
-      - "5173:5173"  # Svelte default
-    volumes:
-      - ./extract-fe:/app
-      - /app/node_modules
-    working_dir: /app
-    command: npm run dev -- --host
-    depends_on:
-      - backend-java
-    environment:
-      - NODE_ENV=development
-    restart: always
-    networks:
-      - app-network
+  # extract-fe:
+  #   build: 
+  #     context: ./extract-fe
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "5173:5173"  # Svelte default
+  #   volumes:
+  #     - ./extract-fe:/app
+  #     - /app/node_modules
+  #   working_dir: /app
+  #   command: npm run dev -- --host
+  #   depends_on:
+  #     - backend-java
+  #   environment:
+  #     - NODE_ENV=development
+  #   restart: always
+  #   networks:
+  #     - app-network
 
   backend-java:
     build: 
@@ -35,11 +35,6 @@ services:
       - backend-python
     env_file:
       - .env
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
-      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}:5432/${DB_NAME}
-      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
     restart: always
     networks:
       - app-network

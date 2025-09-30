@@ -26,6 +26,10 @@ public class ScheduledTasksService {
     private void enrichCategories() {
         LOG.info("Starting scheduled AI enrichment task...");
         List<CategoryMapper> enrichedExpenses = expenseReportingService.getExpenseNames();
+        if (enrichedExpenses.stream().count() == 0) {
+            LOG.info("No expenses found for enrichment.");
+            return;
+        }
         try {
             enrichedExpenses = aiProcessorService.processWithAI(enrichedExpenses);
             for (CategoryMapper cm : enrichedExpenses) {
