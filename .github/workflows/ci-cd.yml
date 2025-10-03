@@ -7,6 +7,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: TOXIC SERVER 
     steps:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@master
