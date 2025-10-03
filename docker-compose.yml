@@ -1,28 +1,20 @@
 services:
   backend-java:
-    build: 
-      context: ./javapi
-      dockerfile: Dockerfile
-    ports:
-      - "9090:9090"  # Updated to match the Spring Boot app's port
     image: ghcr.io/renatoxico/javapi:latest
-    volumes:
-      - ./javapi:/app
-    working_dir: /app
-    #command: ./mvnw spring-boot:run
-    command: ./mvnw compile spring-boot:run
-    depends_on:
-      - backend-python
+    container_name: backend-java
+    ports:
+      - "9090:9090"
     env_file:
       - .env
     restart: always
+    depends_on:
+      - backend-python
     networks:
       - app-network
-      - default
 
   backend-python:
-    build: ./py-extractor
     image: ghcr.io/renatoxico/py-extractor:latest
+    container_name: backend-python
     ports:
       - "9000:9000"
     restart: always
