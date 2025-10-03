@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend-java:
     build: 
@@ -7,6 +5,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "9090:9090"  # Updated to match the Spring Boot app's port
+    image: ghcr.io/Renatoxico/javapi:latest
     volumes:
       - ./javapi:/app
     working_dir: /app
@@ -23,6 +22,7 @@ services:
 
   backend-python:
     build: ./py-extractor
+    image: ghcr.io/Renatoxico/py-extractor:latest
     ports:
       - "9000:9000"
     restart: always
