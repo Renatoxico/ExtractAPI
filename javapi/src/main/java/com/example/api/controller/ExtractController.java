@@ -35,6 +35,7 @@ public class ExtractController {
         this.reportsService = reportsService;
     }
 
+    @CrossOrigin(origins = "*")
     @GetMapping("/")
     public ResponseEntity<?> home(HttpServletRequest request) {
         String ip = request.getRemoteAddr();
@@ -42,7 +43,7 @@ public class ExtractController {
         return ResponseEntity.ok("Ip Address: " + ip);
     }
 
-    @CrossOrigin(origins = "http://localhost:5173")
+    @CrossOrigin(origins = "*")
     @PostMapping("/")
     public ResponseEntity<?> pythonProcessor(@RequestParam("file") MultipartFile[] files){
         LOG.info("Python Processor API");
@@ -61,6 +62,7 @@ public class ExtractController {
         return ResponseEntity.ok(expensesGrouped);
     }
 
+    @CrossOrigin(origins = "*")
     @GetMapping("/summary/{sessionId}")
     public ResponseEntity<?> getExpenseSummary(@PathVariable String sessionId) {
         if(sessionId == null || sessionId.isBlank()) {
