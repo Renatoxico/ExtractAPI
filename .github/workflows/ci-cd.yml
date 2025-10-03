@@ -43,5 +43,5 @@ jobs:
             cd /home/ubuntu/app/ExtractAPI
             echo "${{ secrets.GIT_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             git pull
-            docker-compose pull
-            docker-compose up -d --remove-orphans
+            docker compose pull
+            docker compose up -d --remove-orphans
