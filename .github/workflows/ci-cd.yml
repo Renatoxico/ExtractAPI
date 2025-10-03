@@ -13,6 +13,10 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      - name: Create .env file
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+
       - name: Login to GHCR
         uses: docker/login-action@v2
         with:
@@ -27,6 +31,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
+    needs: build-and-push
     environment: TOXIC SERVER 
     steps:
       - name: Deploy over SSH
