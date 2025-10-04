@@ -1,6 +1,7 @@
 services:
   backend-java:
-    image: ghcr.io/renatoxico/javapi:latest
+    build:
+      context: ./javapi # Path to the directory containing the Dockerfile for backend-java
     container_name: backend-java
     ports:
       - "9091:9090"
@@ -13,7 +14,8 @@ services:
       - app-network
 
   backend-python:
-    image: ghcr.io/renatoxico/py-extractor:latest
+    build:
+      context: ./py-extractor # Path to the directory containing the Dockerfile for backend-python
     container_name: backend-python
     ports:
       - "9000:9000"

@@ -45,8 +45,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_KEY }}
           script: |
-            cd /home/ubuntu/app/ExtractAPI
+            cd /home/ubuntu/ExtractAPI
             echo "${{ secrets.GIT_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            git pull
             docker compose pull
             docker compose up -d --remove-orphans
