@@ -26,12 +26,13 @@ jobs:
       - name: Build and tag images
         run: |
           docker compose build --no-cache
-          docker tag ghcr.io/renatoxico/javapi:latest ghcr.io/renatoxico/javapi:latest
-          docker tag ghcr.io/renatoxico/py-extractor:latest ghcr.io/renatoxico/py-extractor:latest
+          docker tag extractapi-backend-java ghcr.io/renatoxico/javapi:latest
+          docker tag extractapi-backend-python ghcr.io/renatoxico/py-extractor:latest
 
       - name: Push images to GHCR
         run: |
-          docker compose push
+          docker push ghcr.io/renatoxico/javapi:latest
+          docker push ghcr.io/renatoxico/py-extractor:latest
 
   deploy:
     runs-on: ubuntu-latest
