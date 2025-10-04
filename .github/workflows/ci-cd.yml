@@ -7,7 +7,7 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    environment: TOXIC SERVER 
+    environment: TOXIC SERVER
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -23,15 +23,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GIT_TOKEN }}
 
-      - name: Build and push images
+      - name: Build and tag images
         run: |
           docker compose build --no-cache
+          docker tag ghcr.io/renatoxico/javapi:latest ghcr.io/renatoxico/javapi:latest
+          docker tag ghcr.io/renatoxico/py-extractor:latest ghcr.io/renatoxico/py-extractor:latest
+
+      - name: Push images to GHCR
+        run: |
           docker compose push
 
   deploy:
     runs-on: ubuntu-latest
     needs: build-and-push
-    environment: TOXIC SERVER 
+    environment: TOXIC SERVER
     steps:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@master
