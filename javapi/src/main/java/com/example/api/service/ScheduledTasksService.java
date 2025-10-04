@@ -22,7 +22,7 @@ public class ScheduledTasksService {
         this.expenseRepo = expenseRepo;
     }
 
-    @Scheduled(cron = "0 */2 * * * *")
+    //@Scheduled(cron = "0 */2 * * * *")
     private void enrichCategories() {
         LOG.info("Starting scheduled AI enrichment task...");
         List<CategoryMapper> enrichedExpenses = expenseReportingService.getExpenseNames();
