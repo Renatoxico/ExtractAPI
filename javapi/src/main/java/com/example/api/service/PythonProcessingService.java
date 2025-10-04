@@ -20,6 +20,7 @@ public class PythonProcessingService {
     //private static final String URL = "http://192.168.15.9:9000/process";
 
     public String convertPDFtoJSON(MultipartFile file) {
+        LOG.info("Sending file to Python backend: {}", URL);
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.set("Content-Type", "multipart/form-data");
