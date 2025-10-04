@@ -15,7 +15,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -35,7 +34,7 @@ public class ExtractController {
         this.reportsService = reportsService;
     }
 
-    @CrossOrigin(origins = "*")
+    //@CrossOrigin(origins = "*")
     @GetMapping("/")
     public ResponseEntity<?> home(HttpServletRequest request) {
         String ip = request.getRemoteAddr();
@@ -43,7 +42,7 @@ public class ExtractController {
         return ResponseEntity.ok("Ip Address: " + ip);
     }
 
-    @CrossOrigin(origins = "*")
+    //@CrossOrigin(origins = "*")
     @PostMapping("/")
     public ResponseEntity<?> pythonProcessor(@RequestParam("file") MultipartFile[] files){
         LOG.info("Python Processor API");
@@ -62,7 +61,7 @@ public class ExtractController {
         return ResponseEntity.ok(expensesGrouped);
     }
 
-    @CrossOrigin(origins = "*")
+    //@CrossOrigin(origins = "*")
     @GetMapping("/summary/{sessionId}")
     public ResponseEntity<?> getExpenseSummary(@PathVariable String sessionId) {
         if(sessionId == null || sessionId.isBlank()) {
