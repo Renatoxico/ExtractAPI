@@ -55,8 +55,25 @@ public class ValidationService {
         expenses.forEach(expense -> {
             expense.setTransactionName(expense.getTransactionName().replaceAll("\\d{2}/\\d{2}", "").trim());
             expense.setTransactionName(expense.getTransactionName().replaceAll("\\s+", " ").trim());
+            expense.setTransactionName(expense.getTransactionName().replace(".","").trim());
+            expense.setTransactionName(expense.getTransactionName().replaceAll("\\d{2}/\\d{2}", "")); // remove datas no formato dd/mm
+            expense.setTransactionName(expense.getTransactionName().replaceAll("\\s+", " ").trim());
         });
+        expenses = preClassifyExpenses(expenses);
+        return expenses;
+    }
 
+    private List<Expense> preClassifyExpenses (List<Expense> expenses) {
+        expenses.forEach(expense -> {
+            String expName = expense.getTransactionName().toUpperCase();
+            if (expName.contains("IFOOD") || expName.contains("IFD")) {
+                expense.setTransactionType("Restaurante / Lanches");
+            }
+            else if (expName.contains("SERV BEM") || expName.contains("CARREFOUR") || expName.contains("JAU SERVE")){
+                expense.setTransactionType("Supermercado");
+            }
+
+        });
         return expenses;
     }
 }

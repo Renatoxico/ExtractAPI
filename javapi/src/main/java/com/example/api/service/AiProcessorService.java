@@ -26,15 +26,34 @@ public class AiProcessorService {
             Observação: o que esta entre parênteses é apenas para te ajudar a entender melhor a categoria, não deve ser incluído na resposta.
      
                 1. Supermercado
-                2. Restaurante / Lanches ( Inclui coisas como iFood [IFD*], UberEats, Rappi e etc)
-                3. Transporte (Inclui coisas como Posto de abastecer, Uber, 99Taxi, Lyft blabla car e etc)
+                   Inclui supermercados, mercearias, frios, hortifrúti, padarias, açougues, bebidas e conveniências.
+            
+                2. Restaurante / Lanches
+                   Inclui restaurantes, bares, lanchonetes, pizzarias, hamburguerias, e apps de delivery como iFood, UberEats, Rappi etc.
+            
+                3. Transporte / Auto
+                   Inclui postos de combustível, oficinas, auto centers e transportes por app (Uber, 99, Lyft, BlaBlaCar etc).
+            
                 4. Lazer / Entretenimento / Pets
-                5. Saúde / Farmácia
-                6. Moradia / Contas ( Inclui boletos aqui, contas de luz/energia/agua/gas)
-                7. Investimentos ( Inclui Aplicações financeiras)
+                   Inclui pet shops, serviços de streaming (YouTube, Netflix, Patreon, Kick, Spotify), jogos, hobbies, eventos e lazer em geral.
+            
+                5. Saúde / Farmácia / Bem-estar
+                   Inclui farmácias, clínicas, planos de saúde, academias e serviços de bem-estar.
+            
+                6. Moradia / Contas / Serviços
+                   Inclui boletos, aluguel, condomínio, energia, água, gás, telefone, internet, limpeza, dedetização e taxas bancárias.
+            
+                7. Investimentos / Assinaturas profissionais
+                   Inclui aplicações financeiras, hospedagem (HostGator), Canva, domínios, softwares e outras plataformas profissionais.
+            
                 8. Roupas / Acessórios
-                9. E-commerce (Coisas como compras on-line, Amazon, Mercado Livre, Aliexpress e etc)
-                10. Outros / Diversos (Qualquer coisa que não tiver certza, usa essa classificação)
+                   Inclui lojas de roupas, calçados, shopping, artigos esportivos e acessórios.
+            
+                9. E-commerce / Compras online
+                   Inclui Amazon, Mercado Livre, AliExpress e outras lojas virtuais ou intermediadores de pagamento (PagSeguro, Nuvei etc).
+            
+                10. Outros / Pessoais / Transferências
+                    Inclui PIX entre pessoas, saques, transferências entre contas, doações e tudo que não se encaixa claramente nas categorias acima.
        
                 Como retorno, por favor escreva exatamente o nome da despesa, seguido de um caractere pipe `|`, seguido pela categoria apropriada.
                 Algumas despesas podem estar abreviadas ou faltando espaço, tente perceber e categorizar apropriadamente esses casos também.
