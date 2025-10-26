@@ -59,21 +59,39 @@ public class ValidationService {
             expense.setTransactionName(expense.getTransactionName().replaceAll("\\d{2}/\\d{2}", "")); // remove datas no formato dd/mm
             expense.setTransactionName(expense.getTransactionName().replaceAll("\\s+", " ").trim());
         });
-        expenses = preClassifyExpenses(expenses);
+        preClassifyExpenses(expenses);
         return expenses;
     }
 
-    private List<Expense> preClassifyExpenses (List<Expense> expenses) {
+    private void preClassifyExpenses (List<Expense> expenses) {
         expenses.forEach(expense -> {
             String expName = expense.getTransactionName().toUpperCase();
-            if (expName.contains("IFOOD") || expName.contains("IFD")) {
+            if(expName.contains("UBER") || expName.contains("CLICKBUS")){
+                expense.setTransactionType("Transporte / Auto");
+            }
+            else if (expName.contains("IFOOD") || expName.contains("IFD")) {
                 expense.setTransactionType("Restaurante / Lanches");
             }
-            else if (expName.contains("SERV BEM") || expName.contains("CARREFOUR") || expName.contains("JAU SERVE")){
+            else if (expName.contains("SERV BEM") || expName.contains("CARREFOUR")
+                    || expName.contains("JAU SERVE")){
                 expense.setTransactionType("Supermercado");
             }
-
+            else if (expName.contains("AMAZONMARKETPLACE") || expName.contains("MERCADOLIVRE")
+                    || expName.contains("MERCADOPAGO") || expName.contains("KABUM")){
+                expense.setTransactionType("E-commerce / Compras online");
+            }
+            else if (expName.contains("NETFLIX") || expName.contains("HBOMAX")
+                    || expName.contains("AMAZONPRIME") || expName.contains("PATREON")
+                    || expName.contains("PAG*STEAM") || expName.contains("PET SHOP") || expName.contains("PETSHOP")
+                    || expName.contains("KICKSTREAMING")) {
+                expense.setTransactionType("Lazer / Entretenimento / Pets");
+            }
+            else if (expName.contains("PAGAMENTO DE BOLETO") || expName.contains("TARIFA MENSALIDADE")
+                    || expName.contains("PGTO CONTA") || expName.contains("MENSALIDADE DE SEGURO")
+                    || expName.contains("HOSTGATOR") || expName.contains("SEGURO VIDA")
+                    || expName.contains("APPLECOM/BILL")){
+                expense.setTransactionType("Moradia / Contas");
+            }
         });
-        return expenses;
     }
 }
