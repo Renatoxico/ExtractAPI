@@ -20,7 +20,7 @@ import java.util.Map;
 @Service
 public class AiProcessorService {
     private static final Logger LOG = LoggerFactory.getLogger(AiProcessorService.class);
-    private static final String URL = "http://192.168.15.9:11434/api/generate";
+    private static final String URL = "http://host.docker.internal:11434/api/generate";
     private static final String PROMPT_TEMPLATE = """
             Preciso que você categorize/classifique algumas despesas financeiras, utilize as categorias abaixo:
             Observação: o que esta entre parênteses é apenas para te ajudar a entender melhor a categoria, não deve ser incluído na resposta.
@@ -45,6 +45,7 @@ public class AiProcessorService {
                 PAGAMENTO DE BOLETO ROCA ADMINISTRADORA DE IM|Moradia / Contas
                 PIX ENVIADO Companhia Paulista de For|Transporte
                 PIX ENVIADO Amazon Servicos de Varejo|E-commerce
+                IFD*JEFFERSON BORGES DE LIMA|Restaurante / Lanches
        
                 Despesas:
             """;
