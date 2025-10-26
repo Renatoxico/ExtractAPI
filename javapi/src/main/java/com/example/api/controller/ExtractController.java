@@ -15,7 +15,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -42,7 +41,7 @@ public class ExtractController {
         return ResponseEntity.ok("Ip Address: " + ip);
     }
 
-    @CrossOrigin(origins = "http://localhost:5173")
+    //@CrossOrigin(origins = "*")
     @PostMapping("/")
     public ResponseEntity<?> pythonProcessor(@RequestParam("file") MultipartFile[] files){
         LOG.info("Python Processor API");
