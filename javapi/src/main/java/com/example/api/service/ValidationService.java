@@ -76,21 +76,30 @@ public class ValidationService {
                     || expName.contains("JAU SERVE")){
                 expense.setTransactionType("Supermercado");
             }
-            else if (expName.contains("AMAZONMARKETPLACE") || expName.contains("MERCADOLIVRE")
-                    || expName.contains("MERCADOPAGO") || expName.contains("KABUM")){
+            else if (expName.contains("AMAZON") || expName.contains("MERCADOLIVRE")
+                    || expName.contains("MERCADOPAGO") || expName.contains("KABUM")
+                    || expName.contains("HAVAN")){
                 expense.setTransactionType("E-commerce / Compras online");
             }
             else if (expName.contains("NETFLIX") || expName.contains("HBOMAX")
                     || expName.contains("AMAZONPRIME") || expName.contains("PATREON")
                     || expName.contains("PAG*STEAM") || expName.contains("PET SHOP") || expName.contains("PETSHOP")
-                    || expName.contains("KICKSTREAMING")) {
+                    || expName.contains("KICKSTREAMING") || expName.contains("YOUTUBE")
+                    || expName.contains("MELIMAIS") || expName.contains("DISNEY")) {
                 expense.setTransactionType("Lazer / Entretenimento / Pets");
             }
             else if (expName.contains("PAGAMENTO DE BOLETO") || expName.contains("TARIFA MENSALIDADE")
                     || expName.contains("PGTO CONTA") || expName.contains("MENSALIDADE DE SEGURO")
-                    || expName.contains("HOSTGATOR") || expName.contains("SEGURO VIDA")
+                    || expName.contains("HOSTGATOR") || expName.contains("SEGURO VIDA") || expName.contains("SEGUROVIDA")
                     || expName.contains("APPLECOM/BILL")){
                 expense.setTransactionType("Moradia / Contas");
+            }
+            else if (expName.contains("RENNER") || expName.contains("HERING")
+                    || expName.contains("NIKEECOMMER")){
+                expense.setTransactionType("Roupas / Acessórios");
+            }
+            else if (expName.contains("SAUDE") || expName.contains("FARMACIA")){
+                expense.setTransactionType("Saúde / Farmácia / Bem-estar");
             }
         });
     }

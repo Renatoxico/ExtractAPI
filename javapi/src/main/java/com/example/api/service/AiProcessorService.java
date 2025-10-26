@@ -62,7 +62,6 @@ public class AiProcessorService {
                 Exemplo do formato esperado:
        
                 PAGAMENTO DE BOLETO ROCA ADMINISTRADORA DE IM|Moradia / Contas
-                PIX ENVIADO Companhia Paulista de For|Transporte
                 PIX ENVIADO Amazon Servicos de Varejo|E-commerce
                 IFD*JEFFERSON BORGES DE LIMA|Restaurante / Lanches
        
