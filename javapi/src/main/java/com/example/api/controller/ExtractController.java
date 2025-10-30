@@ -41,7 +41,6 @@ public class ExtractController {
         return ResponseEntity.ok("Ip Address: " + ip);
     }
 
-    //@CrossOrigin(origins = "*")
     @PostMapping("/")
     public ResponseEntity<?> pythonProcessor(@RequestParam("file") MultipartFile[] files){
         LOG.info("Python Processor API");
