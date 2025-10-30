@@ -40,7 +40,7 @@ public class AiProcessorService {
                 5. Saúde / Farmácia / Bem-estar
                    (Inclui farmácias, clínicas, planos de saúde, academias e serviços de bem-estar.)
             
-                6. Moradia / Contas / Serviços
+                6. Moradia / Contas
                    (Inclui boletos, aluguel, condomínio, energia, água, gás, telefone, internet, limpeza, dedetização e taxas bancárias.)
             
                 7. Investimentos / Assinaturas profissionais
