@@ -4,7 +4,7 @@ services:
       context: ./javapi # Path to the directory containing the Dockerfile for backend-java
     container_name: backend-java
     ports:
-      - "9091:9090"
+      - "9090:9090"
     env_file:
       - .env
     restart: always

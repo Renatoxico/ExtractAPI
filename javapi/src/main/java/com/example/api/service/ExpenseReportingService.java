@@ -39,7 +39,7 @@ public class ExpenseReportingService {
         Map<String, Object> res = new HashMap<>();
 
         res.put("SmartGroupExpenselist", mapGroupedExpenses(expenseRepo.getGroupedExpenses(sessionId)));
-        res.put("Top10Expenses", mapGroupedExpenses(expenseRepo.getTopExpenses(sessionId)));
+        res.put("Top10Expenses", mapAllExpenses(expenseRepo.getTopExpenses(sessionId)));
         res.put("AllExpenses", mapAllExpenses(expenseRepo.getAllExpenses(sessionId)));
         res.put("ExpensesByCategory", mapByCategory(expenseRepo.getExpensesByType(sessionId)));
 
