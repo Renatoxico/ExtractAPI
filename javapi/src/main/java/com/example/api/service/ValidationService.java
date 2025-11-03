@@ -2,13 +2,20 @@ package com.example.api.service;
 
 import com.example.api.model.Expense;
 import com.example.api.model.ValidationResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ValidationService {
+    private static final Logger LOG = LoggerFactory.getLogger(ValidationService.class);
     private static final long MAX_SIZE_KB = 1024;
 
     public ValidationResponse validateFiles (MultipartFile[] files) {
@@ -60,6 +67,7 @@ public class ValidationService {
             expense.setTransactionName(expense.getTransactionName().replaceAll("\\s+", " ").trim());
         });
         preClassifyExpenses(expenses);
+        setLongDate(expenses);
         return expenses;
     }
 
@@ -102,5 +110,103 @@ public class ValidationService {
                 expense.setTransactionType("Saúde / Farmácia / Bem-estar");
             }
         });
+    }
+
+    private void setLongDate (List<Expense> expenses) {
+        int currentYear = LocalDate.now().getYear();
+        Integer commonYear = mostCommonYear(expenses);
+        for (Expense expense : expenses) {
+            String date = expense.getDate();
+            if (date != null && date.matches("\\d{2}/\\d{2}")) {
+                String longDate;
+                if (commonYear != null) {
+                    longDate = date + "/" + commonYear;
+                    if(validateDate(longDate)){
+                        expense.setDate(longDate);
+                        continue;
+                    }
+                }
+                longDate = date + "/" + currentYear;
+                if(validateDate(longDate)) {
+                    expense.setDate(longDate);
+                }
+                else {
+                    longDate = date + "/" + (currentYear - 1);
+                    if (validateDate(longDate)) {
+                        expense.setDate(longDate);
+                    }
+                }
+            }
+        }
+    }
+
+    private static Integer extractYear(String date) {
+        try {
+            date = date.trim();
+            String ano = date.substring(date.length() - 4);
+            int year = Integer.parseInt(ano);
+
+            if(year > 2000 && year < 2100)
+                return year;
+        } catch (NumberFormatException e ) {
+            LOG.error(Arrays.toString(e.getStackTrace()));
+        }
+        return null;
+    }
+
+    private Integer mostCommonYear (List<Expense> expenses) {
+        if(expenses == null || expenses.isEmpty())
+            return null;
+        Map<Integer, Integer> freqMap = new HashMap<>();
+        for(Expense expense : expenses) {
+            Integer year = extractYear(expense.getDate());
+            if(year != null) {
+                freqMap.merge(year, 1, Integer::sum);
+            }
+        }
+        if (freqMap.isEmpty())
+            return null;
+        return freqMap.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse(null);
+    }
+
+    private boolean validateDate(String date) {
+        if (date == null || !date.matches("\\d{2}/\\d{2}/\\d{4}")) {
+            return false;
+        }
+        String[] parts = date.split("/");
+        int day = Integer.parseInt(parts[0]);
+        int month = Integer.parseInt(parts[1]);
+        int year = Integer.parseInt(parts[2]);
+
+        if (month < 1 || month > 12) {
+            return false;
+        }
+
+        int[] daysInMonth = {31, (isLeapYear(year) ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+        if (day < 1 || day > daysInMonth[month - 1]) {
+            return false;
+        }
+
+        try {
+            LocalDate parsed = LocalDate.of(year, month, day);
+            LocalDate now = LocalDate.now();
+            if (parsed.isAfter(now)) {
+                return false;
+            }
+        } catch (java.time.DateTimeException e) {
+            LOG.error(Arrays.toString(e.getStackTrace()));
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean isLeapYear(int year) {
+        if (year <= 0)
+            return false;
+        return (year % 4 == 0) && (year % 100 != 0 || year % 400 == 0);
     }
 }
