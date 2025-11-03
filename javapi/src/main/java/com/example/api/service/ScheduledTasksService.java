@@ -33,8 +33,10 @@ public class ScheduledTasksService {
         try {
             enrichedExpenses = aiProcessorService.processWithAI(enrichedExpenses);
             for (CategoryMapper cm : enrichedExpenses) {
-                LOG.info("Updating {} to category {}", cm.getExpenseName(), cm.getTransactionType());
-                expenseRepo.updateTransactionType(cm.getExpenseName(), cm.getTransactionType());
+                if (cm.getTransactionType() != null && !cm.getTransactionType().isEmpty()) {
+                    LOG.info("Updating {} to category {}", cm.getExpenseName(), cm.getTransactionType());
+                    expenseRepo.updateTransactionType(cm.getExpenseName(), cm.getTransactionType());
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

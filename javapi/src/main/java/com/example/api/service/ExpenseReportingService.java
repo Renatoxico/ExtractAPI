@@ -1,9 +1,6 @@
 package com.example.api.service;
 
-import com.example.api.model.CategoryMapper;
-import com.example.api.model.ExpenseDTO;
-import com.example.api.model.ExpensesCategories;
-import com.example.api.model.ExpensesGroupedDTO;
+import com.example.api.model.*;
 import com.example.api.repo.ExpenseRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,9 +19,11 @@ public class ExpenseReportingService {
     private static final Logger LOG = LoggerFactory.getLogger(ExpenseReportingService.class);
     private final ExpenseRepository expenseRepo;
     private static final SecureRandom random = new SecureRandom();
+    private final ValidationService validationService;
 
-    public ExpenseReportingService(ExpenseRepository expenseRepo) {
+    public ExpenseReportingService(ExpenseRepository expenseRepo, ValidationService validationService) {
         this.expenseRepo = expenseRepo;
+        this.validationService = validationService;
     }
 
     public String generateId () {
@@ -52,6 +51,18 @@ public class ExpenseReportingService {
         }
 
         return res;
+    }
+
+    public List<Expense> updateExpenses(String SessionId) {
+        List<Expense> expenses = expenseRepo.getAllExpenses2(SessionId);
+        expenses = validationService.validateExpenses(expenses);
+        for (Expense expense : expenses) {
+            expense = expenseRepo.save(expense);
+        }
+        return expenses;
+    }
+    public List<Expense> getAllExpensesEntities(String sessionId) {
+        return expenseRepo.getAllExpenses2(sessionId);
     }
 
     public List<CategoryMapper> getExpenseNames() {

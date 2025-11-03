@@ -24,6 +24,20 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     List<Object[]> getAllExpenses(@Param("sessionId") String sessionId);
 
     @Query(value = """
+            SELECT
+                ID,
+                SESSION_ID,
+            	TRANSACTION_NAME,
+            	DATE,
+            	VALUE,
+            	COALESCE(TRANSACTION_TYPE, 'Outros / Transferências') AS TRANSACTION_TYPE
+            FROM TB_EXPENSE
+            WHERE SESSION_ID = :sessionId
+            ORDER BY VALUE DESC
+            """, nativeQuery = true)
+    List<Expense> getAllExpenses2(@Param("sessionId") String sessionId);
+
+    @Query(value = """
             SELECT DISTINCT (TRANSACTION_NAME),
             TRANSACTION_TYPE
             FROM TB_EXPENSE

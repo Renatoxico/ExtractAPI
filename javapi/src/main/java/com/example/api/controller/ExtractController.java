@@ -69,6 +69,13 @@ public class ExtractController {
         return ResponseEntity.status(HttpStatus.OK).body(expensesGrouped);
     }
 
+    //@GetMapping("/test/{sessionId}")
+    public ResponseEntity<?> testEndpoint(@PathVariable String sessionId) {
+        return ResponseEntity.status(HttpStatus.OK).body(
+                reportsService.updateExpenses(sessionId)
+        );
+    }
+
     private String saveFileTemp(MultipartFile file){
         try {
             Files.createDirectories(Paths.get(PATH));
