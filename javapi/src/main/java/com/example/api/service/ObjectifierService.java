@@ -30,6 +30,7 @@ public class ObjectifierService {
         List<String> filteredExpenses = getFilterCharges(expensesDoc);
         List<Expense> expensesObj = objectifyExtract(sessionId,filteredExpenses);
         expensesObj = validationService.validateExpenses(expensesObj);
+        //expensesObj = validationService.validateAndCleanExpenses(expensesObj);
         expenseRepo.saveAll(expensesObj);
     }
 

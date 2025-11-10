@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class ValidationService {
@@ -60,19 +61,38 @@ public class ValidationService {
         //expenses.removeIf(expense -> !expense.getTransactionName().matches(".*[a-zA-Z].*"));
         expenses.removeIf(expense -> expense.getTransactionName().isEmpty());
         expenses.forEach(expense -> {
-            expense.setTransactionName(expense.getTransactionName().replaceAll("\\d{2}/\\d{2}", "").trim());
-            expense.setTransactionName(expense.getTransactionName().replaceAll("\\s+", " ").trim());
-            expense.setTransactionName(expense.getTransactionName().replace(".","").trim());
-            expense.setTransactionName(expense.getTransactionName().replaceAll("\\d{2}/\\d{2}", "")); // remove datas no formato dd/mm
-            expense.setTransactionName(expense.getTransactionName().replaceAll("\\s+", " ").trim());
+            expense.setTransactionName(expense.getTransactionName().replaceAll("\\d{2}/\\d{2}", "").trim());// remove datas no formato dd/mm
+            expense.setTransactionName(expense.getTransactionName().replaceAll("\\s+", " ").trim());// remove espaços extras
+            expense.setTransactionName(expense.getTransactionName().replace(".","").trim());// remove pontos
+            //expense.setTransactionName(expense.getTransactionName().replaceAll("\\d{2}/\\d{2}", ""));
+            expense = preClassifyExpenses(expense);
         });
-        preClassifyExpenses(expenses);
         setLongDate(expenses);
         return expenses;
     }
 
-    private void preClassifyExpenses (List<Expense> expenses) {
-        expenses.forEach(expense -> {
+    public List<Expense> validateAndCleanExpenses (List<Expense> expenses) {
+        return setLongDate(expenses
+                .parallelStream()
+                .map(this::preClassifyExpenses)
+                .map(this::cleanExpense)
+                .collect(Collectors.toList()));
+    }
+
+    private Expense cleanExpense(Expense expense) {
+        if (expense.getValue().doubleValue() <= 0 || expense.getTransactionName().isEmpty()) {
+            return null;
+        }
+        String cleanedName = expense.getTransactionName()
+                .replaceAll("\\d{2}/\\d{2}", "") // remove dates in dd/mm format
+                .replaceAll("\\s+", " ") // replace multiple spaces with a single space
+                .replace(".", "") // remove dots
+                .trim();
+        expense.setTransactionName(cleanedName);
+        return expense;
+    }
+
+    private Expense preClassifyExpenses (Expense expense) {
             String expName = expense.getTransactionName().toUpperCase();
             if(expName.contains("UBER") || expName.contains("CLICKBUS")){
                 expense.setTransactionType("Transporte / Auto");
@@ -109,10 +129,10 @@ public class ValidationService {
             else if (expName.contains("SAUDE") || expName.contains("FARMACIA")){
                 expense.setTransactionType("Saúde / Farmácia / Bem-estar");
             }
-        });
+            return expense;
     }
 
-    private void setLongDate (List<Expense> expenses) {
+    private List<Expense> setLongDate (List<Expense> expenses) {
         int currentYear = LocalDate.now().getYear();
         Integer commonYear = mostCommonYear(expenses);
         for (Expense expense : expenses) {
@@ -138,6 +158,7 @@ public class ValidationService {
                 }
             }
         }
+        return expenses;
     }
 
     private static Integer extractYear(String date) {
