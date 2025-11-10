@@ -145,7 +145,6 @@ public class ValidationService {
             date = date.trim();
             String ano = date.substring(date.length() - 4);
             int year = Integer.parseInt(ano);
-
             if(year > 2000 && year < 2100)
                 return year;
         } catch (NumberFormatException e ) {

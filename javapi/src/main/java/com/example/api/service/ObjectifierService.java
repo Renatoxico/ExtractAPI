@@ -96,14 +96,6 @@ public class ObjectifierService {
         return filteredCharges;
     }
 
-//    public List<ExpensesGroupedDTO> getExpenseSummary (String sessionId) {
-//        List<Object[]> mid = expenseRepo.getGroupedExpenses(sessionId);
-//        List<ExpensesGroupedDTO> fin = mid.stream()
-//                .map(obj -> new ExpensesGroupedDTO((String) obj[0], (Double) obj[1], (Long) obj[2]))
-//                .collect(Collectors.toList());
-//        return fin;
-//    }
-
     public void mapToObj (String sessionId, List<Expense> expenses, BigDecimal amount, String transaction, String data){
         expenses.add(new Expense(sessionId, amount, transaction, data, ""));
     }
