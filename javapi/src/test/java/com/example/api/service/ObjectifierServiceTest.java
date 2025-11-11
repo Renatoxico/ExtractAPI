@@ -7,6 +7,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -19,8 +21,9 @@ class ObjectifierServiceTest {
 
     @BeforeAll
     static void loadPythonOutput() {
-        try {
-            pythonOutput = Files.readString(Path.of("/Users/renatodias/Documents/DEV/ExtractAPI/javapi/src/test/resources/pythonOutputExample.txt"));
+        try (InputStream is = ObjectifierServiceTest.class.getResourceAsStream("/testing/pythonOutputExample.txt")) {
+            if (is == null) throw new IllegalArgumentException("File not found!");
+            pythonOutput = new String(is.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
