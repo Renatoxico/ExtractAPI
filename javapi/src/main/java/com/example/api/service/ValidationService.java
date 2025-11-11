@@ -12,7 +12,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class ValidationService {
@@ -57,39 +56,18 @@ public class ValidationService {
     }
 
     public List<Expense> validateExpenses (List<Expense> expenses) {
-        expenses.removeIf(expense -> expense.getValue().doubleValue()<=0);
+        expenses.removeIf(expense -> expense.getValue().doubleValue()<=0); // remove valores zerados ou negativos
         //expenses.removeIf(expense -> !expense.getTransactionName().matches(".*[a-zA-Z].*"));
         expenses.removeIf(expense -> expense.getTransactionName().isEmpty());
         expenses.forEach(expense -> {
             expense.setTransactionName(expense.getTransactionName().replaceAll("\\d{2}/\\d{2}", "").trim());// remove datas no formato dd/mm
             expense.setTransactionName(expense.getTransactionName().replaceAll("\\s+", " ").trim());// remove espaços extras
-            expense.setTransactionName(expense.getTransactionName().replace(".","").trim());// remove pontos
+            expense.setTransactionName(expense.getTransactionName().replace("."," ").trim());// remove pontos
             //expense.setTransactionName(expense.getTransactionName().replaceAll("\\d{2}/\\d{2}", ""));
             expense = preClassifyExpenses(expense);
         });
         setLongDate(expenses);
         return expenses;
-    }
-
-    public List<Expense> validateAndCleanExpenses (List<Expense> expenses) {
-        return setLongDate(expenses
-                .parallelStream()
-                .map(this::preClassifyExpenses)
-                .map(this::cleanExpense)
-                .collect(Collectors.toList()));
-    }
-
-    private Expense cleanExpense(Expense expense) {
-        if (expense.getValue().doubleValue() <= 0 || expense.getTransactionName().isEmpty()) {
-            return null;
-        }
-        String cleanedName = expense.getTransactionName()
-                .replaceAll("\\d{2}/\\d{2}", "") // remove dates in dd/mm format
-                .replaceAll("\\s+", " ") // replace multiple spaces with a single space
-                .replace(".", "") // remove dots
-                .trim();
-        expense.setTransactionName(cleanedName);
-        return expense;
     }
 
     private Expense preClassifyExpenses (Expense expense) {

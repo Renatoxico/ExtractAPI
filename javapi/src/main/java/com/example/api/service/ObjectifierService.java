@@ -30,12 +30,11 @@ public class ObjectifierService {
         List<String> filteredExpenses = getFilterCharges(expensesDoc);
         List<Expense> expensesObj = objectifyExtract(sessionId,filteredExpenses);
         expensesObj = validationService.validateExpenses(expensesObj);
-        //expensesObj = validationService.validateAndCleanExpenses(expensesObj);
         expenseRepo.saveAll(expensesObj);
     }
 
     public String[] splitByLine (String extractText) {
-        LOG.info("Enter ObjectifierService.splitByLine");
+        //LOG.info("Enter ObjectifierService.splitByLine");
         extractText = extractText.replace("\\n", "\n");
         return extractText.split("\\n");
 
