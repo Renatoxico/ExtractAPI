@@ -12,10 +12,7 @@ import org.springframework.web.client.RestTemplate;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class AiProcessorService {
@@ -68,6 +65,19 @@ public class AiProcessorService {
                 Despesas:
             """;
 
+    private static final Set<String> VALID_CATEGORIES = Set.of(
+            "Roupas / Acessórios",
+            "E-commerce / Compras online",
+            "Restaurante / Lanches",
+            "Investimentos / Assinaturas profissionais",
+            "Saúde / Farmácia / Bem-estar",
+            "Transporte / Auto",
+            "Lazer / Entretenimento / Pets",
+            "Supermercado",
+            "Outros / Transferências",
+            "Moradia / Contas"
+    );
+
     public List<CategoryMapper> processWithAI(List<CategoryMapper> expenses) {
         RestTemplate restTemplate = new RestTemplate();
         StringBuilder prompt = new StringBuilder();
@@ -88,9 +98,7 @@ public class AiProcessorService {
             ResponseExtractor<String> extractor = response -> {
                 StringBuilder resp = new StringBuilder();
                 try (BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(
-                                response.getBody(), StandardCharsets.UTF_8)
-                        )
+                        new InputStreamReader(response.getBody(), StandardCharsets.UTF_8))
                 ) {
                     String line;
                     while((line = reader.readLine()) != null) {
@@ -137,9 +145,17 @@ public class AiProcessorService {
         List<CategoryMapper> res = new ArrayList<>();
         String[] lines = aiResponse.split("\\r?\\n");
         for(String line : lines){
-            if(line.isBlank() || !line.contains("|")) continue;
+            if(line.isBlank() || !line.contains("|"))
+                continue;//invalid line -> skip
+
             String[] parts = line.split("\\|");
-            if(parts.length != 2) continue;
+
+            if(parts.length != 2)
+                continue;//invalid format -> skip
+
+            if(!VALID_CATEGORIES.contains(parts[1].trim()))
+                continue;//invalid category -> skip
+
             res.add(new CategoryMapper(parts[0].trim(), parts[1].trim()));
         }
         return res;
