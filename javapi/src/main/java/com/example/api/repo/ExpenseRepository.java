@@ -38,6 +38,22 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     List<Expense> getAllExpenses2(@Param("sessionId") String sessionId);
 
     @Query(value = """
+            (SELECT TE.DATE, COUNT(1) AS TRANSACIONS, SUM(TE.VALUE) AS TOTAL
+            FROM TB_EXPENSE TE
+            WHERE TE.SESSION_ID = :sessionId
+            GROUP BY TE.DATE
+            ORDER BY COUNT(1) DESC, TOTAL DESC
+            LIMIT 1)
+            UNION ALL
+            (SELECT TE.DATE, COUNT(1) AS TRANSACIONS, SUM(TE.VALUE) AS TOTAL
+            FROM TB_EXPENSE TE
+            WHERE TE.SESSION_ID = :sessionId
+            GROUP BY TE.DATE
+            ORDER BY SUM(TE.VALUE ) DESC
+            LIMIT 1)""", nativeQuery = true)
+    List<Object[]> getNoteableDays(@Param("sessionId") String sessionId);
+
+    @Query(value = """
             SELECT DISTINCT (TRANSACTION_NAME),
             TRANSACTION_TYPE
             FROM TB_EXPENSE
@@ -59,19 +75,6 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
                 ORDER BY TOTAL DESC, INSTANCES DESC, TRANSACTION_NAME
             """, nativeQuery = true)
     List<Object[]> getGroupedExpenses(@Param("sessionId") String sessionId);
-
-    @Query(value = """
-            SELECT
-            	TRANSACTION_NAME,
-            	DATE,
-            	VALUE,
-            	COALESCE(TRANSACTION_TYPE, 'Outros / Transferências') AS TRANSACTION_TYPE
-            FROM TB_EXPENSE
-            WHERE SESSION_ID = :sessionId
-            ORDER BY VALUE  DESC, TRANSACTION_NAME
-            LIMIT 10
-            """, nativeQuery = true)
-    List<Object[]> getTopExpenses(@Param("sessionId")String sessionId);
 
     @Query(value = """
             SELECT

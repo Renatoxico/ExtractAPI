@@ -38,7 +38,7 @@ public class ExpenseReportingService {
         Map<String, Object> res = new HashMap<>();
 
         res.put("SmartGroupExpenselist", mapGroupedExpenses(expenseRepo.getGroupedExpenses(sessionId)));
-        res.put("Top10Expenses", mapAllExpenses(expenseRepo.getTopExpenses(sessionId)));
+        res.put("NotableDays", mapNoteableDays(expenseRepo.getNoteableDays(sessionId)));
         res.put("AllExpenses", mapAllExpenses(expenseRepo.getAllExpenses(sessionId)));
         res.put("ExpensesByCategory", mapByCategory(expenseRepo.getExpensesByType(sessionId)));
 
@@ -86,6 +86,11 @@ public class ExpenseReportingService {
     private List<ExpensesCategories> mapByCategory(List<Object[]> list) {
         return list.stream()
                 .map(obj -> new ExpensesCategories((BigDecimal) obj[0], (String) obj[1]))
+                .collect(Collectors.toList());
+    }
+    private List<NoteableDay> mapNoteableDays(List<Object[]> list) {
+        return list.stream()
+                .map(obj -> new NoteableDay((String) obj[0], (Long) obj[1], (BigDecimal) obj[2]))
                 .collect(Collectors.toList());
     }
 }
