@@ -25,13 +25,15 @@ public class ExtractController {
     private final ObjectifierService objService;
     private final ExpenseReportingService reportsService;
     private final ValidationService validationService;
+    private final ExtractorService javaProcessor;
     private static final String PATH = System.getProperty("user.dir") + "\\tmp\\";
 
-    public ExtractController(ValidationService validationService, PythonProcessingService pyProcessor, ObjectifierService objService, ExpenseReportingService reportsService) {
+    public ExtractController(ValidationService validationService, PythonProcessingService pyProcessor, ObjectifierService objService, ExpenseReportingService reportsService, ExtractorService javaProcessor) {
         this.pyProcessor = pyProcessor;
         this.objService = objService;
         this.validationService = validationService;
         this.reportsService = reportsService;
+        this.javaProcessor = javaProcessor;
     }
 
     @GetMapping("/")
@@ -42,7 +44,7 @@ public class ExtractController {
     }
 
     @PostMapping("/")
-    public ResponseEntity<?> pythonProcessor(@RequestParam("file") MultipartFile[] files){
+    public ResponseEntity<?> process(@RequestParam("file") MultipartFile[] files){
         LOG.info("Python Processor API");
         String sessionId = reportsService.generateId();
         ValidationResponse isValid = validationService.validateFiles(files);
@@ -50,8 +52,8 @@ public class ExtractController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(isValid.getMessage());
         }
         for (MultipartFile file : files) {
-            //String filepath = saveFileTemp(file);
-            String pdfText = pyProcessor.convertPDFtoJSON(file);
+            //String pdfText = pyProcessor.convertPDFtoJSON(file);
+            String pdfText = javaProcessor.extractText(file);
             objService.process(sessionId, pdfText);
         }
         Map<String,Object> expensesGrouped = reportsService.getFullReport(sessionId);
