@@ -35,22 +35,29 @@ public class ExpenseReportingService {
     }
 
     public Map<String, Object> getFullReport(String sessionId) {
-        Map<String, Object> res = new HashMap<>();
+        try {
+            LOG.info("Generating full report for session: {}", sessionId);
+            Map<String, Object> res = new HashMap<>();
 
-        res.put("SmartGroupExpenselist", mapGroupedExpenses(expenseRepo.getGroupedExpenses(sessionId)));
-        res.put("NotableDays", mapNoteableDays(expenseRepo.getNoteableDays(sessionId)));
-        res.put("AllExpenses", mapAllExpenses(expenseRepo.getAllExpenses(sessionId)));
-        res.put("ExpensesByCategory", mapByCategory(expenseRepo.getExpensesByType(sessionId)));
+            res.put("SmartGroupExpenselist", mapGroupedExpenses(expenseRepo.getGroupedExpenses(sessionId)));
+            res.put("NotableDays", mapNoteableDays(expenseRepo.getNoteableDays(sessionId)));
+            res.put("AllExpenses", mapAllExpenses(expenseRepo.getAllExpenses(sessionId)));
+            res.put("ExpensesByCategory", mapByCategory(expenseRepo.getExpensesByType(sessionId)));
 
-        List<Object[]> biggest = expenseRepo.getBiggestExpense(sessionId);
-        if (!biggest.isEmpty()) {
-            Object[] obj = biggest.getFirst();
-            res.put("BiggestSingularExpense", new ExpenseDTO((String) obj[0], (BigDecimal) obj[2], (String) obj[1],(String) obj[3]));
-        } else {
-            res.put("BiggestSingularExpense", null);
+            List<Object[]> biggest = expenseRepo.getBiggestExpense(sessionId);
+            if (!biggest.isEmpty()) {
+                Object[] obj = biggest.getFirst();
+                res.put("BiggestSingularExpense", new ExpenseDTO((String) obj[0], (BigDecimal) obj[2], (String) obj[1],(String) obj[3]));
+            } else {
+                res.put("BiggestSingularExpense", null);
+            }
+
+            LOG.info("Successfully generated full report for session: {}", sessionId);
+            return res;
+        } catch (Exception ex) {
+            LOG.error("Error generating report for session {}: {}", sessionId, ex.getMessage(), ex);
+            throw ex;
         }
-
-        return res;
     }
 
     public List<Expense> updateExpenses(String SessionId) {

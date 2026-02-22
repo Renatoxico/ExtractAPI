@@ -21,11 +21,13 @@ public class ValidationService {
     public ValidationResponse validateFiles (MultipartFile[] files) {
         ValidationResponse res = new ValidationResponse(true, "DEFAULT_OK");
         if (files.length<1){
+            LOG.warn("File validation failed: No files provided");
             res.setStatus(false);
             res.setMessage("No files found");
             return res;
         }
         if (files.length>6){
+            LOG.warn("File validation failed: Too many files ({})", files.length);
             res.setStatus(false);
             res.setMessage("Too many files");
             return res;
@@ -35,23 +37,27 @@ public class ValidationService {
             String contentType = file.getContentType();
             String fileName = file.getOriginalFilename();
 
+            LOG.info("Validating file: {} ({}KB, type: {})", fileName, fileSizeKB, contentType);
+
             boolean isValidType = "application/pdf".equals(contentType);
             boolean hasValidExtension = fileName != null && (fileName.toLowerCase().endsWith(".pdf"));
 
             if (fileSizeKB >= MAX_SIZE_KB / 2) {
+                LOG.warn("File {} is too large: {}KB (max: {}KB)", fileName, fileSizeKB, MAX_SIZE_KB / 2);
                 res.setStatus(false);
                 res.setMessage("File too big");
                 return res;
             }
 
             if (!isValidType || !hasValidExtension) {
+                LOG.warn("File {} has invalid type or extension", fileName);
                 res.setStatus(false);
                 res.setMessage("Invalid file type");
                 return res;
             }
 
         }
-
+        LOG.info("All {} files passed validation", files.length);
         return res;
     }
 

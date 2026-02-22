@@ -25,12 +25,30 @@ public class ObjectifierService {
     }
 
     public void process (String sessionId, String inputText) {
-        LOG.info("Enter ObjectifierService.process");
-        String[] expensesDoc = splitByLine(inputText);
-        List<String> filteredExpenses = getFilterCharges(expensesDoc);
-        List<Expense> expensesObj = objectifyExtract(sessionId,filteredExpenses);
-        expensesObj = validationService.validateExpenses(expensesObj);
-        expenseRepo.saveAll(expensesObj);
+        try {
+            LOG.info("Enter ObjectifierService.process for session: {}", sessionId);
+
+            if (inputText == null || inputText.trim().isEmpty()) {
+                LOG.warn("Empty input text provided for session: {}", sessionId);
+                return;
+            }
+
+            String[] expensesDoc = splitByLine(inputText);
+            List<String> filteredExpenses = getFilterCharges(expensesDoc);
+            List<Expense> expensesObj = objectifyExtract(sessionId, filteredExpenses);
+
+            LOG.info("Extracted {} expenses from document for session: {}", expensesObj.size(), sessionId);
+
+            expensesObj = validationService.validateExpenses(expensesObj);
+
+            LOG.info("Validated {} expenses, saving to database for session: {}", expensesObj.size(), sessionId);
+            expenseRepo.saveAll(expensesObj);
+
+            LOG.info("Successfully processed {} expenses for session: {}", expensesObj.size(), sessionId);
+        } catch (Exception ex) {
+            LOG.error("Error in ObjectifierService.process for session {}: {}", sessionId, ex.getMessage(), ex);
+            throw ex;
+        }
     }
 
     public String[] splitByLine (String extractText) {
@@ -41,7 +59,7 @@ public class ObjectifierService {
     }
 
     public List<Expense> objectifyExtract (String sessionId,List<String> expenses) {
-        LOG.info("Enter ObjectifierService.objectifyExtract");
+        LOG.info("Enter ObjectifierService.objectifyExtract for session: {}", sessionId);
         List<Expense> expensesObj = new ArrayList<>();
         expenses.forEach(line -> {
             Matcher dateMatcher = datePattern.matcher(line);
@@ -68,6 +86,7 @@ public class ObjectifierService {
                 }
             }
         });
+        LOG.info("Extracted {} valid expenses from {} lines for session: {}", expensesObj.size(), expenses.size(), sessionId);
         return expensesObj;
     }
     
