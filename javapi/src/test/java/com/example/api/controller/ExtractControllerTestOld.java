@@ -19,7 +19,7 @@ import java.util.Comparator;
 
 import static org.mockito.Mockito.mock;
 
-public class ExtractControllerTest {
+public class ExtractControllerTestOld {
     static String filePath = "src/test/resources/testing/FaturaNovembro.pdf";
     static MultipartFile file;
     private static ObjectifierService service;
