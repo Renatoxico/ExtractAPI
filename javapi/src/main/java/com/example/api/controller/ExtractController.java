@@ -52,11 +52,11 @@ public class ExtractController {
             // Validate files
             ValidationResponse isValid = validationService.validateFiles(files);
             if (!isValid.getStatus()){
-                LOG.warn("File validation failed: {}", isValid.getMessage());
+                LOG.warn("File validation failed [{}]: {}", isValid.getErrorCode(), isValid.getMessage());
                 throw new ProcessingException(
                     isValid.getMessage(),
-                    HttpStatus.BAD_REQUEST,
-                    "FILE_VALIDATION_FAILED"
+                    isValid.getHttpStatus(),
+                    isValid.getErrorCode()
                 );
             }
 

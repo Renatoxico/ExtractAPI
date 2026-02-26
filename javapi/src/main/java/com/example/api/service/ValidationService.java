@@ -4,6 +4,7 @@ import com.example.api.model.Expense;
 import com.example.api.model.ValidationResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,19 +20,15 @@ public class ValidationService {
     private static final long MAX_SIZE_KB = 1024;
 
     public ValidationResponse validateFiles (MultipartFile[] files) {
-        ValidationResponse res = new ValidationResponse(true, "DEFAULT_OK");
-        if (files.length<1){
+        if (files.length < 1) {
             LOG.warn("File validation failed: No files provided");
-            res.setStatus(false);
-            res.setMessage("No files found");
-            return res;
+            return new ValidationResponse(false, "No files found", "NO_FILES_PROVIDED", HttpStatus.BAD_REQUEST);
         }
-        if (files.length>6){
+        if (files.length > 6) {
             LOG.warn("File validation failed: Too many files ({})", files.length);
-            res.setStatus(false);
-            res.setMessage("Too many files");
-            return res;
+            return new ValidationResponse(false, "Too many files (maximum 6 allowed)", "TOO_MANY_FILES", HttpStatus.BAD_REQUEST);
         }
+
         for (MultipartFile file : files) {
             long fileSizeKB = file.getSize() / 1024;
             String contentType = file.getContentType();
@@ -44,21 +41,22 @@ public class ValidationService {
 
             if (fileSizeKB >= MAX_SIZE_KB / 2) {
                 LOG.warn("File {} is too large: {}KB (max: {}KB)", fileName, fileSizeKB, MAX_SIZE_KB / 2);
-                res.setStatus(false);
-                res.setMessage("File too big");
-                return res;
+                return new ValidationResponse(false,
+                    "File '" + fileName + "' is too large: " + fileSizeKB + "KB (maximum 512KB)",
+                    "FILE_TOO_BIG",
+                    HttpStatus.BAD_REQUEST);
             }
 
             if (!isValidType || !hasValidExtension) {
                 LOG.warn("File {} has invalid type or extension", fileName);
-                res.setStatus(false);
-                res.setMessage("Invalid file type");
-                return res;
+                return new ValidationResponse(false,
+                    "File '" + fileName + "' is not a valid PDF file",
+                    "INVALID_FILE_TYPE",
+                    HttpStatus.BAD_REQUEST);
             }
-
         }
         LOG.info("All {} files passed validation", files.length);
-        return res;
+        return new ValidationResponse(true, "All files validated successfully", "OK", HttpStatus.OK);
     }
 
     public List<Expense> validateExpenses (List<Expense> expenses) {
