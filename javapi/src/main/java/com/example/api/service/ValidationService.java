@@ -67,7 +67,7 @@ public class ValidationService {
             expense.setTransactionName(expense.getTransactionName().replaceAll("\\d{2}/\\d{2}", "").trim());// remove datas no formato dd/mm
             expense.setTransactionName(expense.getTransactionName().replaceAll("\\s+", " ").trim());// remove espaços extras
             expense.setTransactionName(expense.getTransactionName().replace("."," ").trim());// remove pontos
-            expense.setTransactionName(expense.getTransactionName().substring(0,70).trim());// limita tamanho do nome
+            expense.setTransactionName(expense.getTransactionName().substring(0,Math.min(expense.getTransactionName().length(), 70)).trim());// limita tamanho do nome
             //expense.setTransactionName(expense.getTransactionName().replaceAll("\\d{2}/\\d{2}", ""));
             expense = preClassifyExpenses(expense);
         });
