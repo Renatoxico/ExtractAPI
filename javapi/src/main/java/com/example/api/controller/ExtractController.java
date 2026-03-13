@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,7 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Map;
 
-@RestController
+@Controller
 @RequestMapping("/extract")
 public class ExtractController {
     private static final Logger LOG = LoggerFactory.getLogger(ExtractController.class);
@@ -38,10 +39,8 @@ public class ExtractController {
     }
 
     @GetMapping("/")
-    public ResponseEntity<?> home(HttpServletRequest request) {
-        String ip = request.getRemoteAddr();
-        LOG.info("Home API called from IP: " + ip);
-        return ResponseEntity.ok("Ip Address: " + ip);
+    public String home(HttpServletRequest request) {
+        return "api-docs";
     }
 
     @PostMapping("/")
@@ -157,6 +156,71 @@ public class ExtractController {
         return ResponseEntity.status(HttpStatus.OK).body(
                 reportsService.updateExpenses(sessionId)
         );
+    }
+
+    @PostMapping
+    public ResponseEntity<?> extractRawText(@RequestParam("file") MultipartFile[] files) {
+        LOG.info("Extract Raw Text API - Processing {} file(s)", files.length);
+
+        try {
+            ValidationResponse isValid = validationService.validateFiles(files);
+            if (!isValid.getStatus()){
+                LOG.warn("File validation failed [{}]: {}", isValid.getErrorCode(), isValid.getMessage());
+                throw new ProcessingException(
+                    isValid.getMessage(),
+                    isValid.getHttpStatus(),
+                    isValid.getErrorCode()
+                );
+            }
+
+            StringBuilder combinedText = new StringBuilder();
+            for (MultipartFile file : files) {
+                try {
+                    LOG.info("Extracting text from file: {}", file.getOriginalFilename());
+                    String pdfText = javaProcessor.extractText(file);
+
+                    if (pdfText == null || pdfText.trim().isEmpty()) {
+                        LOG.warn("No text extracted from file: {}", file.getOriginalFilename());
+                        continue;
+                    }
+
+                    combinedText.append(pdfText).append("\n");
+                    LOG.info("Successfully extracted text from file: {}", file.getOriginalFilename());
+                } catch (ProcessingException ex) {
+                    throw ex;
+                } catch (Exception ex) {
+                    LOG.error("Error extracting text from file {}: {}", file.getOriginalFilename(), ex.getMessage(), ex);
+                    throw new ProcessingException(
+                        "Failed to extract text from file: " + file.getOriginalFilename(),
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "TEXT_EXTRACTION_ERROR",
+                        ex
+                    );
+                }
+            }
+
+            if (combinedText.isEmpty()) {
+                LOG.warn("No text extracted from any of the provided files");
+                throw new ProcessingException(
+                    "No text could be extracted from the provided files",
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "NO_TEXT_EXTRACTED"
+                );
+            }
+
+            LOG.info("Successfully extracted text from all files");
+            return ResponseEntity.ok(Map.of("extractedText", combinedText.toString()));
+        } catch (ProcessingException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            LOG.error("Unexpected error in extractRawText endpoint: {}", ex.getMessage(), ex);
+            throw new ProcessingException(
+                "An unexpected error occurred during text extraction",
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "UNEXPECTED_ERROR",
+                ex
+            );
+        }
     }
 
     private String saveFileTemp(MultipartFile file){
