@@ -17,7 +17,8 @@ import java.util.*;
 @Service
 public class AiProcessorService {
     private static final Logger LOG = LoggerFactory.getLogger(AiProcessorService.class);
-    private static final String URL = "http://host.docker.internal:11434/api/generate";
+    private static final String URL = "http://localhost:11434/api/generate";
+    private static final String MODEL = "gemma3:4b";
     private static final String PROMPT_TEMPLATE = """
             Preciso que você categorize/classifique algumas despesas financeiras, utilize as categorias abaixo:
             Observação: o que esta entre parênteses é apenas para te ajudar a entender melhor a categoria, não deve ser incluído na resposta.
@@ -134,7 +135,7 @@ public class AiProcessorService {
         options.put("temperature", 0);
 
         Map<String, Object> body = new HashMap<>();
-        body.put("model", "gemma3:4b");
+        body.put("model", MODEL);
         body.put("prompt", prompt);
         body.put("stream", true);
         body.put("options", options);
