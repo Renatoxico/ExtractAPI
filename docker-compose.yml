@@ -1,7 +1,7 @@
 services:
   backend-java:
     build:
-      context: ./javapi # Path to the directory containing the Dockerfile for backend-java
+      context: ./javapi
     container_name: backend-java
     ports:
       - "9090:9090"
