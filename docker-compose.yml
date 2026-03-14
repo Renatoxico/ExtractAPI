@@ -10,18 +10,6 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: always
-    depends_on:
-      - backend-python
-    networks:
-      - app-network
-
-  backend-python:
-    build:
-      context: ./py-extractor # Path to the directory containing the Dockerfile for backend-python
-    container_name: backend-python
-    ports:
-      - "9000:9000"
-    restart: always
     networks:
       - app-network
 
