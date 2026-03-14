@@ -59,7 +59,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             FROM TB_EXPENSE
             WHERE TRANSACTION_TYPE IS NULL OR TRANSACTION_TYPE = ''
             ORDER BY TRANSACTION_NAME
-            LIMIT 25
+            LIMIT 50
             """, nativeQuery = true)
     List<Object[]> getExpenseNames();
 

@@ -31,7 +31,7 @@ public class ScheduledTasksService {
             return;
         }
         try {
-            enrichedExpenses = aiProcessorService.processWithAI(enrichedExpenses);
+            enrichedExpenses = aiProcessorService.processWithGemini(enrichedExpenses);
             for (CategoryMapper cm : enrichedExpenses) {
                 if (cm.getTransactionType() != null && !cm.getTransactionType().isEmpty()) {
                     LOG.info("Updating {} to category {}", cm.getExpenseName(), cm.getTransactionType());

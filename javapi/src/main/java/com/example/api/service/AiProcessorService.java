@@ -1,15 +1,22 @@
 package com.example.api.service;
 
+import com.example.api.exception.ProcessingException;
 import com.example.api.model.CategoryMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestTemplate;
+import com.google.genai.Client;
+import com.google.genai.types.GenerateContentResponse;
 
 import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -19,52 +26,25 @@ public class AiProcessorService {
     private static final Logger LOG = LoggerFactory.getLogger(AiProcessorService.class);
     private static final String URL = "http://localhost:11434/api/generate";
     private static final String MODEL = "gemma3:4b";
-    private static final String PROMPT_TEMPLATE = """
-            Preciso que você categorize/classifique algumas despesas financeiras, utilize as categorias abaixo:
-            Observação: o que esta entre parênteses é apenas para te ajudar a entender melhor a categoria, não deve ser incluído na resposta.
-     
-                **Supermercado**
-                   (Inclui supermercados, mercearias, frios, hortifrúti, padarias, açougues, bebidas e conveniências.)
-            
-                **Restaurante / Lanches**
-                   (Inclui restaurantes, bares, lanchonetes, pizzarias, hamburguerias, e apps de delivery como iFood, UberEats, Rappi etc.)
-            
-                **Transporte / Auto**
-                   (Inclui postos de combustível, oficinas, auto centers e transportes por app (Uber, 99, Lyft, BlaBlaCar etc).)
-            
-                **Lazer / Entretenimento / Pets**
-                   (Inclui pet shops, serviços de streaming (YouTube, Netflix, Patreon, Kick, Spotify), jogos, hobbies, eventos e lazer em geral.)
-            
-                **Saúde / Farmácia / Bem-estar**
-                   (Inclui farmácias, clínicas, planos de saúde, academias e serviços de bem-estar.)
-            
-                **Moradia / Contas**
-                   (Inclui boletos, aluguel, condomínio, energia, água, gás, telefone, internet, limpeza, dedetização e taxas bancárias.)
-            
-                **Investimentos / Assinaturas profissionais**
-                   (Inclui aplicações financeiras, hospedagem (HostGator), Canva, domínios, softwares e outras plataformas profissionais.)
-            
-                **Roupas / Acessórios**
-                   (Inclui lojas de roupas, calçados, shopping, artigos esportivos e acessórios.)
-            
-                **E-commerce / Compras online**
-                   (Inclui Amazon, Mercado Livre, AliExpress e outras lojas virtuais ou intermediadores de pagamento (PagSeguro, Nuvei etc).)
-            
-                **Outros / Transferências**
-                    (Inclui PIX entre pessoas, saques, transferências entre contas, doações e tudo que não se encaixa claramente nas categorias acima.)
-       
-                Como retorno, por favor escreva exatamente o nome da despesa, seguido de um caractere pipe `|`, seguido pela categoria apropriada.
-                Algumas despesas podem estar abreviadas ou faltando espaço, tente perceber e categorizar apropriadamente esses casos também.
-                Por favor categorize cada uma das despesas, preciso de uma lista 1:1
-       
-                Exemplo do formato esperado:
-       
-                PAGAMENTO DE BOLETO ROCA ADMINISTRADORA DE IM|Moradia / Contas
-                PIX ENVIADO Amazon Servicos de Varejo|E-commerce
-                IFD*JEFFERSON BORGES DE LIMA|Restaurante / Lanches
-       
-                Despesas:
-            """;
+
+    @Value("${api.key}")
+    private String API_KEY;
+
+
+    public String getPrompt() {
+        try {
+            InputStream promptStream = this.getClass().getResourceAsStream("/cat-prompt.txt");
+            return new String( promptStream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (Exception ex) {
+            LOG.error("Error loading prompt template: {}", ex.getMessage(), ex);
+            throw new ProcessingException(
+                    "Error loading prompt template",
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "PROMPT_LOAD_ERROR",
+                    ex
+            );
+        }
+    }
 
     private static final Set<String> VALID_CATEGORIES = Set.of(
             "Roupas / Acessórios",
@@ -79,16 +59,51 @@ public class AiProcessorService {
             "Moradia / Contas"
     );
 
-    public List<CategoryMapper> processWithAI(List<CategoryMapper> expenses) {
-        RestTemplate restTemplate = new RestTemplate();
+    public List<CategoryMapper> processWithGemini(List<CategoryMapper> expenses) {
+        String prompt = buildPrompt(expenses);
+        try {
+            Client client = Client.builder().apiKey(API_KEY).build();
+
+            GenerateContentResponse response = client.models.generateContent(
+            "gemini-3-flash-preview",
+            prompt,
+            null);
+
+            if (response.text() != null) {
+                String aiResponse = response.text();
+                if (aiResponse != null) {
+                    LOG.info("Received response from Gemini");
+                    return mapCategories(aiResponse);
+                }
+            }
+        } catch (Exception ex) {
+            LOG.error("Error calling Gemini API: {}", ex.getMessage(), ex);
+                throw new ProcessingException(
+                        "Error calling Gemini API",
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "GEMINI_API_ERROR",
+                        ex
+                );
+
+        }
+        return expenses;
+    }
+
+    private String buildPrompt(List<CategoryMapper> expenses) {
         StringBuilder prompt = new StringBuilder();
-        prompt.append(PROMPT_TEMPLATE);
+        prompt.append(getPrompt());
 
         for(CategoryMapper expense : expenses){
             prompt.append(expense.getExpenseName()).append(" | \n");
         }
+        return prompt.toString();
+    }
 
-        Map<String, Object> body = getRequestBody(prompt.toString());
+    public List<CategoryMapper> processWithAI(List<CategoryMapper> expenses) {
+        RestTemplate restTemplate = new RestTemplate();
+        String prompt = buildPrompt(expenses);
+
+        Map<String, Object> body = getRequestBody(prompt);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
