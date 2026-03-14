@@ -1,12 +1,17 @@
 package com.example.api.service;
 
+import com.example.api.exception.ProcessingException;
 import com.example.api.model.*;
 import com.example.api.repo.ExpenseRepository;
+import com.opencsv.CSVWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.io.StringWriter;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.HashMap;
@@ -99,5 +104,44 @@ public class ExpenseReportingService {
         return list.stream()
                 .map(obj -> new NoteableDay((String) obj[0], (Long) obj[1], (BigDecimal) obj[2]))
                 .collect(Collectors.toList());
+    }
+
+    public byte[] exportReportCSV(String sessionId) {
+        List<Expense> expenses = expenseRepo.getAllExpenses2(sessionId);
+        if (expenses == null || expenses.isEmpty()) {
+            LOG.warn("No data found for session (export): {}", sessionId);
+            throw new ProcessingException(
+                    "No data found for the provided session ID",
+                    HttpStatus.NOT_FOUND,
+                    "SESSION_NOT_FOUND"
+            );
+        }
+        String[] header = {"id", "transactionName", "transactionType", "value", "date", "sessionId"};
+        StringWriter sw = new StringWriter();
+        try (CSVWriter csvWriter = new CSVWriter(sw)) {
+            csvWriter.writeNext(header);
+            for (com.example.api.model.Expense e : expenses) {
+                String[] row = new String[]{
+                        e.getId() == null ? "" : e.getId().toString(),
+                        e.getTransactionName() == null ? "" : e.getTransactionName(),
+                        e.getTransactionType() == null ? "" : e.getTransactionType(),
+                        e.getValue() == null ? "" : e.getValue().toString(),
+                        e.getDate() == null ? "" : e.getDate(),
+                        e.getSessionId() == null ? "" : e.getSessionId()
+                };
+                csvWriter.writeNext(row);
+            }
+        } catch (Exception ex) {
+            LOG.error("Error exporting CSV for session {}: {}", sessionId, ex.getMessage(), ex);
+            throw new ProcessingException(
+                    "Error exporting CSV",
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "CSV_EXPORT_ERROR",
+                    ex
+            );
+        }
+
+        return sw.toString().getBytes(StandardCharsets.UTF_8);
+
     }
 }

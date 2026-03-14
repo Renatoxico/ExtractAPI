@@ -5,447 +5,218 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Extract API - Documentation</title>
     <style>
-        /* Black & Green theme - color palette centered around deep blacks and vivid greens */
-        :root{
-            --bg-page: #000000;
-            --panel-bg: #0b0b0b;
-            --panel-contrast: #0f2616; /* subtle greenish contrast */
-            --primary-green: #00c853; /* vivid green */
-            --primary-dark: #004d40; /* deep green */
-            --muted: #9be6b3; /* light green text */
-            --muted-2: #a6f7c8;
-            --code-bg: #07120b;
-            --border: rgba(0,200,83,0.12);
-            --accent: #00e676;
-            --danger: #d32f2f; /* keep red for error emphasis */
-        }
+        :root {
+    /* Refined Dark Palette */
+    --bg-page: #0f1115;
+    --panel-bg: #161920;
+    --panel-border: rgba(16, 185, 129, 0.1);
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    /* Elegant Greens */
+    --primary-green: #10b981; /* Emerald 500 */
+    --accent-glow: rgba(16, 185, 129, 0.15);
+    --text-main: #e2e8f0;
+    --text-muted: #94a3b8;
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: var(--muted-2);
-            background: linear-gradient(180deg, var(--bg-page) 0%, #03120a 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
+    /* Component Colors */
+    --code-bg: #010409;
+    --danger: #ef4444;
+}
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: linear-gradient(180deg, #050505 0%, var(--panel-bg) 100%);
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-            overflow: hidden;
-            border: 1px solid rgba(0,200,83,0.06);
-        }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-        header {
-            background: linear-gradient(135deg, #00110b 0%, var(--primary-dark) 100%);
-            color: var(--muted-2);
-            padding: 60px 40px;
-            text-align: center;
-            border-bottom: 1px solid rgba(0,200,83,0.08);
-        }
+body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    line-height: 1.6;
+    color: var(--text-main);
+    background-color: var(--bg-page);
+    background-image:
+        radial-gradient(circle at 0% 0%, rgba(16, 185, 129, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 100% 100%, rgba(16, 185, 129, 0.03) 0%, transparent 50%);
+    padding: 40px 20px;
+}
 
-        header h1 {
-            font-size: 3em;
-            margin-bottom: 10px;
-            font-weight: 700;
-            color: var(--accent);
-            text-shadow: 0 2px 6px rgba(0,0,0,0.6);
-        }
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: var(--panel-bg);
+    border-radius: 16px;
+    border: 1px solid var(--panel-border);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+}
 
-        header p {
-            font-size: 1.2em;
-            opacity: 0.9;
-            margin-bottom: 20px;
-            color: var(--muted);
-        }
+header {
+    padding: 60px 40px;
+    background: linear-gradient(to bottom, rgba(16, 185, 129, 0.05), transparent);
+    text-align: center;
+    border-bottom: 1px solid var(--panel-border);
+}
 
-        .version-badge {
-            display: inline-block;
-            background: rgba(0,200,83,0.08);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.9em;
-            margin-top: 15px;
-            color: var(--muted-2);
-            border: 1px solid rgba(0,200,83,0.12);
-        }
+header h1 {
+    font-size: 2.5em;
+    letter-spacing: -1px;
+    color: #fff;
+    margin-bottom: 8px;
+}
 
-        .content {
-            padding: 40px;
-        }
+header p {
+    color: var(--text-muted);
+    font-size: 1.1em;
+}
 
-        section {
-            margin-bottom: 50px;
-        }
+.version-badge {
+    display: inline-block;
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--primary-green);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-top: 15px;
+    border: 1px solid var(--panel-border);
+}
 
-        h2 {
-            color: var(--accent);
-            font-size: 2em;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 3px solid rgba(0,200,83,0.06);
-            display: flex;
-            align-items: center;
-        }
+.nav-section {
+    background: rgba(255,255,255,0.02);
+    padding: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    border-bottom: 1px solid var(--panel-border);
+}
 
-        h2::before {
-            content: "";
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background: var(--primary-green);
-            border-radius: 50%;
-            margin-right: 15px;
-            box-shadow: 0 0 8px rgba(0,200,83,0.35);
-        }
+.nav-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.9em;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: 0.2s;
+}
 
-        h3 {
-            color: var(--primary-green);
-            font-size: 1.5em;
-            margin-top: 30px;
-            margin-bottom: 15px;
-        }
+.nav-link:hover {
+    color: var(--primary-green);
+    background: var(--accent-glow);
+}
 
-        .endpoint {
-            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-            border-left: 4px solid var(--primary-green);
-            padding: 25px;
-            margin-bottom: 25px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
+.content {
+    padding: 40px;
+}
 
-        .endpoint:hover {
-            box-shadow: 0 5px 30px rgba(0, 200, 83, 0.06);
-            transform: translateX(5px);
-        }
+h2 {
+    font-size: 1.5em;
+    color: #fff;
+    margin: 40px 0 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
-        .method {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 0.85em;
-            margin-right: 10px;
-            color: #00110b;
-            font-family: 'Courier New', monospace;
-        }
+h2::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--panel-border);
+}
 
-        .method.get {
-            background: var(--primary-green);
-        }
+.endpoint {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 30px;
+}
 
-        .method.post {
-            background: #007a3d; /* slightly darker green for contrast */
-            color: var(--muted-2);
-        }
+.endpoint-path {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-weight: 600;
+    color: var(--text-main);
+    background: #000;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-left: 10px;
+}
 
-        .method.put {
-            background: #00552b;
-            color: var(--muted-2);
-        }
+.method {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 800;
+    text-transform: uppercase;
+}
 
-        .method.delete {
-            background: var(--danger);
-            color: white;
-        }
+.method.get { background: #3b82f6; color: #fff; }
+.method.post { background: var(--primary-green); color: #fff; }
 
-        .endpoint-path {
-            font-family: 'Courier New', monospace;
-            font-size: 1.1em;
-            color: var(--muted-2);
-            margin-bottom: 15px;
-            font-weight: 500;
-        }
+.sub-section h4 {
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin: 25px 0 10px 0;
+}
 
-        .endpoint-description {
-            color: #9fe9b9;
-            margin-bottom: 15px;
-            font-size: 1em;
-            line-height: 1.6;
-        }
+.parameter-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
 
-        .sub-section {
-            margin: 20px 0;
-            padding: 15px;
-            background: #07120b;
-            border-radius: 6px;
-            border: 1px solid rgba(0,200,83,0.04);
-        }
+.parameter-table th {
+    text-align: left;
+    padding: 12px;
+    font-size: 0.85em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--panel-border);
+}
 
-        .sub-section h4 {
-            color: var(--primary-green);
-            margin-bottom: 10px;
-            font-size: 1.1em;
-        }
+.parameter-table td {
+    padding: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    font-size: 0.95em;
+}
 
-        .parameter-table, .response-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 15px 0;
-            font-size: 0.95em;
-        }
+.code-block {
+    background: var(--code-bg);
+    padding: 20px;
+    border-radius: 8px;
+    color: #a7f3d0;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.9em;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.05);
+}
 
-        .parameter-table th, .response-table th {
-            background: linear-gradient(90deg, var(--primary-dark), #003826);
-            color: #eafff0;
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-        }
+.tech-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
 
-        .parameter-table td, .response-table td {
-            padding: 12px;
-            border-bottom: 1px solid rgba(0,200,83,0.04);
-            color: var(--muted-2);
-        }
+.tech-card {
+    background: rgba(255,255,255,0.03);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--panel-border);
+}
 
-        .parameter-table tr:nth-child(even), .response-table tr:nth-child(even) {
-            background: rgba(0,200,83,0.015);
-        }
+.tech-card h4 {
+    color: var(--primary-green);
+    margin-bottom: 8px;
+}
 
-        .type-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 3px;
-            font-size: 0.85em;
-            font-weight: 600;
-            font-family: 'Courier New', monospace;
-            background: rgba(0,200,83,0.06);
-            color: var(--primary-green);
-        }
-
-        .required {
-            color: var(--danger);
-            font-weight: bold;
-        }
-
-        .optional {
-            color: var(--primary-green);
-            font-weight: 600;
-        }
-
-        .code-block {
-            background: var(--code-bg);
-            color: var(--primary-green);
-            padding: 20px;
-            border-radius: 6px;
-            overflow-x: auto;
-            margin: 15px 0;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-            line-height: 1.5;
-            border: 1px solid rgba(0,200,83,0.06);
-            box-shadow: inset 0 2px 8px rgba(0,0,0,0.7);
-        }
-
-        .tech-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            margin: 25px 0;
-        }
-
-        .tech-card {
-            background: linear-gradient(135deg, #00110b 0%, #003826 100%);
-            color: var(--muted-2);
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.6);
-            transition: transform 0.3s ease;
-            border: 1px solid rgba(0,200,83,0.05);
-        }
-
-        .tech-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 200, 83, 0.06);
-        }
-
-        .tech-card h4 {
-            font-size: 1.3em;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            color: var(--primary-green);
-        }
-
-        .tech-card p {
-            opacity: 0.95;
-            font-size: 0.95em;
-            line-height: 1.6;
-            color: var(--muted-2);
-        }
-
-        .tech-icon {
-            font-size: 1.5em;
-            margin-right: 10px;
-            color: var(--primary-green);
-        }
-
-        .error-codes {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin: 25px 0;
-        }
-
-        .error-card {
-            background: #3a130f; /* dark red-brown to fit theme */
-            border-left: 4px solid rgba(211,47,47,0.9);
-            padding: 20px;
-            border-radius: 6px;
-            color: #ffdede;
-        }
-
-        .error-code-name {
-            font-weight: bold;
-            color: #ffb3b3;
-            font-family: 'Courier New', monospace;
-            margin-bottom: 8px;
-        }
-
-        .error-code-desc {
-            color: #ffdede;
-            font-size: 0.95em;
-        }
-
-        .success-response {
-            background: rgba(0,200,83,0.06);
-            border-left: 4px solid var(--primary-green);
-            padding: 20px;
-            border-radius: 6px;
-            margin: 15px 0;
-            color: var(--muted-2);
-        }
-
-        .error-response {
-            background: rgba(211,47,47,0.06);
-            border-left: 4px solid var(--danger);
-            padding: 20px;
-            border-radius: 6px;
-            margin: 15px 0;
-            color: #ffdede;
-        }
-
-        .nav-section {
-            background: #07120b;
-            padding: 30px 40px;
-            border-bottom: 2px solid rgba(0,200,83,0.04);
-        }
-
-        .nav-links {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: center;
-        }
-
-        .nav-link {
-            color: var(--primary-green);
-            text-decoration: none;
-            font-weight: 600;
-            padding: 10px 20px;
-            border-radius: 25px;
-            background: transparent;
-            border: 2px solid rgba(0,200,83,0.06);
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .nav-link:hover {
-            background: var(--primary-green);
-            color: #00110b;
-        }
-
-        footer {
-            background: #07120b;
-            padding: 30px 40px;
-            text-align: center;
-            color: var(--muted-2);
-            border-top: 2px solid rgba(0,200,83,0.04);
-        }
-
-        .json-highlight {
-            background: rgba(255,255,255,0.02);
-            border-left: 3px solid var(--primary-green);
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
-            overflow-x: auto;
-            color: var(--muted-2);
-        }
-
-        .highlight-key {
-            color: #a8ffcf;
-            font-weight: bold;
-        }
-
-        .highlight-value {
-            color: var(--primary-green);
-        }
-
-        @media (max-width: 768px) {
-            header {
-                padding: 40px 20px;
-            }
-
-            header h1 {
-                font-size: 2em;
-            }
-
-            .content {
-                padding: 20px;
-            }
-
-            .tech-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .parameter-table, .response-table {
-                font-size: 0.85em;
-            }
-
-            .parameter-table th, .response-table th {
-                padding: 8px;
-            }
-
-            .parameter-table td, .response-table td {
-                padding: 8px;
-            }
-        }
-
-        .breadcrumb {
-            display: flex;
-            align-items: center;
-            margin-bottom: 25px;
-            color: var(--muted-2);
-            font-size: 0.95em;
-        }
-
-        .breadcrumb span {
-            margin: 0 10px;
-            color: #6fbf95;
-        }
-
-        .status-ok {
-            color: var(--primary-green);
-            font-weight: bold;
-        }
-
-        .status-error {
-            color: var(--danger);
-            font-weight: bold;
-        }
+footer {
+    padding: 40px;
+    text-align: center;
+    font-size: 0.85em;
+    color: var(--text-muted);
+    border-top: 1px solid var(--panel-border);
+}
     </style>
 </head>
 <body>
@@ -461,8 +232,6 @@
                 <a class="nav-link" href="#overview">Overview</a>
                 <a class="nav-link" href="#technologies">Technologies</a>
                 <a class="nav-link" href="#endpoints">Endpoints</a>
-                <a class="nav-link" href="#errors">Error Codes</a>
-                <a class="nav-link" href="#examples">Examples</a>
             </div>
         </div>
 
@@ -477,17 +246,17 @@
 
                 <div class="sub-section">
                     <h4>🎯 Purpose</h4>
-                    <p>The Extract API is a sophisticated service designed to process PDF files containing expense data. It leverages both Java (PDFBox) and Python (AI-based) processing to intelligently extract, categorize, and organize expense information from unstructured PDF documents.</p>
+                    <p>The Extract API is a sophisticated service designed to process PDF files containing expense data. It leverages Java (PDFBox) and an external AI processing service to intelligently extract, categorize, and organize expense information from unstructured PDF documents.</p>
                 </div>
 
                 <div class="sub-section">
                     <h4>✨ Key Features</h4>
                     <ul style="margin-left: 20px; color: #555;">
-                        <li><strong>Multi-file Processing:</strong> Upload and process multiple PDF files in a single request</li>
-                        <li><strong>Intelligent Extraction:</strong> AI-powered text extraction and expense categorization</li>
+                        <li><strong>Multi-file Processing:</strong> Upload and process multiple PDF files in a single request (up to 6 files)</li>
+                        <li><strong>Intelligent Extraction:</strong> AI-powered text extraction and expense categorization (via external AI processing service)</li>
                         <li><strong>Session Management:</strong> Unique session tokens for tracking and retrieving results</li>
                         <li><strong>Comprehensive Reporting:</strong> Grouped expense reports by category and date</li>
-                        <li><strong>Error Handling:</strong> Detailed error responses with specific error codes</li>
+                        <li><strong>Error Handling:</strong> Detailed error responses with specific error codes (see Error Codes section)</li>
                         <li><strong>Data Validation:</strong> Robust file validation and content verification</li>
                     </ul>
                 </div>
@@ -505,11 +274,11 @@
                         </tr>
                         <tr>
                             <td>Max File Size</td>
-                            <td><code>1MB</code></td>
+                            <td><code>512KB</code></td>
                         </tr>
                         <tr>
                             <td>Max Request Size</td>
-                            <td><code>1MB</code></td>
+                            <td><code>Up to 6 files, 512KB each</code></td>
                         </tr>
                         <tr>
                             <td>Database</td>
@@ -550,48 +319,13 @@
                         <p>Industry-standard Java library for PDF manipulation and text extraction from PDF documents with high accuracy.</p>
                     </div>
                     <div class="tech-card">
-                        <h4><span class="tech-icon">🧠</span>Python AI Integration</h4>
-                        <p>Custom Python service for intelligent expense categorization, AI-powered processing, and advanced natural language understanding.</p>
+                        <h4><span class="tech-icon">🧠</span>AI Processing Service</h4>
+                        <p>External AI-based processing (language/model agnostic) used for intelligent expense categorization.</p>
                     </div>
                     <div class="tech-card">
                         <h4><span class="tech-icon">📋</span>JSON Smart 2.5.2</h4>
                         <p>High-performance JSON parsing and manipulation library for flexible data handling.</p>
                     </div>
-                </div>
-
-                <h3>Architecture Components</h3>
-                <div class="sub-section">
-                    <h4>Service Layer</h4>
-                    <table class="parameter-table">
-                        <tr>
-                            <th>Service</th>
-                            <th>Responsibility</th>
-                        </tr>
-                        <tr>
-                            <td><code>ExtractorService</code></td>
-                            <td>Java-based PDF text extraction using PDFBox</td>
-                        </tr>
-                        <tr>
-                            <td><code>ObjectifierService</code></td>
-                            <td>Convert extracted text into structured expense objects</td>
-                        </tr>
-                        <tr>
-                            <td><code>PythonProcessingService</code></td>
-                            <td>Integration with Python AI service for intelligent processing</td>
-                        </tr>
-                        <tr>
-                            <td><code>AiProcessorService</code></td>
-                            <td>AI-based analysis and categorization of expenses</td>
-                        </tr>
-                        <tr>
-                            <td><code>ExpenseReportingService</code></td>
-                            <td>Generate reports, manage sessions, and organize expenses</td>
-                        </tr>
-                        <tr>
-                            <td><code>ValidationService</code></td>
-                            <td>File and data validation</td>
-                        </tr>
-                    </table>
                 </div>
             </section>
 
@@ -754,366 +488,8 @@ curl -X GET "http://localhost:9090/extract/summary/550e8400-e29b-41d4-a716-44665
                 </div>
             </section>
 
-            <!-- Error Codes Section -->
-            <section id="errors">
-                <h2>⚠️ Error Codes & Responses</h2>
-
-                <div class="sub-section">
-                    <h4>Common Error Response Format</h4>
-                    <div class="json-highlight">
-{
-  "<span class="highlight-key">errorCode</span>": "<span class="highlight-value">ERROR_CODE_NAME</span>",
-  "<span class="highlight-key">message</span>": "<span class="highlight-value">Human-readable error message</span>",
-  "<span class="highlight-key">details</span>": "<span class="highlight-value">Optional detailed information</span>",
-  "<span class="highlight-key">timestamp</span>": "<span class="highlight-value">2024-03-08T15:30:00</span>"
-}
                     </div>
                 </div>
-
-                <h3>Error Code Reference</h3>
-                <div class="error-codes">
-                    <div class="error-card">
-                        <div class="error-code-name">INVALID_SESSION_ID</div>
-                        <div class="error-code-desc">The provided session ID is null, empty, or invalid</div>
-                        <div style="margin-top: 8px; font-size: 0.85em; color: #666;">Status: <strong>400</strong></div>
-                    </div>
-                    <div class="error-card">
-                        <div class="error-code-name">EMPTY_PDF_CONTENT</div>
-                        <div class="error-code-desc">PDF file exists but no text could be extracted from it</div>
-                        <div style="margin-top: 8px; font-size: 0.85em; color: #666;">Status: <strong>422</strong></div>
-                    </div>
-                    <div class="error-card">
-                        <div class="error-code-name">FILE_PROCESSING_ERROR</div>
-                        <div class="error-code-desc">Error occurred while processing individual file (text extraction, parsing, etc.)</div>
-                        <div style="margin-top: 8px; font-size: 0.85em; color: #666;">Status: <strong>500</strong></div>
-                    </div>
-                    <div class="error-card">
-                        <div class="error-code-name">SESSION_NOT_FOUND</div>
-                        <div class="error-code-desc">No data exists for the provided session ID in the database</div>
-                        <div style="margin-top: 8px; font-size: 0.85em; color: #666;">Status: <strong>404</strong></div>
-                    </div>
-                    <div class="error-card">
-                        <div class="error-code-name">VALIDATION_FAILED</div>
-                        <div class="error-code-desc">File validation failed (invalid format, size, type, etc.)</div>
-                        <div style="margin-top: 8px; font-size: 0.85em; color: #666;">Status: <strong>400</strong></div>
-                    </div>
-                    <div class="error-card">
-                        <div class="error-code-name">SUMMARY_RETRIEVAL_ERROR</div>
-                        <div class="error-code-desc">Error occurred while retrieving or generating expense summary</div>
-                        <div style="margin-top: 8px; font-size: 0.85em; color: #666;">Status: <strong>500</strong></div>
-                    </div>
-                    <div class="error-card">
-                        <div class="error-code-name">UNEXPECTED_ERROR</div>
-                        <div class="error-code-desc">Unexpected server error occurred during processing</div>
-                        <div style="margin-top: 8px; font-size: 0.85em; color: #666;">Status: <strong>500</strong></div>
-                    </div>
-                </div>
-
-                <div class="sub-section" style="margin-top: 25px;">
-                    <h4>HTTP Status Codes</h4>
-                    <table class="parameter-table">
-                        <tr>
-                            <th>Status Code</th>
-                            <th>Meaning</th>
-                            <th>Description</th>
-                        </tr>
-                        <tr>
-                            <td><span class="status-ok">200</span></td>
-                            <td>OK</td>
-                            <td>Request succeeded, response body contains the data</td>
-                        </tr>
-                        <tr>
-                            <td><span class="status-error">400</span></td>
-                            <td>Bad Request</td>
-                            <td>Invalid request parameters or validation failed</td>
-                        </tr>
-                        <tr>
-                            <td><span class="status-error">404</span></td>
-                            <td>Not Found</td>
-                            <td>Requested resource (session/data) does not exist</td>
-                        </tr>
-                        <tr>
-                            <td><span class="status-error">422</span></td>
-                            <td>Unprocessable Entity</td>
-                            <td>Request valid but cannot be processed (e.g., empty PDF)</td>
-                        </tr>
-                        <tr>
-                            <td><span class="status-error">500</span></td>
-                            <td>Internal Server Error</td>
-                            <td>Server error during processing</td>
-                        </tr>
-                    </table>
-                </div>
-            </section>
-
-            <!-- Examples Section -->
-            <section id="examples">
-                <h2>📚 Usage Examples</h2>
-
-                <h3>JavaScript/Fetch API</h3>
-                <div class="code-block">
-// Processing multiple PDF files
-const formData = new FormData();
-formData.append('file', document.getElementById('file1').files[0]);
-formData.append('file', document.getElementById('file2').files[0]);
-
-fetch('http://localhost:9090/extract/', {
-  method: 'POST',
-  body: formData
-})
-.then(response => response.json())
-.then(data => {
-  console.log('Session Token:', data.sessionToken);
-  console.log('Expenses:', data.categories);
-})
-.catch(error => console.error('Error:', error));
-
-// Retrieving summary by session
-fetch('http://localhost:9090/extract/summary/{sessionId}')
-  .then(response => response.json())
-  .then(data => console.log('Summary:', data));
-                </div>
-
-                <h3>Python/Requests</h3>
-                <div class="code-block">
-import requests
-
-# Upload files
-files = [
-    ('file', open('expenses.pdf', 'rb')),
-    ('file', open('receipts.pdf', 'rb'))
-]
-
-response = requests.post(
-    'http://localhost:9090/extract/',
-    files=files
-)
-data = response.json()
-session_id = data['sessionToken']
-print(f"Session ID: {session_id}")
-
-# Get summary
-summary = requests.get(
-    f'http://localhost:9090/extract/summary/{session_id}'
-).json()
-print(summary)
-                </div>
-
-                <h3>cURL</h3>
-                <div class="code-block">
-# Upload and process files
-curl -X POST "http://localhost:9090/extract/" \
-  -F "file=@expenses.pdf" \
-  -F "file=@receipts.pdf"
-
-# Get summary (replace SESSION_ID with actual token)
-curl -X GET "http://localhost:9090/extract/summary/SESSION_ID"
-                </div>
-
-                <h3>Expected Response Structure</h3>
-                <div class="code-block">
-{
-  "sessionToken": "550e8400-e29b-41d4-a716-446655440000",
-  "categories": {
-    "Groceries": [
-      {
-        "expenseName": "Whole Foods",
-        "value": 125.50,
-        "date": "2024-03-08",
-        "category": "Groceries"
-      },
-      {
-        "expenseName": "Local Market",
-        "value": 45.25,
-        "date": "2024-03-07",
-        "category": "Groceries"
-      }
-    ],
-    "Transportation": [
-      {
-        "expenseName": "Uber",
-        "value": 18.75,
-        "date": "2024-03-08",
-        "category": "Transportation"
-      }
-    ],
-    "Entertainment": [
-      {
-        "expenseName": "Movie Tickets",
-        "value": 30.00,
-        "date": "2024-03-06",
-        "category": "Entertainment"
-      }
-    ]
-  },
-  "summary": {
-    "totalExpenses": 219.50,
-    "categoryCount": 3,
-    "transactionCount": 4,
-    "dateRange": {
-      "from": "2024-03-06",
-      "to": "2024-03-08"
-    }
-  }
-}
-                </div>
-            </section>
-
-            <!-- Data Models Section -->
-            <section>
-                <h2>📦 Data Models</h2>
-
-                <h3>Expense Entity</h3>
-                <div class="sub-section">
-                    <table class="parameter-table">
-                        <tr>
-                            <th>Field</th>
-                            <th>Type</th>
-                            <th>Description</th>
-                        </tr>
-                        <tr>
-                            <td><code>id</code></td>
-                            <td><span class="type-badge">Long</span></td>
-                            <td>Auto-generated primary key</td>
-                        </tr>
-                        <tr>
-                            <td><code>value</code></td>
-                            <td><span class="type-badge">BigDecimal</span></td>
-                            <td>Monetary value of the expense</td>
-                        </tr>
-                        <tr>
-                            <td><code>transactionName</code></td>
-                            <td><span class="type-badge">String</span></td>
-                            <td>Name/description of the transaction</td>
-                        </tr>
-                        <tr>
-                            <td><code>transactionType</code></td>
-                            <td><span class="type-badge">String</span></td>
-                            <td>Type of transaction</td>
-                        </tr>
-                        <tr>
-                            <td><code>date</code></td>
-                            <td><span class="type-badge">String</span></td>
-                            <td>Date of the transaction</td>
-                        </tr>
-                        <tr>
-                            <td><code>sessionId</code></td>
-                            <td><span class="type-badge">String</span></td>
-                            <td>Associated session ID for grouping</td>
-                        </tr>
-                    </table>
-                </div>
-
-                <h3>ExpenseDTO (Data Transfer Object)</h3>
-                <div class="sub-section">
-                    <table class="parameter-table">
-                        <tr>
-                            <th>Field</th>
-                            <th>Type</th>
-                            <th>Description</th>
-                        </tr>
-                        <tr>
-                            <td><code>expenseName</code></td>
-                            <td><span class="type-badge">String</span></td>
-                            <td>Display name of the expense</td>
-                        </tr>
-                        <tr>
-                            <td><code>value</code></td>
-                            <td><span class="type-badge">BigDecimal</span></td>
-                            <td>Amount spent</td>
-                        </tr>
-                        <tr>
-                            <td><code>date</code></td>
-                            <td><span class="type-badge">String</span></td>
-                            <td>Date of expense</td>
-                        </tr>
-                        <tr>
-                            <td><code>category</code></td>
-                            <td><span class="type-badge">String</span></td>
-                            <td>Expense category (Groceries, Transportation, etc.)</td>
-                        </tr>
-                    </table>
-                </div>
-            </section>
-
-            <!-- Getting Started Section -->
-            <section>
-                <h2>🚀 Getting Started</h2>
-
-                <div class="sub-section">
-                    <h4>Prerequisites</h4>
-                    <ul style="margin-left: 20px; color: #555;">
-                        <li>Java 21 or higher</li>
-                        <li>PostgreSQL database running and configured</li>
-                        <li>Python service running (for AI processing)</li>
-                        <li>Environment variables configured:
-                            <ul style="margin-top: 10px;">
-                                <li><code>DB_HOST</code> - PostgreSQL host</li>
-                                <li><code>DB_PORT</code> - PostgreSQL port</li>
-                                <li><code>DB_NAME</code> - Database name</li>
-                                <li><code>DB_USERNAME</code> - Database username</li>
-                                <li><code>DB_PASSWORD</code> - Database password</li>
-                            </ul>
-                        </li>
-                    </ul>
-                </div>
-
-                <div class="sub-section">
-                    <h4>Building & Running</h4>
-                    <div class="code-block">
-# Build the application
-mvn clean install
-
-# Run the application
-mvn spring-boot:run
-
-# Or run the JAR directly
-java -jar target/API-0.0.1-SNAPSHOT.jar
-                    </div>
-                </div>
-
-                <div class="sub-section">
-                    <h4>Docker Deployment</h4>
-                    <div class="code-block">
-# Using docker-compose
-docker-compose up -d
-
-# Build custom Docker image
-docker build -t extract-api .
-docker run -p 9090:9090 extract-api
-                    </div>
-                </div>
-            </section>
-
-            <!-- Support Section -->
-            <section>
-                <h2>📞 Support & Documentation</h2>
-
-                <div class="sub-section">
-                    <h4>Key Features</h4>
-                    <ul style="margin-left: 20px; color: #555;">
-                        <li>✅ Automatic PDF text extraction</li>
-                        <li>✅ AI-powered expense categorization</li>
-                        <li>✅ Multi-file batch processing</li>
-                        <li>✅ Comprehensive error handling</li>
-                        <li>✅ Session-based data management</li>
-                        <li>✅ RESTful API design</li>
-                        <li>✅ Docker containerization</li>
-                        <li>✅ PostgreSQL persistence</li>
-                    </ul>
-                </div>
-
-                <div class="sub-section">
-                    <h4>Troubleshooting</h4>
-                    <ul style="margin-left: 20px; color: #555;">
-                        <li><strong>PDF extraction fails:</strong> Ensure PDF is not corrupted and contains extractable text</li>
-                        <li><strong>Session not found:</strong> Verify the session ID is correct and the data hasn't expired</li>
-                        <li><strong>Database connection error:</strong> Check PostgreSQL is running and credentials are correct</li>
-                        <li><strong>File size exceeded:</strong> Maximum file size is 1MB per file, 1MB total request size</li>
-                    </ul>
-                </div>
-            </section>
-        </div>
 
         <footer>
             <p><strong>Extract API v0.0.1</strong> | Built with Spring Boot 3.5.3 & Java 21</p>

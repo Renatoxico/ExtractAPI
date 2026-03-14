@@ -85,6 +85,13 @@
 			<version>2.5.2</version>
 		</dependency>
 
+		<!-- OpenCSV for CSV export -->
+		<dependency>
+			<groupId>com.opencsv</groupId>
+			<artifactId>opencsv</artifactId>
+			<version>5.9</version>
+		</dependency>
+
 <!--		<dependency>-->
 <!--			<groupId>com.example</groupId>-->
 <!--			<artifactId>API</artifactId>-->
