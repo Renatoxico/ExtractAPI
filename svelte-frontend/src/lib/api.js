@@ -28,7 +28,7 @@ export async function processFiles(fileArray) {
 
   let res;
   try {
-    res = await fetch( API + '/extract/', { method: 'POST', body: form });
+    res = await fetch( `http://${host}:9090/extract/`, { method: 'POST', body: form });
   } catch {
     const err = new Error('Não foi possível conectar ao servidor. Verifique se a API está rodando.');
     err.errorCode = 'NETWORK_ERROR';
