@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/extract': 'http://localhost:9090'
+      '/extract': 'http://backend-java:9090'
     }
   }
 });
