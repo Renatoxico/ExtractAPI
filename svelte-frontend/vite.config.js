@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/extract': 'http://192.168.15.6:9090'
+      '/extract': 'http://localhost:9090'
     }
   }
 });
