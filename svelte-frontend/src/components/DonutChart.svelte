@@ -1,0 +1,160 @@
+<script>
+  import { onMount, onDestroy } from 'svelte';
+  import { Chart, ArcElement, DoughnutController, Tooltip } from 'chart.js';
+  import { categoryColor } from '../lib/categoryColors.js';
+  import { formatBRL } from '../lib/formatters.js';
+
+  Chart.register(ArcElement, DoughnutController, Tooltip);
+
+  let { data } = $props();
+
+  let canvas;
+  let chartInstance = null;
+
+  function buildChart() {
+    if (chartInstance) {
+      chartInstance.destroy();
+      chartInstance = null;
+    }
+    if (!canvas || !data?.length) return;
+
+    chartInstance = new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: data.map(d => d.category),
+        datasets: [{
+          data: data.map(d => Number(d.value)),
+          backgroundColor: data.map(d => categoryColor(d.category)),
+          borderWidth: 0,
+          hoverOffset: 10
+        }]
+      },
+      options: {
+        cutout: '68%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => ` ${formatBRL(ctx.parsed)}`
+            }
+          }
+        },
+        animation: { animateRotate: true, duration: 600 }
+      }
+    });
+  }
+
+  onMount(() => buildChart());
+  onDestroy(() => chartInstance?.destroy());
+
+  $effect(() => {
+    // Rebuild when data changes (new upload)
+    data;
+    buildChart();
+  });
+
+  let total = $derived(data?.reduce((sum, d) => sum + Number(d.value), 0) ?? 0);
+</script>
+
+<div class="donut-wrap">
+  <div class="canvas-wrap">
+    <canvas bind:this={canvas}></canvas>
+    <div class="donut-center">
+      <span class="donut-total-label">Total</span>
+      <span class="donut-total">{formatBRL(total)}</span>
+    </div>
+  </div>
+
+  <ul class="legend">
+    {#each data as item}
+      <li class="legend-item">
+        <span class="legend-dot" style="background: {categoryColor(item.category)}"></span>
+        <span class="legend-name">{item.category}</span>
+        <span class="legend-value">{formatBRL(Number(item.value))}</span>
+      </li>
+    {/each}
+  </ul>
+</div>
+
+<style>
+  .donut-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  .canvas-wrap {
+    position: relative;
+    width: min(280px, 100%);
+    flex-shrink: 0;
+  }
+
+  .canvas-wrap canvas {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .donut-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .donut-total-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .donut-total {
+    display: block;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-main);
+    white-space: nowrap;
+  }
+
+  .legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .legend-name {
+    flex: 1;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .legend-value {
+    color: var(--text-main);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+</style>

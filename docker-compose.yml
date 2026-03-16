@@ -13,6 +13,18 @@ services:
     networks:
       - app-network
 
+  frontend:
+    build:
+      context: ./svelte-frontend
+    container_name: frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend-java
+    restart: always
+    networks:
+      - app-network
+
 networks:
   app-network:
     driver: bridge
