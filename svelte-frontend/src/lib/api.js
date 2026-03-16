@@ -2,7 +2,7 @@ export async function fetchSummary(sessionId) {
   let res;
   const API = import.meta.env.VITE_API_URL;
   try {
-    res = await fetch( `:9090/extract/summary/${encodeURIComponent(sessionId)}`);
+    res = await fetch( `${API}extract/summary/${encodeURIComponent(sessionId)}`);
   } catch {
     const err = new Error('Não foi possível conectar ao servidor. Verifique se a API está rodando.');
     err.errorCode = 'NETWORK_ERROR';
