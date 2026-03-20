@@ -3,21 +3,23 @@ services:
     image: ghcr.io/renatoxico/javapi:latest
     container_name: backend-java
     ports:
-      - "9091:9090"
+      - "9090:9090"
     env_file:
       - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: always
-    depends_on:
-      - backend-python
     networks:
       - app-network
 
-  backend-python:
-    image: ghcr.io/renatoxico/py-extractor:latest
-    container_name: backend-python
+  frontend:
+    image: ghcr.io/renatoxico/svelte-frontend:latest
+    container_name: extractapi_frontend_prod
     ports:
-      - "9000:9000"
-    restart: always
+      - "80:80"
+    depends_on:
+      - backend-java
+    restart: unless-stopped
     networks:
       - app-network
 
