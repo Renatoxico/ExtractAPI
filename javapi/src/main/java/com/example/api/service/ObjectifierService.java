@@ -2,8 +2,10 @@ package com.example.api.service;
 
 import com.example.api.model.Expense;
 import com.example.api.repo.ExpenseRepository;
+import com.example.api.exception.ProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -35,6 +37,17 @@ public class ObjectifierService {
 
             String[] expensesDoc = splitByLine(inputText);
             List<String> filteredExpenses = getFilterCharges(expensesDoc);
+
+            // Validate that there is at least one candidate line to process; if not, throw a ProcessingException
+            if (filteredExpenses == null || filteredExpenses.isEmpty()) {
+                LOG.warn("No candidate expense lines found after filtering for session: {}", sessionId);
+                throw new ProcessingException(
+                    "No expenses could be extracted from the provided files",
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "NO_EXPENSES_EXTRACTED"
+                );
+            }
+
             List<Expense> expensesObj = objectifyExtract(sessionId, filteredExpenses);
 
             LOG.info("Extracted {} expenses from document for session: {}", expensesObj.size(), sessionId);
