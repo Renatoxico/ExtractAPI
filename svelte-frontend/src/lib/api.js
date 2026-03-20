@@ -1,6 +1,6 @@
+export const host = import.meta.env.VITE_API_URL;
 export async function fetchSummary(sessionId) {
   let res;
-  const host = import.meta.env.VITE_API_URL;
   try {
     res = await fetch( `${host}/extract/summary/${encodeURIComponent(sessionId)}`);
   } catch {
