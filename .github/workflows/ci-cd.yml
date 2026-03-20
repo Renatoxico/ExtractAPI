@@ -30,16 +30,16 @@ jobs:
       - name: Build backend image
         run: |
           docker compose build --no-cache backend-java
-          docker tag extractapi-backend-java ghcr.io/${{ github.repository_owner }}/javapi:latest
+          docker tag extractapi-backend-java ghcr.io/renatoxico/javapi:latest
 
       - name: Push backend image to GHCR
         run: |
-          docker push ghcr.io/${{ github.repository_owner }}/javapi:latest
+          docker push ghcr.io/renatoxico/javapi:latest
 
       - name: Build and push frontend image
         run: |
-          docker build --no-cache -t ghcr.io/${{ github.repository_owner }}/svelte-frontend:latest ./svelte-frontend
-          docker push ghcr.io/${{ github.repository_owner }}/svelte-frontend:latest
+          docker build --no-cache -t ghcr.io/renatoxico/svelte-frontend:latest ./svelte-frontend
+          docker push ghcr.io/renatoxico/svelte-frontend:latest
 
   deploy:
     runs-on: ubuntu-latest
@@ -56,7 +56,7 @@ jobs:
           script: |
             cd /var/www/extractor/ExtractAPI
             echo "${{ secrets.GIT_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            docker pull ghcr.io/${{ github.repository_owner }}/javapi:latest
-            docker pull ghcr.io/${{ github.repository_owner }}/svelte-frontend:latest
+            docker pull ghcr.io/renatoxico/javapi:latest
+            docker pull ghcr.io/renatoxico/svelte-frontend:latest
             docker compose pull
             docker compose up -d --remove-orphans
