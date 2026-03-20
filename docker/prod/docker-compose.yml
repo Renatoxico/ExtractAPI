@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  backend-java:
+    image: ghcr.io/renatoxico/javapi:latest
+    container_name: extractapi_backend_java_prod
+    ports:
+      - "9090:9090"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  frontend:
+    image: ghcr.io/renatoxico/svelte-frontend:latest
+    container_name: extractapi_frontend_prod
+    ports:
+      - "80:80"
+    depends_on:
+      - backend-java
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
