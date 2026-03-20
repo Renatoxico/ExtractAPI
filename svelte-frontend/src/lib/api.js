@@ -2,7 +2,7 @@ export async function fetchSummary(sessionId) {
   let res;
   const host = import.meta.env.VITE_API_URL;
   try {
-    res = await fetch( `http://${host}/extract/summary/${encodeURIComponent(sessionId)}`);
+    res = await fetch( `${host}/extract/summary/${encodeURIComponent(sessionId)}`);
   } catch {
     const err = new Error('Não foi possível conectar ao servidor. Verifique se a API está rodando.');
     err.errorCode = 'NETWORK_ERROR';
@@ -28,7 +28,7 @@ export async function processFiles(fileArray) {
 
   let res;
   try {
-    res = await fetch( `http://${host}/extract/`, { method: 'POST', body: form });
+    res = await fetch( `${host}/extract/`, { method: 'POST', body: form });
   } catch {
     const err = new Error('Não foi possível conectar ao servidor. Verifique se a API está rodando.');
     err.errorCode = 'NETWORK_ERROR';
