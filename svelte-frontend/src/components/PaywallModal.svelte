@@ -6,7 +6,8 @@
   let checking = $state(false)
 
   function openCheckout() {
-    const url = `${REVENUECAT_CHECKOUT_URL}${auth.session.user.id}`
+    const base = REVENUECAT_CHECKOUT_URL.replace(/\/$/, '')
+    const url = `${base}/${auth.session.user.id}`
     window.open(url, '_blank')
   }
 
