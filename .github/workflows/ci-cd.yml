@@ -58,6 +58,7 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           script: |
             cd /var/www/extractor/ExtractAPI
+            echo "${{ secrets.ENV_FILE }}" > .env
             echo "${{ secrets.GIT_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker pull ghcr.io/renatoxico/javapi:latest
             docker pull ghcr.io/renatoxico/svelte-frontend:latest
