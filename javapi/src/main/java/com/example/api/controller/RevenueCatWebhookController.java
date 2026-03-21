@@ -30,7 +30,7 @@ public class RevenueCatWebhookController {
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @RequestBody Map<String, Object> payload) {
 
-        if (authHeader == null || !authHeader.equals("Bearer " + webhookSecret)) {
+        if (authHeader == null || !authHeader.equals(webhookSecret)) {
             return ResponseEntity.status(401).build();
         }
 
