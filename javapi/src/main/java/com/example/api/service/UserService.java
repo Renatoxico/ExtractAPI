@@ -18,10 +18,17 @@ public class UserService {
 
     @Transactional
     public User findOrCreate(UUID id, String email) {
-        return userRepository.findById(id).orElseGet(() -> {
+        User user = userRepository.findById(id).orElseGet(() -> {
             User newUser = new User(id, email);
             return userRepository.save(newUser);
         });
+
+        if (user.getEmail() == null && email != null) {
+            user.setEmail(email);
+            userRepository.save(user);
+        }
+
+        return user;
     }
 
     @Transactional
