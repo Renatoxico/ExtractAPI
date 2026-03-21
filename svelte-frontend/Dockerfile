@@ -8,6 +8,7 @@ ENV VITE_API_URL=$VITE_API_URL
 COPY package.json .
 RUN npm install
 COPY . .
+COPY .env .env
 RUN npm run build
 
 # Serve stage

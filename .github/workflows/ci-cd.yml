@@ -38,9 +38,9 @@ jobs:
 
       - name: Build and push frontend image
         run: |
+          echo "${{ secrets.FRONTEND_ENV }}" > ./svelte-frontend/.env
           docker build \
             --no-cache \
-            --build-arg VITE_API_URL=https://api.renatoxico.net \
             -t ghcr.io/renatoxico/svelte-frontend:latest ./svelte-frontend
           docker push ghcr.io/renatoxico/svelte-frontend:latest
 
