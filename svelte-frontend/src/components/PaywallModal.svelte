@@ -1,18 +1,18 @@
 <script>
-  import { session, isPremium, checkPremiumStatus, signOut } from '../lib/auth.js'
+  import { auth } from '../lib/auth.svelte.js'
 
   const REVENUECAT_CHECKOUT_URL = import.meta.env.VITE_REVENUECAT_CHECKOUT_URL
 
   let checking = $state(false)
 
   function openCheckout() {
-    const url = `${REVENUECAT_CHECKOUT_URL}?app_user_id=${session.user.id}`
+    const url = `${REVENUECAT_CHECKOUT_URL}?app_user_id=${auth.session.user.id}`
     window.open(url, '_blank')
   }
 
   async function handleCheckAgain() {
     checking = true
-    await checkPremiumStatus()
+    await auth.checkPremiumStatus()
     checking = false
   }
 </script>
@@ -41,8 +41,8 @@
       Acesso liberado para web e iOS com um único plano.
     </p>
 
-    {#if session}
-      <p class="user-email">{session.user.email}</p>
+    {#if auth.session}
+      <p class="user-email">{auth.session.user.email}</p>
     {/if}
 
     <div class="pricing-card">
@@ -75,7 +75,7 @@
       {/if}
     </button>
 
-    <button class="signout-link" onclick={signOut}>Sair da conta</button>
+    <button class="signout-link" onclick={() => auth.signOut()}>Sair da conta</button>
   </div>
 </div>
 

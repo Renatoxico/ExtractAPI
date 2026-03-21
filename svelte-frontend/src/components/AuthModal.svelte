@@ -1,5 +1,5 @@
 <script>
-  import { signInWithGoogle } from '../lib/auth.js'
+  import { auth } from '../lib/auth.svelte.js'
 
   let loading = $state(false)
   let error = $state(null)
@@ -8,7 +8,7 @@
     loading = true
     error = null
     try {
-      await signInWithGoogle()
+      await auth.signInWithGoogle()
       // Page will redirect for OAuth; loading state stays until redirect
     } catch (e) {
       error = 'Não foi possível iniciar o login. Tente novamente.'

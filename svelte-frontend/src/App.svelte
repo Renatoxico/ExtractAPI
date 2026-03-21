@@ -4,7 +4,7 @@
   import { formatBRL, formatDate, formatCount } from './lib/formatters.js'
   import { categoryColor } from './lib/categoryColors.js'
   import { computeMonthWithMostTransactions } from './lib/computeStats.js'
-  import { session, isPremium, init, signOut } from './lib/auth.js'
+  import { auth } from './lib/auth.svelte.js'
 
   import UploadZone from './components/UploadZone.svelte'
   import FileList from './components/FileList.svelte'
@@ -40,7 +40,7 @@
   let canSubmitSession = $derived(sessionId.trim().length > 0 && !loading)
 
   onMount(() => {
-    init()
+    auth.init()
   })
 
   function handleFilesChange(newFiles) {
@@ -93,13 +93,13 @@
   }
 </script>
 
-{#if !session}
+{#if !auth.session}
   <AuthModal />
-{:else if isPremium === false}
+{:else if auth.isPremium === false}
   <PaywallModal />
 {/if}
 
-<div class="app" class:blurred={!session || isPremium === false}>
+<div class="app" class:blurred={!auth.session || auth.isPremium === false}>
   <header class="app-header">
     <div class="header-inner">
       <div class="logo">
@@ -122,10 +122,10 @@
           </button>
         {/if}
 
-        {#if session}
+        {#if auth.session}
           <div class="user-info">
-            <span class="user-email">{session.user.email}</span>
-            <button class="signout-btn" onclick={signOut} title="Sair">
+            <span class="user-email">{auth.session.user.email}</span>
+            <button class="signout-btn" onclick={() => auth.signOut()} title="Sair">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                 <polyline points="16 17 21 12 16 7"/>
@@ -139,11 +139,11 @@
   </header>
 
   <main class="app-main">
-    {#if isPremium === null && session}
+    {#if auth.isPremium === null && auth.session}
       <div class="status-checking">
         <LoadingSpinner />
       </div>
-    {:else if isPremium}
+    {:else if auth.isPremium}
       {#if !result}
         <!-- Upload Phase -->
         <section class="upload-section">
