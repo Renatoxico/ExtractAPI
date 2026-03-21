@@ -26,7 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-@CrossOrigin(origins = "*")
 @Controller
 @RequestMapping("/extract")
 public class ExtractController {

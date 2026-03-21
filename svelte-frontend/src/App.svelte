@@ -1,92 +1,105 @@
 <script>
-  import { processFiles, fetchSummary } from './lib/api.js';
-  import { formatBRL, formatDate, formatCount } from './lib/formatters.js';
-  import { categoryColor } from './lib/categoryColors.js';
-  import { computeMonthWithMostTransactions } from './lib/computeStats.js';
+  import { onMount } from 'svelte'
+  import { processFiles, fetchSummary } from './lib/api.js'
+  import { formatBRL, formatDate, formatCount } from './lib/formatters.js'
+  import { categoryColor } from './lib/categoryColors.js'
+  import { computeMonthWithMostTransactions } from './lib/computeStats.js'
+  import { session, isPremium, init, signOut } from './lib/auth.js'
 
-  import UploadZone from './components/UploadZone.svelte';
-  import FileList from './components/FileList.svelte';
-  import LoadingSpinner from './components/LoadingSpinner.svelte';
-  import ErrorBanner from './components/ErrorBanner.svelte';
-  import DonutChart from './components/DonutChart.svelte';
-  import StatCard from './components/StatCard.svelte';
-  import SmartGroupTable from './components/SmartGroupTable.svelte';
-  import AllExpensesTable from './components/AllExpensesTable.svelte';
+  import UploadZone from './components/UploadZone.svelte'
+  import FileList from './components/FileList.svelte'
+  import LoadingSpinner from './components/LoadingSpinner.svelte'
+  import ErrorBanner from './components/ErrorBanner.svelte'
+  import DonutChart from './components/DonutChart.svelte'
+  import StatCard from './components/StatCard.svelte'
+  import SmartGroupTable from './components/SmartGroupTable.svelte'
+  import AllExpensesTable from './components/AllExpensesTable.svelte'
+  import AuthModal from './components/AuthModal.svelte'
+  import PaywallModal from './components/PaywallModal.svelte'
 
-  const MAX_FILES = 6;
-  const MAX_SIZE = 512 * 1024;
+  const MAX_FILES = 6
+  const MAX_SIZE = 512 * 1024
 
-  let files = $state([]);
-  let sessionId = $state('');
-  let result = $state(null);
-  let loading = $state(false);
-  let error = $state(null);
+  let files = $state([])
+  let sessionId = $state('')
+  let result = $state(null)
+  let loading = $state(false)
+  let error = $state(null)
 
   // Derived stats
-  let monthStat = $derived(computeMonthWithMostTransactions(result?.AllExpenses));
+  let monthStat = $derived(computeMonthWithMostTransactions(result?.AllExpenses))
   let mostRecurring = $derived(
     result?.SmartGroupExpenselist?.slice().sort((a, b) => b.instances - a.instances)[0] ?? null
-  );
+  )
   let mostExpensiveDay = $derived(
     result?.NotableDays?.slice().sort((a, b) => Number(b.total) - Number(a.total))[0] ?? null
-  );
+  )
 
-  let hasOversized = $derived(files.some(f => f.size > MAX_SIZE));
-  let canSubmitFiles = $derived(files.length > 0 && files.length <= MAX_FILES && !hasOversized && !loading);
-  let canSubmitSession = $derived(sessionId.trim().length > 0 && !loading);
+  let hasOversized = $derived(files.some(f => f.size > MAX_SIZE))
+  let canSubmitFiles = $derived(files.length > 0 && files.length <= MAX_FILES && !hasOversized && !loading)
+  let canSubmitSession = $derived(sessionId.trim().length > 0 && !loading)
+
+  onMount(() => {
+    init()
+  })
 
   function handleFilesChange(newFiles) {
-    const merged = [...files, ...newFiles];
-    // Deduplicate by name+size, keep last MAX_FILES
-    const seen = new Set();
+    const merged = [...files, ...newFiles]
+    const seen = new Set()
     const deduped = merged.filter(f => {
-      const key = f.name + f.size;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-    files = deduped.slice(-MAX_FILES);
+      const key = f.name + f.size
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    files = deduped.slice(-MAX_FILES)
   }
 
   function removeFile(index) {
-    files = files.filter((_, i) => i !== index);
+    files = files.filter((_, i) => i !== index)
   }
 
   async function handleSubmitFiles() {
-    if (!canSubmitFiles) return;
-    loading = true;
-    error = null;
+    if (!canSubmitFiles) return
+    loading = true
+    error = null
     try {
-      result = await processFiles(files);
+      result = await processFiles(files)
     } catch (err) {
-      error = { errorCode: err.errorCode, message: err.message, details: err.details };
+      error = { errorCode: err.errorCode, message: err.message, details: err.details }
     } finally {
-      loading = false;
+      loading = false
     }
   }
 
   async function handleSubmitSession() {
-    if (!canSubmitSession) return;
-    loading = true;
-    error = null;
+    if (!canSubmitSession) return
+    loading = true
+    error = null
     try {
-      result = await fetchSummary(sessionId.trim());
+      result = await fetchSummary(sessionId.trim())
     } catch (err) {
-      error = { errorCode: err.errorCode, message: err.message, details: err.details };
+      error = { errorCode: err.errorCode, message: err.message, details: err.details }
     } finally {
-      loading = false;
+      loading = false
     }
   }
 
   function reset() {
-    result = null;
-    files = [];
-    sessionId = '';
-    error = null;
+    result = null
+    files = []
+    sessionId = ''
+    error = null
   }
 </script>
 
-<div class="app">
+{#if !session}
+  <AuthModal />
+{:else if isPremium === false}
+  <PaywallModal />
+{/if}
+
+<div class="app" class:blurred={!session || isPremium === false}>
   <header class="app-header">
     <div class="header-inner">
       <div class="logo">
@@ -97,164 +110,186 @@
         </svg>
         <span>Extract</span>
       </div>
-      {#if result}
-        <button class="reset-btn" onclick={reset}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="1 4 1 10 7 10"/>
-            <path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
-          </svg>
-          Novo relatório
-        </button>
-      {/if}
-    </div>
-  </header>
 
-  <main class="app-main">
-    {#if !result}
-      <!-- Upload Phase -->
-      <section class="upload-section">
-        <div class="upload-header">
-          <h1>Relatório de Gastos</h1>
-          <p>Envie seus extratos em PDF para gerar uma análise detalhada das despesas.</p>
-        </div>
-
-        {#if error}
-          <ErrorBanner
-            errorCode={error.errorCode}
-            message={error.message}
-            details={error.details}
-            onDismiss={() => (error = null)}
-          />
+      <div class="header-right">
+        {#if result}
+          <button class="reset-btn" onclick={reset}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="1 4 1 10 7 10"/>
+              <path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
+            </svg>
+            Novo relatório
+          </button>
         {/if}
 
-        {#if loading}
-          <LoadingSpinner />
-        {:else}
-          <UploadZone onFilesChange={handleFilesChange} />
-
-          {#if files.length}
-            <FileList {files} onRemove={removeFile} />
-
-            <div class="submit-row">
-              <span class="file-counter" class:warn={files.length === MAX_FILES}>
-                {files.length} / {MAX_FILES} arquivos
-              </span>
-              <button
-                class="submit-btn"
-                disabled={!canSubmitFiles}
-                onclick={handleSubmitFiles}
-              >
-                Processar extratos
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <line x1="5" y1="12" x2="19" y2="12"/>
-                  <polyline points="12 5 19 12 12 19"/>
-                </svg>
-              </button>
-            </div>
-          {/if}
-
-          <div class="divider"><span>ou buscar sessão existente</span></div>
-
-          <div class="session-row">
-            <input
-              class="session-input"
-              type="text"
-              placeholder="Session ID"
-              bind:value={sessionId}
-              onkeydown={(e) => e.key === 'Enter' && handleSubmitSession()}
-            />
-            <button
-              class="submit-btn"
-              disabled={!canSubmitSession}
-              onclick={handleSubmitSession}
-            >
-              Buscar
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="11" cy="11" r="8"/>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        {#if session}
+          <div class="user-info">
+            <span class="user-email">{session.user.email}</span>
+            <button class="signout-btn" onclick={signOut} title="Sair">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
               </svg>
             </button>
           </div>
         {/if}
-      </section>
-    {:else}
-      <!-- Report Phase -->
-      <section class="report-section">
-        {#if error}
-          <ErrorBanner
-            errorCode={error.errorCode}
-            message={error.message}
-            details={error.details}
-            onDismiss={() => (error = null)}
-          />
-        {/if}
+      </div>
+    </div>
+  </header>
 
-        <!-- Top row: chart + stat cards -->
-        <div class="top-row">
-          <div class="chart-panel panel">
-            <h2 class="panel-title">Gastos por Categoria</h2>
-            {#if result.ExpensesByCategory?.length}
-              <DonutChart data={result.ExpensesByCategory} />
-            {:else}
-              <p class="empty">Sem dados de categoria</p>
-            {/if}
+  <main class="app-main">
+    {#if isPremium === null && session}
+      <div class="status-checking">
+        <LoadingSpinner />
+      </div>
+    {:else if isPremium}
+      {#if !result}
+        <!-- Upload Phase -->
+        <section class="upload-section">
+          <div class="upload-header">
+            <h1>Relatório de Gastos</h1>
+            <p>Envie seus extratos em PDF para gerar uma análise detalhada das despesas.</p>
           </div>
 
-          <div class="stats-grid">
-            {#if result.BiggestSingularExpense}
-              <StatCard
-                label="Maior gasto único"
-                value={formatBRL(Number(result.BiggestSingularExpense.value))}
-                sub="{result.BiggestSingularExpense.expenseName} · {formatDate(result.BiggestSingularExpense.date)}"
-                color={categoryColor(result.BiggestSingularExpense.category)}
-              />
+          {#if error}
+            <ErrorBanner
+              errorCode={error.errorCode}
+              message={error.message}
+              details={error.details}
+              onDismiss={() => (error = null)}
+            />
+          {/if}
+
+          {#if loading}
+            <LoadingSpinner />
+          {:else}
+            <UploadZone onFilesChange={handleFilesChange} />
+
+            {#if files.length}
+              <FileList {files} onRemove={removeFile} />
+
+              <div class="submit-row">
+                <span class="file-counter" class:warn={files.length === MAX_FILES}>
+                  {files.length} / {MAX_FILES} arquivos
+                </span>
+                <button
+                  class="submit-btn"
+                  disabled={!canSubmitFiles}
+                  onclick={handleSubmitFiles}
+                >
+                  Processar extratos
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                    <polyline points="12 5 19 12 12 19"/>
+                  </svg>
+                </button>
+              </div>
             {/if}
 
-            {#if monthStat}
-              <StatCard
-                label="Mês com mais transações"
-                value={monthStat.label}
-                sub={formatCount(monthStat.count)}
-                color="#10b981"
-              />
-            {/if}
+            <div class="divider"><span>ou buscar sessão existente</span></div>
 
-            {#if mostRecurring}
-              <StatCard
-                label="Compra mais recorrente"
-                value={mostRecurring.expenseName}
-                sub="{mostRecurring.instances}× · {formatBRL(Number(mostRecurring.total))}"
-                color={categoryColor(mostRecurring.category)}
+            <div class="session-row">
+              <input
+                class="session-input"
+                type="text"
+                placeholder="Session ID"
+                bind:value={sessionId}
+                onkeydown={(e) => e.key === 'Enter' && handleSubmitSession()}
               />
-            {/if}
+              <button
+                class="submit-btn"
+                disabled={!canSubmitSession}
+                onclick={handleSubmitSession}
+              >
+                Buscar
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+              </button>
+            </div>
+          {/if}
+        </section>
+      {:else}
+        <!-- Report Phase -->
+        <section class="report-section">
+          {#if error}
+            <ErrorBanner
+              errorCode={error.errorCode}
+              message={error.message}
+              details={error.details}
+              onDismiss={() => (error = null)}
+            />
+          {/if}
 
-            {#if mostExpensiveDay}
-              <StatCard
-                label="Dia mais caro"
-                value={formatDate(mostExpensiveDay.date)}
-                sub="{formatBRL(Number(mostExpensiveDay.total))} · {mostExpensiveDay.transactions} transações"
-                color="#FF3B30"
-              />
-            {/if}
+          <!-- Top row: chart + stat cards -->
+          <div class="top-row">
+            <div class="chart-panel panel">
+              <h2 class="panel-title">Gastos por Categoria</h2>
+              {#if result.ExpensesByCategory?.length}
+                <DonutChart data={result.ExpensesByCategory} />
+              {:else}
+                <p class="empty">Sem dados de categoria</p>
+              {/if}
+            </div>
+
+            <div class="stats-grid">
+              {#if result.BiggestSingularExpense}
+                <StatCard
+                  label="Maior gasto único"
+                  value={formatBRL(Number(result.BiggestSingularExpense.value))}
+                  sub="{result.BiggestSingularExpense.expenseName} · {formatDate(result.BiggestSingularExpense.date)}"
+                  color={categoryColor(result.BiggestSingularExpense.category)}
+                />
+              {/if}
+
+              {#if monthStat}
+                <StatCard
+                  label="Mês com mais transações"
+                  value={monthStat.label}
+                  sub={formatCount(monthStat.count)}
+                  color="#10b981"
+                />
+              {/if}
+
+              {#if mostRecurring}
+                <StatCard
+                  label="Compra mais recorrente"
+                  value={mostRecurring.expenseName}
+                  sub="{mostRecurring.instances}× · {formatBRL(Number(mostRecurring.total))}"
+                  color={categoryColor(mostRecurring.category)}
+                />
+              {/if}
+
+              {#if mostExpensiveDay}
+                <StatCard
+                  label="Dia mais caro"
+                  value={formatDate(mostExpensiveDay.date)}
+                  sub="{formatBRL(Number(mostExpensiveDay.total))} · {mostExpensiveDay.transactions} transações"
+                  color="#FF3B30"
+                />
+              {/if}
+            </div>
           </div>
-        </div>
 
-        <!-- Smart group table -->
-        {#if result.SmartGroupExpenselist?.length}
-          <div class="panel">
-            <h2 class="panel-title">Top Gastos por Nome</h2>
-            <SmartGroupTable items={result.SmartGroupExpenselist} />
-          </div>
-        {/if}
+          <!-- Smart group table -->
+          {#if result.SmartGroupExpenselist?.length}
+            <div class="panel">
+              <h2 class="panel-title">Top Gastos por Nome</h2>
+              <SmartGroupTable items={result.SmartGroupExpenselist} />
+            </div>
+          {/if}
 
-        <!-- All expenses table -->
-        {#if result.AllExpenses?.length}
-          <div class="panel">
-            <h2 class="panel-title">Todas as Despesas</h2>
-            <AllExpensesTable items={result.AllExpenses} />
-          </div>
-        {/if}
-      </section>
+          <!-- All expenses table -->
+          {#if result.AllExpenses?.length}
+            <div class="panel">
+              <h2 class="panel-title">Todas as Despesas</h2>
+              <AllExpensesTable items={result.AllExpenses} />
+            </div>
+          {/if}
+        </section>
+      {/if}
     {/if}
   </main>
 </div>
@@ -296,6 +331,13 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    transition: filter 200ms ease;
+  }
+
+  .app.blurred {
+    filter: blur(4px);
+    pointer-events: none;
+    user-select: none;
   }
 
   /* Header */
@@ -326,6 +368,45 @@
     color: var(--primary);
   }
 
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .user-email {
+    font-size: 0.8125rem;
+    color: var(--text-dim);
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .signout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.375rem;
+    transition: color var(--transition), border-color var(--transition);
+  }
+
+  .signout-btn:hover {
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+
   .reset-btn {
     display: flex;
     align-items: center;
@@ -353,6 +434,12 @@
     width: 100%;
     margin: 0 auto;
     padding: 2rem 1.5rem;
+  }
+
+  .status-checking {
+    display: flex;
+    justify-content: center;
+    padding-top: 4rem;
   }
 
   /* Upload section */
@@ -519,5 +606,6 @@
     .app-main { padding: 1.25rem 1rem; }
     .stats-grid { grid-template-columns: 1fr; }
     .upload-header h1 { font-size: 1.5rem; }
+    .user-email { display: none; }
   }
 </style>

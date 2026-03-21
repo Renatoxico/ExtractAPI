@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Termos e Condições — Extract</title>
+    <style>
+        :root {
+            --bg-page: #0f1115;
+            --panel-bg: #161920;
+            --panel-border: rgba(16, 185, 129, 0.1);
+            --primary-green: #10b981;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            --surface-1: #1e2330;
+            --radius-md: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg-page);
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            min-height: 100vh;
+            line-height: 1.7;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        header {
+            border-bottom: 1px solid var(--panel-border);
+            background: var(--panel-bg);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header-inner {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+            font-size: 1.125rem;
+            color: var(--primary-green);
+            text-decoration: none;
+        }
+
+        main {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem 5rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 0.375rem;
+        }
+
+        .last-updated {
+            font-size: 0.875rem;
+            color: var(--text-dim);
+            margin-bottom: 2.5rem;
+        }
+
+        .intro {
+            background: var(--surface-1);
+            border-left: 3px solid var(--primary-green);
+            border-radius: 0 var(--radius-md) var(--radius-md) 0;
+            padding: 1rem 1.25rem;
+            margin-bottom: 2.5rem;
+            font-size: 0.9375rem;
+            color: var(--text-muted);
+        }
+
+        section {
+            margin-bottom: 2.25rem;
+        }
+
+        h2 {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--primary-green);
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 0.9375rem;
+            margin-bottom: 0.75rem;
+        }
+
+        p:last-child { margin-bottom: 0; }
+
+        ul {
+            color: var(--text-muted);
+            font-size: 0.9375rem;
+            padding-left: 1.375rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        a {
+            color: var(--primary-green);
+            text-decoration: none;
+        }
+
+        a:hover { text-decoration: underline; }
+
+        footer {
+            border-top: 1px solid var(--panel-border);
+            padding: 2rem 1.5rem;
+            text-align: center;
+            font-size: 0.8125rem;
+            color: var(--text-dim);
+        }
+
+        @media (max-width: 600px) {
+            main { padding: 2rem 1rem 4rem; }
+            .page-title { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <a href="/extract/" class="logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2"/>
+                <path d="M8 21h8M12 17v4"/>
+                <path d="M6 9l3 3 3-3 3 3 3-3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Extract
+        </a>
+    </div>
+</header>
+
+<main>
+    <h1 class="page-title">Termos e Condições</h1>
+    <p class="last-updated">Última atualização: 21 de março de 2025</p>
+
+    <div class="intro">
+        Ao utilizar o Extract, você concorda com os termos descritos neste documento. Leia com atenção antes de usar o serviço.
+    </div>
+
+    <section>
+        <h2>1. Sobre o Serviço</h2>
+        <p>O Extract é um serviço de análise de extratos bancários em PDF. Utilizamos inteligência artificial para categorizar e resumir suas despesas, gerando relatórios detalhados para uso pessoal.</p>
+        <p>O serviço está disponível nas plataformas web e iOS, mediante assinatura mensal ativa.</p>
+    </section>
+
+    <section>
+        <h2>2. Elegibilidade</h2>
+        <p>Para usar o Extract, você deve:</p>
+        <ul>
+            <li>Ter ao menos 18 anos de idade</li>
+            <li>Possuir uma conta válida (via autenticação com Google, Apple ou Microsoft)</li>
+            <li>Ter uma assinatura ativa e em dia</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>3. Assinatura e Pagamento</h2>
+        <p>O acesso ao Extract é condicionado a uma assinatura mensal recorrente. O valor é cobrado automaticamente no cartão cadastrado a cada ciclo de cobrança.</p>
+        <p>O cancelamento pode ser feito a qualquer momento. O acesso permanece ativo até o final do período já pago. Não realizamos reembolsos por períodos parcialmente utilizados.</p>
+        <p>Em caso de falha no pagamento, o acesso será suspenso até a regularização da cobrança.</p>
+    </section>
+
+    <section>
+        <h2>4. Uso dos Dados</h2>
+        <p>Os arquivos PDF enviados são processados exclusivamente para gerar o relatório solicitado. Não armazenamos o conteúdo dos seus extratos bancários além do tempo necessário para o processamento.</p>
+        <p>Os dados de análise (categorias, totais, sessões) ficam disponíveis temporariamente por meio do ID de sessão gerado. Não associamos seus dados financeiros a terceiros.</p>
+        <p>Utilizamos seus dados de conta (e-mail, ID de usuário) apenas para gerenciar o acesso ao serviço e o status da assinatura.</p>
+    </section>
+
+    <section>
+        <h2>5. Uso Aceitável</h2>
+        <p>Você concorda em utilizar o Extract apenas para fins pessoais e lícitos. É proibido:</p>
+        <ul>
+            <li>Compartilhar ou revender o acesso à sua conta</li>
+            <li>Tentar burlar os mecanismos de autenticação ou assinatura</li>
+            <li>Enviar arquivos que não sejam extratos bancários pessoais</li>
+            <li>Utilizar o serviço de forma automatizada sem autorização prévia</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>6. Limitação de Responsabilidade</h2>
+        <p>O Extract é fornecido "no estado em que se encontra". Não garantimos que o serviço estará disponível ininterruptamente ou que os resultados da análise de IA serão sempre precisos.</p>
+        <p>Não nos responsabilizamos por decisões financeiras tomadas com base nos relatórios gerados. Os dados são para referência pessoal e não constituem assessoria financeira.</p>
+    </section>
+
+    <section>
+        <h2>7. Propriedade Intelectual</h2>
+        <p>Todo o código, design e funcionalidades do Extract são de propriedade exclusiva dos seus desenvolvedores. É proibida a reprodução, cópia ou engenharia reversa do serviço sem autorização expressa.</p>
+    </section>
+
+    <section>
+        <h2>8. Alterações nos Termos</h2>
+        <p>Podemos atualizar estes termos periodicamente. Em caso de alterações relevantes, notificaremos os usuários por e-mail com antecedência mínima de 7 dias. O uso continuado do serviço após esse prazo implica aceitação dos novos termos.</p>
+    </section>
+
+    <section>
+        <h2>9. Encerramento de Conta</h2>
+        <p>Você pode encerrar sua conta a qualquer momento cancelando a assinatura e entrando em contato conosco. Nos reservamos o direito de suspender contas que violem estes termos.</p>
+    </section>
+
+    <section>
+        <h2>10. Contato</h2>
+        <p>Dúvidas ou solicitações relacionadas a estes termos podem ser enviadas para: <a href="mailto:contato@extractapp.com.br">contato@extractapp.com.br</a></p>
+    </section>
+</main>
+
+<footer>
+    &copy; 2025 Extract. Todos os direitos reservados.
+    &nbsp;·&nbsp;
+    <a href="/extract/">Voltar ao app</a>
+</footer>
+
+</body>
+</html>
