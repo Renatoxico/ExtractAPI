@@ -2,6 +2,7 @@ package com.example.api.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -16,11 +17,12 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class PythonProcessingService {
     private static final Logger LOG = LoggerFactory.getLogger(PythonProcessingService.class);
-    //private static final String URL = "http://backend-python:9000/process";
-    private static final String URL = "http://192.168.15.3:9000/process";
+
+    @Value("${python.backend.url:http://backend-python:9000/process}")
+    private String pythonBackendUrl;
 
     public String convertPDFtoJSON(MultipartFile file) {
-        LOG.info("Sending file to Python backend: {}", URL);
+        LOG.info("Sending file to Python backend: {}", pythonBackendUrl);
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.set("Content-Type", "multipart/form-data");
@@ -30,7 +32,7 @@ public class PythonProcessingService {
 
         HttpEntity<MultiValueMap<String, Object>> req = new HttpEntity<>(map, headers);
 
-        ResponseEntity<String> resp = restTemplate.exchange(URL, HttpMethod.POST, req, String.class);
+        ResponseEntity<String> resp = restTemplate.exchange(pythonBackendUrl, HttpMethod.POST, req, String.class);
         return resp.getBody();
     }
 }

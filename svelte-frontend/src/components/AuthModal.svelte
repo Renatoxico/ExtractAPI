@@ -3,13 +3,43 @@
 
   let loading = $state(false)
   let error = $state(null)
+  let successMsg = $state(null)
+  let mode = $state('login') // 'login' | 'register' | 'reset'
+  let email = $state('')
+  let password = $state('')
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    loading = true
+    error = null
+    successMsg = null
+    try {
+      if (mode === 'register') {
+        await auth.signUp(email, password)
+        successMsg = 'Verifique seu email para confirmar sua conta.'
+        mode = 'login'
+        email = ''
+        password = ''
+      } else if (mode === 'reset') {
+        await auth.resetPassword(email)
+        successMsg = 'Email de recuperação enviado. Verifique sua caixa de entrada.'
+        mode = 'login'
+        email = ''
+      } else {
+        await auth.signInWithEmail(email, password)
+      }
+    } catch (e) {
+      error = e.message || 'Ocorreu um erro. Tente novamente.'
+    } finally {
+      loading = false
+    }
+  }
 
   async function handleGoogle() {
     loading = true
     error = null
     try {
       await auth.signInWithGoogle()
-      // Page will redirect for OAuth; loading state stays until redirect
     } catch (e) {
       error = 'Não foi possível iniciar o login. Tente novamente.'
       loading = false
@@ -28,27 +58,93 @@
       <span class="modal-title">Extract</span>
     </div>
 
-    <h2>Acesse sua conta</h2>
-    <p class="subtitle">Faça login para analisar seus extratos bancários</p>
+    <h2>
+      {#if mode === 'reset'}
+        Recuperar senha
+      {:else if mode === 'register'}
+        Criar conta
+      {:else}
+        Acesse sua conta
+      {/if}
+    </h2>
+    <p class="subtitle">
+      {#if mode === 'reset'}
+        Informe seu email para receber o link de recuperação
+      {:else if mode === 'register'}
+        Crie sua conta para analisar seus extratos bancários
+      {:else}
+        Faça login para analisar seus extratos bancários
+      {/if}
+    </p>
 
     {#if error}
       <div class="error-msg">{error}</div>
     {/if}
 
-    <div class="providers">
-      <button class="provider-btn" onclick={handleGoogle} disabled={loading}>
+    {#if successMsg}
+      <div class="success-msg">{successMsg}</div>
+    {/if}
+
+    <form class="email-form" onsubmit={handleSubmit}>
+      <input
+        type="email"
+        placeholder="Email"
+        bind:value={email}
+        required
+        disabled={loading}
+      />
+      {#if mode !== 'reset'}
+        <input
+          type="password"
+          placeholder="Senha"
+          bind:value={password}
+          required
+          minlength="6"
+          disabled={loading}
+        />
+      {/if}
+      <button class="submit-btn" type="submit" disabled={loading}>
         {#if loading}
           <span class="spinner"></span>
-          Redirecionando...
-        {:else}
-          <svg width="18" height="18" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-          </svg>
-          Entrar com Google
         {/if}
+        {#if mode === 'reset'}
+          Enviar link de recuperação
+        {:else if mode === 'register'}
+          Criar conta
+        {:else}
+          Entrar
+        {/if}
+      </button>
+    </form>
+
+    <div class="links">
+      {#if mode === 'login'}
+        <button class="link-btn" onclick={() => { mode = 'register'; error = null; successMsg = null }}>
+          Não tem conta? Criar conta
+        </button>
+        <button class="link-btn" onclick={() => { mode = 'reset'; error = null; successMsg = null }}>
+          Esqueceu a senha?
+        </button>
+      {:else}
+        <button class="link-btn" onclick={() => { mode = 'login'; error = null; successMsg = null }}>
+          Já tem conta? Fazer login
+        </button>
+      {/if}
+    </div>
+
+    <div class="divider">
+      <span>ou</span>
+    </div>
+
+    <div class="providers">
+      <button class="provider-btn" onclick={handleGoogle} disabled={loading}>
+        <svg width="18" height="18" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Entrar com Google
       </button>
 
       <button class="provider-btn coming-soon" disabled>
@@ -135,12 +231,116 @@
     text-align: center;
   }
 
+  .success-msg {
+    width: 100%;
+    background: rgba(52, 168, 83, 0.1);
+    color: #34a853;
+    border: 1px solid rgba(52, 168, 83, 0.3);
+    border-radius: var(--radius-sm);
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    text-align: center;
+  }
+
+  .email-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .email-form input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: var(--surface-1);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-sm);
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: 0.9375rem;
+    outline: none;
+    transition: border-color var(--transition);
+    box-sizing: border-box;
+  }
+
+  .email-form input:focus {
+    border-color: var(--primary);
+  }
+
+  .email-form input::placeholder {
+    color: var(--text-dim);
+  }
+
+  .submit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: var(--primary);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity var(--transition);
+  }
+
+  .submit-btn:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  .submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .links {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .link-btn {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-family: inherit;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .link-btn:hover {
+    text-decoration: underline;
+  }
+
+  .divider {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text-dim);
+    font-size: 0.8125rem;
+  }
+
+  .divider::before,
+  .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--panel-border);
+  }
+
   .providers {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
     width: 100%;
-    margin-top: 0.5rem;
   }
 
   .provider-btn {

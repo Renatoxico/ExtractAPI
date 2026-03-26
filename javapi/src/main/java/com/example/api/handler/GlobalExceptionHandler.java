@@ -26,14 +26,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(IOException.class)
     public ResponseEntity<ErrorResponse> handleIOException(IOException ex) {
         LOG.error("IO error: {}", ex.getMessage(), ex);
-        ErrorResponse errorResponse = new ErrorResponse("FILE_IO_ERROR", "Failed to process file", ex.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse("FILE_IO_ERROR", "Failed to process file");
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         LOG.error("Unexpected error: {}", ex.getMessage(), ex);
-        ErrorResponse errorResponse = new ErrorResponse("INTERNAL_SERVER_ERROR", "An unexpected error occurred", ex.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse("INTERNAL_SERVER_ERROR", "An unexpected error occurred");
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

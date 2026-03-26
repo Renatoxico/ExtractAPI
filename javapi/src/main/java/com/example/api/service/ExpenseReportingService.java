@@ -32,7 +32,7 @@ public class ExpenseReportingService {
     }
 
     public String generateId () {
-        byte[] randomBytes = new byte[8];
+        byte[] randomBytes = new byte[24];
         random.nextBytes(randomBytes);
         String session_id = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes).toLowerCase();
         LOG.info("Generated Session_id: {}", session_id);

@@ -2,6 +2,7 @@ package com.example.api.service;
 
 import com.example.api.model.CategoryMapper;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -247,6 +248,7 @@ class AiProcessorServiceTest {
      * 3. Run this test: mvn test -Dtest=AiProcessorServiceTest#testLLMOutputManually
      */
     @Test
+    @Disabled("Requires local Ollama server — run manually with: mvn test -Dtest=AiProcessorServiceTest#testLLMOutputManually")
     @DisplayName("Manual LLM Output Test - Run this to test prompt/model changes")
     void testLLMOutputManually() {
         // TODO: Run this test manually when you want to test LLM output

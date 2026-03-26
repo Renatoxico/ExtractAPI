@@ -45,6 +45,25 @@ class Auth {
     })
   }
 
+  async signUp(email, password) {
+    const { data, error } = await supabase.auth.signUp({ email, password })
+    if (error) throw error
+    return data
+  }
+
+  async signInWithEmail(email, password) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw error
+    return data
+  }
+
+  async resetPassword(email) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin
+    })
+    if (error) throw error
+  }
+
   async signOut() {
     await supabase.auth.signOut()
     this.session = null

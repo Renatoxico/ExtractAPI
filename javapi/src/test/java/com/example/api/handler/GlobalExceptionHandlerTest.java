@@ -203,15 +203,15 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void testHandleIOException_IncludesDetails() {
+    void testHandleIOException_DoesNotLeakExceptionDetails() {
         // Arrange
         IOException exception = new IOException("File read error");
 
         // Act
         ResponseEntity<ErrorResponse> response = exceptionHandler.handleIOException(exception);
 
-        // Assert
-        assertNotNull(response.getBody().getDetails());
+        // Assert — details should be null to avoid leaking internal info
+        assertNull(response.getBody().getDetails());
     }
 
     @Test
@@ -265,17 +265,15 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void testHandleGenericException_DoesNotExposeStackTrace() {
+    void testHandleGenericException_DoesNotExposeInternalDetails() {
         // Arrange
         Exception exception = new RuntimeException("Internal algorithm details");
 
         // Act
         ResponseEntity<ErrorResponse> response = exceptionHandler.handleGenericException(exception);
 
-        // Assert
-        // Should not contain stack trace elements
-        String details = response.getBody().getDetails();
-        assertFalse(details.contains("at "));
+        // Assert — details should be null to avoid leaking internal info
+        assertNull(response.getBody().getDetails());
     }
 
     @Test

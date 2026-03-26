@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(npm install:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(find /c/Users/diasr/IdeaProjects/ExtractAPI -type f \\\\\\(-name *.sh -o -name application*.yml -o -name application*.properties \\\\\\))",
+      "Bash(grep -E \"\\\\.\\(properties|yml|yaml\\)$\")",
+      "Bash(cat /c/Users/diasr/IdeaProjects/ExtractAPI/javapi/src/test/resources/testing/*)",
+      "Bash(./mvnw test:*)",
+      "Bash(./mvnw verify:*)"
     ]
   }
 }

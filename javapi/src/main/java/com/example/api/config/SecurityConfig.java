@@ -45,9 +45,10 @@ public class SecurityConfig {
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/webhooks/**").permitAll()
+                .requestMatchers("/terms").permitAll()
                 .requestMatchers("/api/user/status").authenticated()
                 .requestMatchers("/extract/**").authenticated()
-                .anyRequest().permitAll()
+                .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
                 .bearerTokenResolver(request -> {

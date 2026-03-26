@@ -197,10 +197,12 @@ class ValidationServiceTest {
         Expense expense1 = new Expense();
         expense1.setTransactionName("Valid Expense");
         expense1.setValue(new BigDecimal("50.00"));
+        expense1.setDate("15/03/2025");
 
         Expense expense2 = new Expense();
         expense2.setTransactionName("Negative Expense");
         expense2.setValue(new BigDecimal("-10.00"));
+        expense2.setDate("15/03/2025");
 
         expenses.add(expense1);
         expenses.add(expense2);

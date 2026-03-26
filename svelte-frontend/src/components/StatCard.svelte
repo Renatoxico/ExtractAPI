@@ -1,11 +1,8 @@
 <script>
-  let { label, value, sub = null, color = null, icon = null } = $props();
+  let { label, value, sub = null, color = null } = $props();
 </script>
 
 <div class="stat-card" style={color ? `--accent: ${color}` : ''}>
-  {#if icon}
-    <div class="stat-icon">{@html icon}</div>
-  {/if}
   <p class="stat-label">{label}</p>
   <p class="stat-value">{value}</p>
   {#if sub}
@@ -51,8 +48,4 @@
     margin: 0;
   }
 
-  .stat-icon {
-    color: var(--accent);
-    margin-bottom: 0.25rem;
-  }
 </style>

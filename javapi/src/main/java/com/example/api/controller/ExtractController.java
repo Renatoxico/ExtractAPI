@@ -15,14 +15,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.opencsv.CSVWriter;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -35,7 +27,6 @@ public class ExtractController {
     private final ExpenseReportingService reportsService;
     private final ValidationService validationService;
     private final ExtractorService javaProcessor;
-    private static final String PATH = System.getProperty("user.dir") + "\\tmp\\";
 
     public ExtractController(ValidationService validationService, PythonProcessingService pyProcessor, ObjectifierService objService, ExpenseReportingService reportsService, ExtractorService javaProcessor) {
         this.pyProcessor = pyProcessor;
@@ -268,14 +259,4 @@ public class ExtractController {
         }
     }
 
-    private String saveFileTemp(MultipartFile file){
-        try {
-            Files.createDirectories(Paths.get(PATH));
-            String filePath = PATH + file.getOriginalFilename();
-            file.transferTo(new File(filePath));
-            return filePath;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }
