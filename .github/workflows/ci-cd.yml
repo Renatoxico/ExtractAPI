@@ -25,7 +25,7 @@ jobs:
           cache-dependency-path: javapi/pom.xml
 
       - name: Run tests
-        run: ./mvnw verify -f javapi/pom.xml
+        run: ./javapi/mvnw verify -f javapi/pom.xml
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
