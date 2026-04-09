@@ -1,5 +1,6 @@
 <script>
   import { categoryColor } from '../lib/categoryColors.js';
+  import { categoryIcon } from '../lib/categoryIcons.js';
   import { formatBRL, formatDate } from '../lib/formatters.js';
 
   let { items } = $props();
@@ -57,6 +58,7 @@
             <td class="td-name">{expense.expenseName}</td>
             <td>
               <span class="cat-tag" style="--c: {categoryColor(expense.category)}">
+                <span class="cat-icon" style="color: var(--c)">{@html categoryIcon(expense.category)}</span>
                 {expense.category}
               </span>
             </td>
@@ -165,13 +167,9 @@
     white-space: nowrap;
   }
 
-  .cat-tag::before {
-    content: '';
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--c);
+  .cat-icon {
+    display: flex;
+    align-items: center;
     flex-shrink: 0;
   }
 

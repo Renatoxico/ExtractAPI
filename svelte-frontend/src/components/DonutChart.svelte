@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { Chart, ArcElement, DoughnutController, Tooltip } from 'chart.js';
   import { categoryColor } from '../lib/categoryColors.js';
+  import { categoryIcon } from '../lib/categoryIcons.js';
   import { formatBRL } from '../lib/formatters.js';
 
   Chart.register(ArcElement, DoughnutController, Tooltip);
@@ -68,7 +69,7 @@
   <ul class="legend">
     {#each data as item}
       <li class="legend-item">
-        <span class="legend-dot" style="background: {categoryColor(item.category)}"></span>
+        <span class="legend-icon" style="color: {categoryColor(item.category)}">{@html categoryIcon(item.category)}</span>
         <span class="legend-name">{item.category}</span>
         <span class="legend-value">{formatBRL(Number(item.value))}</span>
       </li>
@@ -137,10 +138,12 @@
     font-size: 0.8125rem;
   }
 
-  .legend-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
+  .legend-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
     flex-shrink: 0;
   }
 

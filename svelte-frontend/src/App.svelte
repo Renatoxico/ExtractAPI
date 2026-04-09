@@ -3,6 +3,7 @@
   import { processFiles, fetchSummary } from './lib/api.js'
   import { formatBRL, formatDate, formatCount } from './lib/formatters.js'
   import { categoryColor } from './lib/categoryColors.js'
+  import { categoryIcon } from './lib/categoryIcons.js'
   import { computeMonthWithMostTransactions } from './lib/computeStats.js'
   import { auth } from './lib/auth.svelte.js'
 
@@ -241,6 +242,7 @@
                   value={formatBRL(Number(result.BiggestSingularExpense.value))}
                   sub="{result.BiggestSingularExpense.expenseName} · {formatDate(result.BiggestSingularExpense.date)}"
                   color={categoryColor(result.BiggestSingularExpense.category)}
+                  icon={categoryIcon(result.BiggestSingularExpense.category)}
                 />
               {/if}
 
@@ -250,6 +252,7 @@
                   value={monthStat.label}
                   sub={formatCount(monthStat.count)}
                   color="#10b981"
+                  icon={'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg>'}
                 />
               {/if}
 
@@ -259,6 +262,7 @@
                   value={mostRecurring.expenseName}
                   sub="{mostRecurring.instances}× · {formatBRL(Number(mostRecurring.total))}"
                   color={categoryColor(mostRecurring.category)}
+                  icon={categoryIcon(mostRecurring.category)}
                 />
               {/if}
 
@@ -268,6 +272,7 @@
                   value={formatDate(mostExpensiveDay.date)}
                   sub="{formatBRL(Number(mostExpensiveDay.total))} · {mostExpensiveDay.transactions} transações"
                   color="#FF3B30"
+                  icon={'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 0.7c-0.2-0.4-0.7-0.6-1.1-0.4-0.4 0.2-0.6 0.7-0.4 1.1 0 0 0 0 0 0L12 2c-3 2-5 5-5 9 0 0.5 0 1 0.1 1.5C5.8 11.1 5 9.1 5 7c0-0.4-0.3-0.8-0.8-0.8S3.5 6.6 3.5 7c0 4.1 2.7 7.6 6.5 8.7V22h4v-6.3c3.8-1.1 6.5-4.6 6.5-8.7 0-3.2-2.7-6.3-7-7.3z"/></svg>'}
                 />
               {/if}
             </div>
@@ -556,7 +561,7 @@
     display: grid;
     grid-template-columns: 320px 1fr;
     gap: 1.5rem;
-    align-items: start;
+    align-items: stretch;
   }
 
   .stats-grid {

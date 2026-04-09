@@ -48,7 +48,7 @@
 
     <div class="pricing-card">
       <span class="price-label">Assinatura mensal</span>
-      <span class="price">R$ 9,90<span class="per">/mês</span></span>
+      <span class="price">R$ 5,00<span class="per">/mês</span></span>
       <ul class="features">
         <li>Análise de até 6 extratos por sessão</li>
         <li>Categorização automática com IA</li>
