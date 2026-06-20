@@ -1,11 +1,9 @@
 <script>
-  import { onMount } from 'svelte'
   import { processFiles, fetchSummary } from './lib/api.js'
   import { formatBRL, formatDate, formatCount } from './lib/formatters.js'
   import { categoryColor } from './lib/categoryColors.js'
   import { categoryIcon } from './lib/categoryIcons.js'
   import { computeMonthWithMostTransactions } from './lib/computeStats.js'
-  import { auth } from './lib/auth.svelte.js'
 
   import UploadZone from './components/UploadZone.svelte'
   import FileList from './components/FileList.svelte'
@@ -15,8 +13,6 @@
   import StatCard from './components/StatCard.svelte'
   import SmartGroupTable from './components/SmartGroupTable.svelte'
   import AllExpensesTable from './components/AllExpensesTable.svelte'
-  import AuthModal from './components/AuthModal.svelte'
-  import PaywallModal from './components/PaywallModal.svelte'
 
   const MAX_FILES = 6
   const MAX_SIZE = 512 * 1024
@@ -39,10 +35,6 @@
   let hasOversized = $derived(files.some(f => f.size > MAX_SIZE))
   let canSubmitFiles = $derived(files.length > 0 && files.length <= MAX_FILES && !hasOversized && !loading)
   let canSubmitSession = $derived(sessionId.trim().length > 0 && !loading)
-
-  onMount(() => {
-    auth.init()
-  })
 
   function handleFilesChange(newFiles) {
     const merged = [...files, ...newFiles]
@@ -94,13 +86,7 @@
   }
 </script>
 
-{#if !auth.session}
-  <AuthModal />
-{:else if auth.isPremium === false}
-  <PaywallModal />
-{/if}
-
-<div class="app" class:blurred={!auth.session || auth.isPremium === false}>
+<div class="app">
   <header class="app-header">
     <div class="header-inner">
       <div class="logo">
@@ -123,29 +109,12 @@
           </button>
         {/if}
 
-        {#if auth.session}
-          <div class="user-info">
-            <span class="user-email">{auth.session.user.email}</span>
-            <button class="signout-btn" onclick={() => auth.signOut()} title="Sair">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-            </button>
-          </div>
-        {/if}
       </div>
     </div>
   </header>
 
   <main class="app-main">
-    {#if auth.isPremium === null && auth.session}
-      <div class="status-checking">
-        <LoadingSpinner />
-      </div>
-    {:else if auth.isPremium}
-      {#if !result}
+    {#if !result}
         <!-- Upload Phase -->
         <section class="upload-section">
           <div class="upload-header">
@@ -212,7 +181,7 @@
             </div>
           {/if}
         </section>
-      {:else}
+    {:else}
         <!-- Report Phase -->
         <section class="report-section">
           {#if error}
@@ -294,7 +263,6 @@
             </div>
           {/if}
         </section>
-      {/if}
     {/if}
   </main>
 </div>
@@ -339,12 +307,6 @@
     transition: filter 200ms ease;
   }
 
-  .app.blurred {
-    filter: blur(4px);
-    pointer-events: none;
-    user-select: none;
-  }
-
   /* Header */
   .app-header {
     border-bottom: 1px solid var(--panel-border);
@@ -379,39 +341,6 @@
     gap: 0.75rem;
   }
 
-  .user-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .user-email {
-    font-size: 0.8125rem;
-    color: var(--text-dim);
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .signout-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: 1px solid var(--panel-border);
-    border-radius: var(--radius-sm);
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 0.375rem;
-    transition: color var(--transition), border-color var(--transition);
-  }
-
-  .signout-btn:hover {
-    color: var(--danger);
-    border-color: var(--danger);
-  }
-
   .reset-btn {
     display: flex;
     align-items: center;
@@ -439,12 +368,6 @@
     width: 100%;
     margin: 0 auto;
     padding: 2rem 1.5rem;
-  }
-
-  .status-checking {
-    display: flex;
-    justify-content: center;
-    padding-top: 4rem;
   }
 
   /* Upload section */
@@ -611,6 +534,5 @@
     .app-main { padding: 1.25rem 1rem; }
     .stats-grid { grid-template-columns: 1fr; }
     .upload-header h1 { font-size: 1.5rem; }
-    .user-email { display: none; }
   }
 </style>

@@ -1,7 +1,6 @@
 package com.example.api.controller;
 
 import com.example.api.service.*;
-import com.example.api.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,9 +46,6 @@ class ExtractControllerTest {
 
     @MockitoBean
     private ExtractorService javaProcessor;
-
-    @MockitoBean
-    private UserService userService;
 
     @Autowired
     private ObjectMapper objectMapper;

@@ -1,18 +1,9 @@
-import { supabase } from './supabase.js'
-
 export const host = import.meta.env.VITE_API_URL
-
-async function authHeaders() {
-  const { data: { session } } = await supabase.auth.getSession()
-  return session ? { Authorization: `Bearer ${session.access_token}` } : {}
-}
 
 export async function fetchSummary(sessionId) {
   let res
   try {
-    res = await fetch(`${host}/extract/summary/${encodeURIComponent(sessionId)}`, {
-      headers: await authHeaders()
-    })
+    res = await fetch(`${host}/extract/summary/${encodeURIComponent(sessionId)}`)
   } catch {
     const err = new Error('Não foi possível conectar ao servidor. Verifique se a API está rodando.')
     err.errorCode = 'NETWORK_ERROR'
@@ -40,8 +31,7 @@ export async function processFiles(fileArray) {
   try {
     res = await fetch(`${host}/extract/`, {
       method: 'POST',
-      body: form,
-      headers: await authHeaders()
+      body: form
     })
   } catch {
     const err = new Error('Não foi possível conectar ao servidor. Verifique se a API está rodando.')
