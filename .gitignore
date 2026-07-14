@@ -69,3 +69,4 @@ yarn.lock
 bun.lock
 bun.lockb
 .npmrc
+.claude
