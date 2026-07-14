@@ -25,6 +25,7 @@ node_modules/
 .vercel/
 .netlify/
 .wrangler/
+dist/
 
 # Python-specific files
 __pycache__/
