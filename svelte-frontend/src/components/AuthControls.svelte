@@ -2,7 +2,7 @@
   import { onMount } from 'svelte'
   import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
   import { auth } from '../lib/firebase.js'
-  import { probeAuthenticatedRequest } from '../lib/api.js'
+  import { fetchAuthenticatedUser } from '../lib/api.js'
 
   const googleProvider = new GoogleAuthProvider()
 
@@ -57,8 +57,8 @@
     error = ''
 
     try {
-      const status = await probeAuthenticatedRequest()
-      apiResult = `API respondeu HTTP ${status}`
+      const authenticatedUser = await fetchAuthenticatedUser()
+      apiResult = `API confirmou ${authenticatedUser.email ?? authenticatedUser.uid}`
     } catch (err) {
       error = err.message
     } finally {

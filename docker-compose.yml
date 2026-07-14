@@ -7,6 +7,11 @@ services:
       - "9090:9090"
     env_file:
       - .env
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/firebase-service-account.json
+    secrets:
+      - source: firebase-service-account
+        target: firebase-service-account.json
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: always
@@ -28,3 +33,7 @@ services:
 networks:
   app-network:
     driver: bridge
+
+secrets:
+  firebase-service-account:
+    file: ${FIREBASE_CREDENTIALS_PATH}

@@ -44,6 +44,7 @@ target/
 !**/src/test/**/target/
 HELP.md
 tmp/
+secrets/
 
 # Maven-specific files
 .mvn/

@@ -29,8 +29,15 @@
 	<properties>
 		<java.version>21</java.version>
 		<postgresql.version>42.7.7</postgresql.version>
+		<firebase-admin.version>9.10.0</firebase-admin.version>
 	</properties>
 	<dependencies>
+
+		<dependency>
+			<groupId>com.google.firebase</groupId>
+			<artifactId>firebase-admin</artifactId>
+			<version>${firebase-admin.version}</version>
+		</dependency>
 
 		<dependency>
 			<groupId>com.google.genai</groupId>

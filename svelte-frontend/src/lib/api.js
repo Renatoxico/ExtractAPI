@@ -66,7 +66,7 @@ export async function processFiles(fileArray) {
   return json
 }
 
-export async function probeAuthenticatedRequest() {
+export async function fetchAuthenticatedUser() {
   const headers = await buildAuthHeaders()
 
   if (!headers.Authorization) {
@@ -75,13 +75,15 @@ export async function probeAuthenticatedRequest() {
     throw err
   }
 
-  const res = await fetch(`${host}/extract/`, { headers })
+  const res = await fetch(`${host}/api/auth/me`, { headers })
+
+  const json = await res.json()
 
   if (!res.ok) {
-    const err = new Error(`A API respondeu com HTTP ${res.status}.`)
-    err.errorCode = `HTTP_${res.status}`
+    const err = new Error(json.message ?? `A API respondeu com HTTP ${res.status}.`)
+    err.errorCode = json.errorCode ?? `HTTP_${res.status}`
     throw err
   }
 
-  return res.status
+  return json
 }
