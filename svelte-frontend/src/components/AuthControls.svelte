@@ -1,20 +1,33 @@
 <script>
-  import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
+  import { onMount } from 'svelte'
+  import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
   import { auth } from '../lib/firebase.js'
 
   const googleProvider = new GoogleAuthProvider()
 
   let user = $state(null)
+  let authReady = $state(false)
   let loading = $state(false)
+  let tokenLoading = $state(false)
+  let tokenPreview = $state('')
   let error = $state('')
+
+  onMount(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      user = firebaseUser
+      authReady = true
+      tokenPreview = ''
+    })
+
+    return unsubscribe
+  })
 
   async function loginWithGoogle() {
     loading = true
     error = ''
 
     try {
-      const result = await signInWithPopup(auth, googleProvider)
-      user = result.user
+      await signInWithPopup(auth, googleProvider)
     } catch (err) {
       if (err.code !== 'auth/popup-closed-by-user') {
         error = 'Não foi possível entrar com o Google.'
@@ -30,17 +43,35 @@
 
     try {
       await signOut(auth)
-      user = null
     } catch {
       error = 'Não foi possível sair.'
     } finally {
       loading = false
     }
   }
+
+  async function inspectIdToken() {
+    if (!user) return
+
+    tokenLoading = true
+    tokenPreview = ''
+    error = ''
+
+    try {
+      const idToken = await user.getIdToken()
+      tokenPreview = `${idToken.slice(0, 12)}...${idToken.slice(-8)} (${idToken.length} caracteres)`
+    } catch {
+      error = 'Não foi possível obter o ID Token.'
+    } finally {
+      tokenLoading = false
+    }
+  }
 </script>
 
 <div class="auth-controls">
-  {#if user}
+  {#if !authReady}
+    <span class="auth-loading">Verificando sessão...</span>
+  {:else if user}
     <div class="user-info">
       {#if user.photoURL}
         <img src={user.photoURL} alt="" referrerpolicy="no-referrer" />
@@ -50,6 +81,9 @@
         <span>{user.email}</span>
       </div>
     </div>
+    <button type="button" onclick={inspectIdToken} disabled={tokenLoading}>
+      {tokenLoading ? 'Obtendo...' : 'Obter token'}
+    </button>
     <button type="button" onclick={logout} disabled={loading}>
       {loading ? 'Saindo...' : 'Sair'}
     </button>
@@ -58,6 +92,10 @@
       <span class="google-mark" aria-hidden="true">G</span>
       {loading ? 'Entrando...' : 'Entrar com Google'}
     </button>
+  {/if}
+
+  {#if tokenPreview}
+    <code class="token-preview" title="Prévia parcial do Firebase ID Token">{tokenPreview}</code>
   {/if}
 
   {#if error}
@@ -128,6 +166,19 @@
   .auth-error {
     color: var(--danger);
     font-size: 0.75rem;
+  }
+
+  .auth-loading,
+  .token-preview {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+  }
+
+  .token-preview {
+    max-width: 230px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   @media (max-width: 600px) {
