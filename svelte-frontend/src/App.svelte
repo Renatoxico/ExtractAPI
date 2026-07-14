@@ -13,6 +13,7 @@
   import StatCard from './components/StatCard.svelte'
   import SmartGroupTable from './components/SmartGroupTable.svelte'
   import AllExpensesTable from './components/AllExpensesTable.svelte'
+  import AuthControls from './components/AuthControls.svelte'
 
   const MAX_FILES = 6
   const MAX_SIZE = 512 * 1024
@@ -99,6 +100,7 @@
       </div>
 
       <div class="header-right">
+        <AuthControls />
         {#if result}
           <button class="reset-btn" onclick={reset}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
