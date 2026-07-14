@@ -2,21 +2,22 @@
   import { onMount } from 'svelte'
   import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
   import { auth } from '../lib/firebase.js'
+  import { probeAuthenticatedRequest } from '../lib/api.js'
 
   const googleProvider = new GoogleAuthProvider()
 
   let user = $state(null)
   let authReady = $state(false)
   let loading = $state(false)
-  let tokenLoading = $state(false)
-  let tokenPreview = $state('')
+  let apiLoading = $state(false)
+  let apiResult = $state('')
   let error = $state('')
 
   onMount(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       user = firebaseUser
       authReady = true
-      tokenPreview = ''
+      apiResult = ''
     })
 
     return unsubscribe
@@ -50,20 +51,18 @@
     }
   }
 
-  async function inspectIdToken() {
-    if (!user) return
-
-    tokenLoading = true
-    tokenPreview = ''
+  async function testApiRequest() {
+    apiLoading = true
+    apiResult = ''
     error = ''
 
     try {
-      const idToken = await user.getIdToken()
-      tokenPreview = `${idToken.slice(0, 12)}...${idToken.slice(-8)} (${idToken.length} caracteres)`
-    } catch {
-      error = 'Não foi possível obter o ID Token.'
+      const status = await probeAuthenticatedRequest()
+      apiResult = `API respondeu HTTP ${status}`
+    } catch (err) {
+      error = err.message
     } finally {
-      tokenLoading = false
+      apiLoading = false
     }
   }
 </script>
@@ -81,8 +80,8 @@
         <span>{user.email}</span>
       </div>
     </div>
-    <button type="button" onclick={inspectIdToken} disabled={tokenLoading}>
-      {tokenLoading ? 'Obtendo...' : 'Obter token'}
+    <button type="button" onclick={testApiRequest} disabled={apiLoading}>
+      {apiLoading ? 'Testando...' : 'Testar API'}
     </button>
     <button type="button" onclick={logout} disabled={loading}>
       {loading ? 'Saindo...' : 'Sair'}
@@ -94,8 +93,8 @@
     </button>
   {/if}
 
-  {#if tokenPreview}
-    <code class="token-preview" title="Prévia parcial do Firebase ID Token">{tokenPreview}</code>
+  {#if apiResult}
+    <span class="api-result">{apiResult}</span>
   {/if}
 
   {#if error}
@@ -169,16 +168,9 @@
   }
 
   .auth-loading,
-  .token-preview {
+  .api-result {
     color: var(--text-muted);
     font-size: 0.75rem;
-  }
-
-  .token-preview {
-    max-width: 230px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   @media (max-width: 600px) {

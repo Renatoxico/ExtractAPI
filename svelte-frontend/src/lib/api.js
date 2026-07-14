@@ -1,9 +1,21 @@
+import { auth } from './firebase.js'
+
 export const host = import.meta.env.VITE_API_URL
 
+async function buildAuthHeaders() {
+  const user = auth.currentUser
+
+  if (!user) return {}
+
+  const idToken = await user.getIdToken()
+  return { Authorization: `Bearer ${idToken}` }
+}
+
 export async function fetchSummary(sessionId) {
+  const headers = await buildAuthHeaders()
   let res
   try {
-    res = await fetch(`${host}/extract/summary/${encodeURIComponent(sessionId)}`)
+    res = await fetch(`${host}/extract/summary/${encodeURIComponent(sessionId)}`, { headers })
   } catch {
     const err = new Error('Não foi possível conectar ao servidor. Verifique se a API está rodando.')
     err.errorCode = 'NETWORK_ERROR'
@@ -27,10 +39,12 @@ export async function processFiles(fileArray) {
   const form = new FormData()
   for (const f of fileArray) form.append('file', f)
 
+  const headers = await buildAuthHeaders()
   let res
   try {
     res = await fetch(`${host}/extract/`, {
       method: 'POST',
+      headers,
       body: form
     })
   } catch {
@@ -50,4 +64,24 @@ export async function processFiles(fileArray) {
   }
 
   return json
+}
+
+export async function probeAuthenticatedRequest() {
+  const headers = await buildAuthHeaders()
+
+  if (!headers.Authorization) {
+    const err = new Error('Entre com o Google antes de testar a API.')
+    err.errorCode = 'AUTH_REQUIRED'
+    throw err
+  }
+
+  const res = await fetch(`${host}/extract/`, { headers })
+
+  if (!res.ok) {
+    const err = new Error(`A API respondeu com HTTP ${res.status}.`)
+    err.errorCode = `HTTP_${res.status}`
+    throw err
+  }
+
+  return res.status
 }
