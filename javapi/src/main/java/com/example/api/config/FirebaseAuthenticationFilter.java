@@ -1,5 +1,8 @@
 package com.example.api.config;
 
+import com.example.api.model.AppUser;
+import com.example.api.model.AuthenticatedUserPrincipal;
+import com.example.api.service.AppUserService;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
@@ -21,13 +24,16 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
 
     private final FirebaseAuth firebaseAuth;
     private final FirebaseAuthenticationEntryPoint authenticationEntryPoint;
+    private final AppUserService appUserService;
 
     public FirebaseAuthenticationFilter(
         FirebaseAuth firebaseAuth,
-        FirebaseAuthenticationEntryPoint authenticationEntryPoint
+        FirebaseAuthenticationEntryPoint authenticationEntryPoint,
+        AppUserService appUserService
     ) {
         this.firebaseAuth = firebaseAuth;
         this.authenticationEntryPoint = authenticationEntryPoint;
+        this.appUserService = appUserService;
     }
 
     @Override
@@ -56,8 +62,17 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             FirebaseToken firebaseToken = firebaseAuth.verifyIdToken(idToken);
+            AppUser appUser = appUserService.synchronize(firebaseToken);
+            AuthenticatedUserPrincipal principal = new AuthenticatedUserPrincipal(
+                appUser.getId(),
+                firebaseToken.getUid(),
+                firebaseToken.getEmail(),
+                firebaseToken.getName(),
+                firebaseToken.getPicture(),
+                firebaseToken.isEmailVerified()
+            );
             UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(firebaseToken, null, List.of());
+                new UsernamePasswordAuthenticationToken(principal, null, List.of());
             SecurityContextHolder.getContext().setAuthentication(authentication);
             filterChain.doFilter(request, response);
         } catch (FirebaseAuthException exception) {

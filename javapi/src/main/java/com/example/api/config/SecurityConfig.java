@@ -1,5 +1,6 @@
 package com.example.api.config;
 
+import com.example.api.service.AppUserService;
 import com.google.firebase.auth.FirebaseAuth;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -28,10 +29,11 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
         HttpSecurity http,
         FirebaseAuth firebaseAuth,
-        FirebaseAuthenticationEntryPoint authenticationEntryPoint
+        FirebaseAuthenticationEntryPoint authenticationEntryPoint,
+        AppUserService appUserService
     ) throws Exception {
         FirebaseAuthenticationFilter firebaseAuthenticationFilter =
-            new FirebaseAuthenticationFilter(firebaseAuth, authenticationEntryPoint);
+            new FirebaseAuthenticationFilter(firebaseAuth, authenticationEntryPoint, appUserService);
 
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))

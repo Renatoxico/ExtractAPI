@@ -2,6 +2,8 @@ package com.example.api.controller;
 
 import com.example.api.config.FirebaseAuthenticationEntryPoint;
 import com.example.api.config.SecurityConfig;
+import com.example.api.model.AppUser;
+import com.example.api.service.AppUserService;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
@@ -29,6 +31,9 @@ class AuthControllerTest {
 
     @MockitoBean
     private FirebaseAuth firebaseAuth;
+
+    @MockitoBean
+    private AppUserService appUserService;
 
     @Test
     void termsIsPublic() throws Exception {
@@ -63,16 +68,20 @@ class AuthControllerTest {
     @Test
     void meWithValidTokenReturnsAuthenticatedUser() throws Exception {
         FirebaseToken firebaseToken = mock(FirebaseToken.class);
+        AppUser appUser = mock(AppUser.class);
+        when(appUser.getId()).thenReturn(42L);
         when(firebaseToken.getUid()).thenReturn("firebase-uid-123");
         when(firebaseToken.getEmail()).thenReturn("user@example.com");
         when(firebaseToken.getName()).thenReturn("Example User");
         when(firebaseToken.getPicture()).thenReturn("https://example.com/photo.jpg");
         when(firebaseToken.isEmailVerified()).thenReturn(true);
         when(firebaseAuth.verifyIdToken("valid-token")).thenReturn(firebaseToken);
+        when(appUserService.synchronize(firebaseToken)).thenReturn(appUser);
 
         mockMvc.perform(get("/api/auth/me")
                 .header("Authorization", "Bearer valid-token"))
             .andExpect(status().isOk())
+            .andExpect(jsonPath("$.localUserId").value(42))
             .andExpect(jsonPath("$.uid").value("firebase-uid-123"))
             .andExpect(jsonPath("$.email").value("user@example.com"))
             .andExpect(jsonPath("$.name").value("Example User"))
