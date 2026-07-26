@@ -1,5 +1,7 @@
 package com.example.api.controller;
 
+import com.example.api.config.FirebaseAuthenticationEntryPoint;
+import com.example.api.config.SecurityConfig;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
@@ -7,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -16,8 +19,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(AuthController.class)
-@AutoConfigureMockMvc(addFilters = false)
+@WebMvcTest({AuthController.class, PageController.class})
+@AutoConfigureMockMvc
+@Import({SecurityConfig.class, FirebaseAuthenticationEntryPoint.class})
 class AuthControllerTest {
 
     @Autowired
@@ -27,10 +31,22 @@ class AuthControllerTest {
     private FirebaseAuth firebaseAuth;
 
     @Test
+    void termsIsPublic() throws Exception {
+        mockMvc.perform(get("/terms"))
+            .andExpect(status().isOk());
+    }
+
+    @Test
     void meWithoutTokenReturnsUnauthorized() throws Exception {
         mockMvc.perform(get("/api/auth/me"))
             .andExpect(status().isUnauthorized())
             .andExpect(jsonPath("$.errorCode").value("AUTH_TOKEN_MISSING"));
+    }
+
+    @Test
+    void extractEndpointsRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/extract/"))
+            .andExpect(status().isUnauthorized());
     }
 
     @Test

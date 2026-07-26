@@ -99,7 +99,7 @@
 			<version>5.9</version>
 		</dependency>
 
-		<!-- Spring Security for CORS/CSRF configuration only; endpoints are public. -->
+		<!-- Spring Security for stateless Firebase authentication and CORS/CSRF configuration. -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
