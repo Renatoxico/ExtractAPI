@@ -2,12 +2,12 @@ package com.example.api.service;
 
 import com.example.api.model.CategoryMapper;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -189,22 +189,6 @@ class AiProcessorServiceTest {
     }
 
     @Test
-    @DisplayName("Should process expense list and create valid request")
-    void testProcessWithAICreatesValidPrompt() {
-        List<CategoryMapper> expenses = new ArrayList<>();
-        expenses.add(new CategoryMapper("EXPENSE1", null));
-        expenses.add(new CategoryMapper("EXPENSE2", null));
-        expenses.add(new CategoryMapper("EXPENSE3", null));
-
-        // Note: This test verifies the input structure. Full LLM integration test
-        // would require mocking RestTemplate, which is complex.
-        // See testProcessWithAIIntegration() for a more complete test.
-
-        assertNotNull(expenses);
-        assertFalse(expenses.isEmpty());
-    }
-
-    @Test
     @DisplayName("Should handle multiple pipes in expense name correctly")
     void testMapCategoriesComplexExpenseNames() {
         String aiResponse = """
@@ -215,89 +199,6 @@ class AiProcessorServiceTest {
 
         // Should be ignored because it has more than 1 pipe before category
         assertEquals(0, result.size());
-    }
-
-    @Test
-    @DisplayName("Integration test: Process sample expenses with mock LLM response")
-    void testProcessWithAIIntegration() {
-        List<CategoryMapper> expenses = new ArrayList<>();
-        expenses.add(new CategoryMapper("AMAZON PURCHASE", null));
-        expenses.add(new CategoryMapper("RESTAURANT XYZ", null));
-        expenses.add(new CategoryMapper("SUPERMARKET ABC", null));
-
-        // This would normally call the real LLM
-        // For testing purposes, you can replace the RestTemplate call
-        // To run this test against the real LLM:
-        // 1. Ensure Ollama is running on http://localhost:11434
-        // 2. Uncomment the actual test below
-        // 3. Run: mvn test -Dtest=AiProcessorServiceTest#testProcessWithAIIntegration
-
-        assertNotNull(expenses);
-        assertFalse(expenses.isEmpty());
-    }
-
-    /**
-     * Manual LLM Testing Method
-     *
-     * This method allows you to test the LLM output repeatedly while making changes
-     * to the prompt or model. Simply modify the test data and run this test.
-     *
-     * Prerequisites:
-     * 1. Ensure Ollama is running: ollama serve
-     * 2. Model should be installed: ollama pull gemma3:4b
-     * 3. Run this test: mvn test -Dtest=AiProcessorServiceTest#testLLMOutputManually
-     */
-    @Test
-    @Disabled("Requires local Ollama server — run manually with: mvn test -Dtest=AiProcessorServiceTest#testLLMOutputManually")
-    @DisplayName("Manual LLM Output Test - Run this to test prompt/model changes")
-    void testLLMOutputManually() {
-        // TODO: Run this test manually when you want to test LLM output
-        // Modify the test expenses below and run:
-        // mvn test -Dtest=AiProcessorServiceTest#testLLMOutputManually
-
-        List<CategoryMapper> testExpenses = new ArrayList<>();
-        testExpenses.add(new CategoryMapper("AMAZON", null));
-        testExpenses.add(new CategoryMapper("IFOOD RESTAURANT", null));
-        testExpenses.add(new CategoryMapper("SUPERMARKET", null));
-        testExpenses.add(new CategoryMapper("UBER TRIP", null));
-        testExpenses.add(new CategoryMapper("NETFLIX", null));
-        testExpenses.add(new CategoryMapper("ELECTRIC BILL", null));
-        testExpenses.add(new CategoryMapper("PHARMACY", null));
-        testExpenses.add(new CategoryMapper("MALL SHOPPING", null));
-
-        try {
-            long startTime = System.currentTimeMillis();
-            List<CategoryMapper> results = aiProcessorService.processWithAI(testExpenses);
-            long endTime = System.currentTimeMillis();
-
-            System.out.println("\n========== LLM TEST RESULTS ==========");
-            System.out.println("Processing time: " + (endTime - startTime) + " ms");
-            System.out.println("Input expenses: " + testExpenses.size());
-            System.out.println("Categorized expenses: " + results.size());
-            System.out.println("\nResults:");
-
-            for (CategoryMapper result : results) {
-                System.out.println("  " + result.getExpenseName() + " -> " + result.getTransactionType());
-            }
-
-            System.out.println("=====================================\n");
-
-            // Verify we got results
-            assertFalse(results.isEmpty(), "LLM should have categorized at least some expenses");
-
-            // Verify all categories are valid
-            for (CategoryMapper result : results) {
-                assertTrue(isValidCategory(result.getTransactionType()),
-                        "Category '" + result.getTransactionType() + "' is not valid");
-            }
-
-        } catch (Exception e) {
-            System.err.println("ERROR: Could not connect to LLM. Make sure:");
-            System.err.println("1. Ollama is running: ollama serve");
-            System.err.println("2. Model is installed: ollama pull gemma3:4b");
-            System.err.println("3. Ollama is accessible at http://localhost:11434");
-            throw e;
-        }
     }
 
     // ===== Helper Methods =====
@@ -328,24 +229,6 @@ class AiProcessorServiceTest {
         }
     }
 
-    /**
-     * Helper to check if a category is valid
-     */
-    private boolean isValidCategory(String category) {
-        Set<String> validCategories = Set.of(
-                "Roupas / Acessórios",
-                "E-commerce / Compras online",
-                "Restaurante / Lanches",
-                "Investimentos / Assinaturas profissionais",
-                "Saúde / Farmácia / Bem-estar",
-                "Transporte / Auto",
-                "Lazer / Entretenimento / Pets",
-                "Supermercado",
-                "Outros / Transferências",
-                "Moradia / Contas"
-        );
-        return validCategories.contains(category);
-    }
 }
 
 

@@ -25,7 +25,7 @@ jobs:
           cache-dependency-path: javapi/pom.xml
 
       - name: Run tests with coverage
-        run: ./mvnw verify -f javapi/pom.xml
+        run: ./javapi/mvnw verify -f javapi/pom.xml
 
       - name: Generate JaCoCo coverage report
         uses: madrapps/jacoco-report@v1.7.1
@@ -67,6 +67,9 @@ jobs:
         working-directory: svelte-frontend
         env:
           VITE_API_URL: https://placeholder.test
-          VITE_SUPABASE_URL: https://placeholder.supabase.co
-          VITE_SUPABASE_ANON_KEY: placeholder
-          VITE_REVENUECAT_CHECKOUT_URL: https://placeholder.test
+          VITE_FIREBASE_API_KEY: placeholder
+          VITE_FIREBASE_AUTH_DOMAIN: placeholder.firebaseapp.com
+          VITE_FIREBASE_PROJECT_ID: placeholder
+          VITE_FIREBASE_STORAGE_BUCKET: placeholder.firebasestorage.app
+          VITE_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+          VITE_FIREBASE_APP_ID: "1:000000000000:web:placeholder"

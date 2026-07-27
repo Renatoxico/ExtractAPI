@@ -13,9 +13,10 @@ Thumbs.db
 .factorypath
 .project
 .settings
-.properties
 .springBeans
 .vscode/
+.agents/
+.github/modernize/
 
 # Node.js dependencies and build outputs
 node_modules/
@@ -65,10 +66,9 @@ vite.config.ts.timestamp-*
 # Prettier and npm-specific files
 .prettierignore
 .prettierrc
-package-lock.json
 pnpm-lock.yaml
 yarn.lock
 bun.lock
 bun.lockb
 .npmrc
-.claude
+.claude/
