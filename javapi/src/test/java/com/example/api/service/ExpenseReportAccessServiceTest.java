@@ -51,12 +51,12 @@ class ExpenseReportAccessServiceTest {
     }
 
     @Test
-    void requireOwnershipHidesMissingAndOtherUsersReports() {
-        when(expenseReportRepository.existsBySessionIdAndOwnerId("session-123", 42L)).thenReturn(false);
+    void requireOwnershipRejectsDifferentUserForSameReport() {
+        when(expenseReportRepository.existsBySessionIdAndOwnerId("session-123", 99L)).thenReturn(false);
 
         ProcessingException exception = assertThrows(
             ProcessingException.class,
-            () -> expenseReportAccessService.requireOwnership("session-123", 42L)
+            () -> expenseReportAccessService.requireOwnership("session-123", 99L)
         );
 
         assertEquals("SESSION_NOT_FOUND", exception.getErrorCode());
