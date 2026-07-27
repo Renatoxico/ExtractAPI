@@ -2,6 +2,7 @@ package com.example.api.controller;
 
 
 import com.example.api.exception.ProcessingException;
+import com.example.api.model.AuthenticatedUserPrincipal;
 import com.example.api.model.ValidationResponse;
 import com.example.api.service.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,13 +29,15 @@ public class ExtractController {
     private final ExpenseReportingService reportsService;
     private final ValidationService validationService;
     private final ExtractorService javaProcessor;
+    private final ExpenseReportAccessService reportAccessService;
 
-    public ExtractController(ValidationService validationService, PythonProcessingService pyProcessor, ObjectifierService objService, ExpenseReportingService reportsService, ExtractorService javaProcessor) {
+    public ExtractController(ValidationService validationService, PythonProcessingService pyProcessor, ObjectifierService objService, ExpenseReportingService reportsService, ExtractorService javaProcessor, ExpenseReportAccessService reportAccessService) {
         this.pyProcessor = pyProcessor;
         this.objService = objService;
         this.validationService = validationService;
         this.reportsService = reportsService;
         this.javaProcessor = javaProcessor;
+        this.reportAccessService = reportAccessService;
     }
 
     @GetMapping("/")
@@ -42,7 +46,10 @@ public class ExtractController {
     }
 
     @PostMapping("/")
-    public ResponseEntity<?> process(@RequestParam("file") MultipartFile[] files){
+    public ResponseEntity<?> process(
+        @RequestParam("file") MultipartFile[] files,
+        @AuthenticationPrincipal AuthenticatedUserPrincipal principal
+    ){
         LOG.info("Java Processor API - Processing {} file(s)", files.length);
 
         try {
@@ -90,6 +97,8 @@ public class ExtractController {
                 }
             }
 
+            reportAccessService.registerOwnership(sessionId, principal.localUserId());
+
             // Generate report
             Map<String,Object> expensesGrouped = reportsService.getFullReport(sessionId);
             expensesGrouped.put("sessionToken", sessionId);
@@ -110,7 +119,10 @@ public class ExtractController {
     }
 
     @GetMapping("/summary/{sessionId}")
-    public ResponseEntity<?> getExpenseSummary(@PathVariable String sessionId) {
+    public ResponseEntity<?> getExpenseSummary(
+        @PathVariable String sessionId,
+        @AuthenticationPrincipal AuthenticatedUserPrincipal principal
+    ) {
         if(sessionId == null || sessionId.isBlank()) {
             LOG.warn("Invalid sessionId provided");
             throw new ProcessingException(
@@ -122,6 +134,7 @@ public class ExtractController {
 
         try {
             LOG.info("Fetching summary for session: {}", sessionId);
+            reportAccessService.requireOwnership(sessionId, principal.localUserId());
             Map<String,Object> expensesGrouped = reportsService.getFullReport(sessionId);
 
             if (expensesGrouped == null || expensesGrouped.isEmpty()) {
@@ -157,7 +170,10 @@ public class ExtractController {
     }
 
     @GetMapping("/export/{sessionId}")
-    public ResponseEntity<ByteArrayResource> exportExpensesCsv(@PathVariable String sessionId) {
+    public ResponseEntity<ByteArrayResource> exportExpensesCsv(
+        @PathVariable String sessionId,
+        @AuthenticationPrincipal AuthenticatedUserPrincipal principal
+    ) {
         if(sessionId == null || sessionId.isBlank()) {
             LOG.warn("Invalid sessionId provided for export");
             throw new ProcessingException(
@@ -169,6 +185,7 @@ public class ExtractController {
 
         try {
             LOG.info("Exporting CSV for session: {}", sessionId);
+            reportAccessService.requireOwnership(sessionId, principal.localUserId());
             byte[] bytes = reportsService.exportReportCSV(sessionId);
             ByteArrayResource resource = new ByteArrayResource(bytes);
 

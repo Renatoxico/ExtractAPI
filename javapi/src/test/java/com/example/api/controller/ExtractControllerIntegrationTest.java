@@ -1,7 +1,10 @@
 package com.example.api.controller;
 
 import com.example.api.service.*;
+import com.example.api.exception.ProcessingException;
+import com.example.api.model.AuthenticatedUserPrincipal;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,10 +14,13 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -47,14 +53,30 @@ class ExtractControllerTest {
     @MockitoBean
     private ExtractorService javaProcessor;
 
+    @MockitoBean
+    private ExpenseReportAccessService reportAccessService;
+
     @Autowired
     private ObjectMapper objectMapper;
 
     private MockMultipartFile validPdfFile;
     private MockMultipartFile invalidTypeFile;
+    private AuthenticatedUserPrincipal principal;
 
     @BeforeEach
     void setUp() {
+        principal = new AuthenticatedUserPrincipal(
+            42L,
+            "firebase-uid-123",
+            "user@example.com",
+            "Example User",
+            null,
+            true
+        );
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken(principal, null, List.of())
+        );
+
         validPdfFile = new MockMultipartFile(
             "file",
             "test.pdf",
@@ -68,6 +90,11 @@ class ExtractControllerTest {
             "text/plain",
             "Text content".getBytes()
         );
+    }
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
     }
 
     // ========== Home Endpoint Tests ==========
@@ -104,6 +131,7 @@ class ExtractControllerTest {
         verify(validationService).validateFiles(any());
         verify(javaProcessor).extractText(any());
         verify(objService).process(anyString(), anyString());
+        verify(reportAccessService).registerOwnership("session-123", 42L);
     }
 
     // ========== Process Endpoint - Validation Error Tests ==========
@@ -266,6 +294,37 @@ class ExtractControllerTest {
             .andExpect(jsonPath("$.sessionToken").value("session-123"));
 
         verify(reportsService).getFullReport("session-123");
+        verify(reportAccessService).requireOwnership("session-123", 42L);
+    }
+
+    @Test
+    void testGetSummary_OtherUsersSession_Returns404WithoutQueryingExpenses() throws Exception {
+        doThrow(new ProcessingException(
+            "No report found for the provided session ID",
+            HttpStatus.NOT_FOUND,
+            "SESSION_NOT_FOUND"
+        )).when(reportAccessService).requireOwnership("other-session", 42L);
+
+        mockMvc.perform(get("/extract/summary/other-session"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.errorCode").value("SESSION_NOT_FOUND"));
+
+        verify(reportsService, never()).getFullReport("other-session");
+    }
+
+    @Test
+    void testExport_OtherUsersSession_Returns404WithoutExporting() throws Exception {
+        doThrow(new ProcessingException(
+            "No report found for the provided session ID",
+            HttpStatus.NOT_FOUND,
+            "SESSION_NOT_FOUND"
+        )).when(reportAccessService).requireOwnership("other-session", 42L);
+
+        mockMvc.perform(get("/extract/export/other-session"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.errorCode").value("SESSION_NOT_FOUND"));
+
+        verify(reportsService, never()).exportReportCSV("other-session");
     }
 
     @Test
