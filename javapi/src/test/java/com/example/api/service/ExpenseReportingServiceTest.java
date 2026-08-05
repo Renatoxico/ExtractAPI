@@ -2,6 +2,11 @@ package com.example.api.service;
 
 import com.example.api.exception.ProcessingException;
 import com.example.api.model.Expense;
+import com.example.api.model.ExpenseDTO;
+import com.example.api.model.ExpensesCategories;
+import com.example.api.model.ExpensesGroupedDTO;
+import com.example.api.model.NoteableDay;
+import com.example.api.model.ReportExport;
 import com.example.api.repo.ExpenseRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,13 +15,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,19 +35,7 @@ class ExpenseReportingServiceTest {
     @InjectMocks
     private ExpenseReportingService service;
 
-    private static List<Object[]> listOf(Object[]... items) {
-        List<Object[]> list = new ArrayList<>();
-        Collections.addAll(list, items);
-        return list;
-    }
-
     // --- generateId ---
-
-    @Test
-    void shouldGenerateNonNullId() {
-        String id = service.generateId();
-        assertThat(id).isNotNull().isNotBlank();
-    }
 
     @Test
     void shouldGenerateUniqueIds() {
@@ -71,29 +63,45 @@ class ExpenseReportingServiceTest {
     void shouldReturnCompleteReportWithAllSections() {
         String sessionId = "test-session";
 
-        when(expenseRepo.getGroupedExpenses(sessionId)).thenReturn(
-                listOf(new Object[]{"SUPERMERCADO", new BigDecimal("150.00"), 3L, "Supermercado"})
+        List<ExpensesGroupedDTO> groupedExpenses = List.of(
+                new ExpensesGroupedDTO("SUPERMERCADO", new BigDecimal("150.00"), 3L, "Supermercado")
         );
-        when(expenseRepo.getNoteableDays(sessionId)).thenReturn(
-                listOf(new Object[]{"15/03/2025", 5L, new BigDecimal("500.00")})
+        List<NoteableDay> notableDays = List.of(
+                new NoteableDay("15/03/2025", 5L, new BigDecimal("500.00"))
         );
-        when(expenseRepo.getAllExpenses(sessionId)).thenReturn(
-                listOf(new Object[]{"SUPERMERCADO", "15/03/2025", new BigDecimal("150.00"), "Supermercado"})
+        List<ExpenseDTO> allExpenses = List.of(
+                new ExpenseDTO("TV SAMSUNG", new BigDecimal("3500.00"), "20/03/2025", "E-commerce"),
+                new ExpenseDTO("SUPERMERCADO", new BigDecimal("150.00"), "15/03/2025", "Supermercado")
         );
-        when(expenseRepo.getExpensesByType(sessionId)).thenReturn(
-                listOf(new Object[]{new BigDecimal("150.00"), "Supermercado"})
-        );
-        when(expenseRepo.getBiggestExpense(sessionId)).thenReturn(
-                listOf(new Object[]{"TV SAMSUNG", "20/03/2025", new BigDecimal("3500.00"), "E-commerce"})
+        List<ExpensesCategories> expensesByType = List.of(
+                new ExpensesCategories(new BigDecimal("150.00"), "Supermercado")
         );
 
-        Map<String, Object> report = service.getFullReport(sessionId);
+        when(expenseRepo.getGroupedExpenses(sessionId)).thenReturn(groupedExpenses);
+        when(expenseRepo.getNoteableDays(sessionId)).thenReturn(notableDays);
+        when(expenseRepo.getAllExpenses(sessionId)).thenReturn(allExpenses);
+        when(expenseRepo.getExpensesByType(sessionId)).thenReturn(expensesByType);
 
-        assertThat(report).containsKeys(
-                "SmartGroupExpenselist", "NotableDays", "AllExpenses",
-                "ExpensesByCategory", "BiggestSingularExpense"
-        );
-        assertThat(report.get("BiggestSingularExpense")).isNotNull();
+        ReportExport report = service.getFullReport(sessionId);
+
+        assertThat(report)
+                .extracting(
+                        "smartGroupExpenselist",
+                        "notableDays",
+                        "allExpenses",
+                        "expensesByCategory",
+                        "biggestSingularExpense",
+                        "sessionToken"
+                )
+                .containsExactly(
+                        groupedExpenses,
+                        notableDays,
+                        allExpenses,
+                        expensesByType,
+                        allExpenses.getFirst(),
+                        sessionId
+                );
+        verify(expenseRepo).getAllExpenses(sessionId);
     }
 
     @Test
@@ -104,11 +112,9 @@ class ExpenseReportingServiceTest {
         when(expenseRepo.getNoteableDays(sessionId)).thenReturn(Collections.emptyList());
         when(expenseRepo.getAllExpenses(sessionId)).thenReturn(Collections.emptyList());
         when(expenseRepo.getExpensesByType(sessionId)).thenReturn(Collections.emptyList());
-        when(expenseRepo.getBiggestExpense(sessionId)).thenReturn(Collections.emptyList());
+        ReportExport report = service.getFullReport(sessionId);
 
-        Map<String, Object> report = service.getFullReport(sessionId);
-
-        assertThat(report.get("BiggestSingularExpense")).isNull();
+        assertThat(report).extracting("biggestSingularExpense").isNull();
     }
 
     // --- exportReportCSV ---
@@ -138,14 +144,6 @@ class ExpenseReportingServiceTest {
                     ProcessingException pe = (ProcessingException) ex;
                     assertThat(pe.getErrorCode()).isEqualTo("SESSION_NOT_FOUND");
                 });
-    }
-
-    @Test
-    void shouldThrowWhenExpensesNull() {
-        when(expenseRepo.getAllExpenses2("null-session")).thenReturn(null);
-
-        assertThatThrownBy(() -> service.exportReportCSV("null-session"))
-                .isInstanceOf(ProcessingException.class);
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.example.api.controller;
 
 import com.example.api.exception.ProcessingException;
 import com.example.api.model.AuthenticatedUserPrincipal;
+import com.example.api.model.ReportExport;
 import com.example.api.model.ValidationResponse;
 import com.example.api.service.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,22 +18,19 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 import java.util.Map;
 
 @Controller
 @RequestMapping("/extract")
 public class ExtractController {
     private static final Logger LOG = LoggerFactory.getLogger(ExtractController.class);
-    private final PythonProcessingService pyProcessor;
     private final ObjectifierService objService;
     private final ExpenseReportingService reportsService;
     private final ValidationService validationService;
     private final ExtractorService javaProcessor;
     private final ExpenseReportAccessService reportAccessService;
 
-    public ExtractController(ValidationService validationService, PythonProcessingService pyProcessor, ObjectifierService objService, ExpenseReportingService reportsService, ExtractorService javaProcessor, ExpenseReportAccessService reportAccessService) {
-        this.pyProcessor = pyProcessor;
+    public ExtractController(ValidationService validationService,  ObjectifierService objService, ExpenseReportingService reportsService, ExtractorService javaProcessor, ExpenseReportAccessService reportAccessService) {
         this.objService = objService;
         this.validationService = validationService;
         this.reportsService = reportsService;
@@ -99,9 +97,7 @@ public class ExtractController {
 
             reportAccessService.registerOwnership(sessionId, principal.localUserId());
 
-            // Generate report
-            Map<String,Object> expensesGrouped = reportsService.getFullReport(sessionId);
-            expensesGrouped.put("sessionToken", sessionId);
+            ReportExport expensesGrouped = reportsService.getFullReport(sessionId);
             LOG.info("Process completed successfully for session: {}", sessionId);
             return ResponseEntity.ok(expensesGrouped);
 
@@ -135,9 +131,9 @@ public class ExtractController {
         try {
             LOG.info("Fetching summary for session: {}", sessionId);
             reportAccessService.requireOwnership(sessionId, principal.localUserId());
-            Map<String,Object> expensesGrouped = reportsService.getFullReport(sessionId);
+            ReportExport expensesGrouped = reportsService.getFullReport(sessionId);
 
-            if (expensesGrouped == null || expensesGrouped.isEmpty()) {
+            if (expensesGrouped == null) {
                 LOG.warn("No data found for session: {}", sessionId);
                 throw new ProcessingException(
                     "No data found for the provided session ID",
@@ -146,7 +142,6 @@ public class ExtractController {
                 );
             }
 
-            expensesGrouped.put("sessionToken", sessionId);
             LOG.info("Successfully retrieved summary for session: {}", sessionId);
             return ResponseEntity.status(HttpStatus.OK).body(expensesGrouped);
         } catch (ProcessingException ex) {

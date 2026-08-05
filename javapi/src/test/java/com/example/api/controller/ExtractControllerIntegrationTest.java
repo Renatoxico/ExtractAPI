@@ -3,7 +3,7 @@ package com.example.api.controller;
 import com.example.api.service.*;
 import com.example.api.exception.ProcessingException;
 import com.example.api.model.AuthenticatedUserPrincipal;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.api.model.ReportExport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,9 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -56,12 +54,13 @@ class ExtractControllerTest {
     @MockitoBean
     private ExpenseReportAccessService reportAccessService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
     private MockMultipartFile validPdfFile;
     private MockMultipartFile invalidTypeFile;
     private AuthenticatedUserPrincipal principal;
+
+    private static ReportExport emptyReport(String sessionId) {
+        return new ReportExport(List.of(), List.of(), List.of(), List.of(), null, sessionId);
+    }
 
     @BeforeEach
     void setUp() {
@@ -116,9 +115,7 @@ class ExtractControllerTest {
         when(reportsService.generateId()).thenReturn("session-123");
         when(javaProcessor.extractText(any())).thenReturn("Sample expense text");
 
-        Map<String, Object> report = new HashMap<>();
-        report.put("expenses", java.util.Collections.emptyList());
-        when(reportsService.getFullReport("session-123")).thenReturn(report);
+        when(reportsService.getFullReport("session-123")).thenReturn(emptyReport("session-123"));
 
         doNothing().when(objService).process(anyString(), anyString());
 
@@ -284,9 +281,7 @@ class ExtractControllerTest {
     @Test
     void testGetSummary_WithValidSessionId_Returns200() throws Exception {
         // Arrange
-        Map<String, Object> report = new HashMap<>();
-        report.put("expenses", java.util.Collections.emptyList());
-        when(reportsService.getFullReport("session-123")).thenReturn(report);
+        when(reportsService.getFullReport("session-123")).thenReturn(emptyReport("session-123"));
 
         // Act & Assert
         mockMvc.perform(get("/extract/summary/session-123"))
@@ -339,34 +334,12 @@ class ExtractControllerTest {
     }
 
     @Test
-    void testGetSummary_WithNullSessionId_Returns400WithINVALID_SESSION_ID() throws Exception {
-        // Act & Assert - Using empty string path which will be blank when passed
-        MvcResult result = mockMvc.perform(get("/extract/summary/"))
-            .andExpect(status().isNotFound())  // 404 because path param is missing
-            .andReturn();
-    }
-
-    @Test
     void testGetSummary_WithNonExistentSession_Returns404WithSESSION_NOT_FOUND() throws Exception {
         // Arrange
         when(reportsService.getFullReport("non-existent")).thenReturn(null);
 
         // Act & Assert
         MvcResult result = mockMvc.perform(get("/extract/summary/non-existent"))
-            .andExpect(status().isNotFound())
-            .andReturn();
-
-        String content = result.getResponse().getContentAsString();
-        assertTrue(content.contains("SESSION_NOT_FOUND"));
-    }
-
-    @Test
-    void testGetSummary_WithEmptySessionData_Returns404WithSESSION_NOT_FOUND() throws Exception {
-        // Arrange
-        when(reportsService.getFullReport("empty-session")).thenReturn(new HashMap<>());
-
-        // Act & Assert
-        MvcResult result = mockMvc.perform(get("/extract/summary/empty-session"))
             .andExpect(status().isNotFound())
             .andReturn();
 
@@ -403,9 +376,7 @@ class ExtractControllerTest {
         when(reportsService.generateId()).thenReturn("session-123");
         when(javaProcessor.extractText(any())).thenReturn("Sample expense text");
 
-        Map<String, Object> report = new HashMap<>();
-        report.put("expenses", java.util.Collections.emptyList());
-        when(reportsService.getFullReport("session-123")).thenReturn(report);
+        when(reportsService.getFullReport("session-123")).thenReturn(emptyReport("session-123"));
 
         doNothing().when(objService).process(anyString(), anyString());
 

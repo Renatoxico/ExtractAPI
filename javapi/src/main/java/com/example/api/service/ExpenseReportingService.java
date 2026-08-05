@@ -8,16 +8,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-
 import java.io.StringWriter;
-import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class ExpenseReportingService {
@@ -39,23 +34,27 @@ public class ExpenseReportingService {
         return session_id;
     }
 
-    public Map<String, Object> getFullReport(String sessionId) {
+    public ReportExport getFullReport(String sessionId) {
         try {
             LOG.info("Generating full report for session: {}", sessionId);
-            Map<String, Object> res = new HashMap<>();
+            List<ExpenseDTO> allExpenses = expenseRepo.getAllExpenses(sessionId);
 
-            res.put("SmartGroupExpenselist", mapGroupedExpenses(expenseRepo.getGroupedExpenses(sessionId)));
-            res.put("NotableDays", mapNoteableDays(expenseRepo.getNoteableDays(sessionId)));
-            res.put("AllExpenses", mapAllExpenses(expenseRepo.getAllExpenses(sessionId)));
-            res.put("ExpensesByCategory", mapByCategory(expenseRepo.getExpensesByType(sessionId)));
-
-            List<Object[]> biggest = expenseRepo.getBiggestExpense(sessionId);
-            if (!biggest.isEmpty()) {
-                Object[] obj = biggest.getFirst();
-                res.put("BiggestSingularExpense", new ExpenseDTO((String) obj[0], (BigDecimal) obj[2], (String) obj[1],(String) obj[3]));
-            } else {
-                res.put("BiggestSingularExpense", null);
+            if (allExpenses == null || allExpenses.isEmpty()) {
+                LOG.warn("No data found for session: {}", sessionId);
+                throw new ProcessingException(
+                        "No data found for the provided session ID",
+                        HttpStatus.NOT_FOUND,
+                        "SESSION_NOT_FOUND"
+                );
             }
+
+            ReportExport res = new ReportExport(
+                expenseRepo.getGroupedExpenses(sessionId),
+                expenseRepo.getNoteableDays(sessionId),
+                allExpenses,
+                expenseRepo.getExpensesByType(sessionId),
+                allExpenses.isEmpty() ? null : allExpenses.getFirst(),
+                sessionId);
 
             LOG.info("Successfully generated full report for session: {}", sessionId);
             return res;
@@ -78,32 +77,8 @@ public class ExpenseReportingService {
     }
 
     public List<CategoryMapper> getExpenseNames() {
-        List<CategoryMapper> expenses = expenseRepo.getExpenseNames().stream()
-                .map(obj -> new CategoryMapper((String) obj[0], (String) obj[1])).toList();
+        List<CategoryMapper> expenses = expenseRepo.getExpenseNames();
         return expenses;
-    }
-
-    private List<ExpensesGroupedDTO> mapGroupedExpenses(List<Object[]> list) {
-        return list.stream()
-                .map(obj -> new ExpensesGroupedDTO((String) obj[0], (BigDecimal) obj[1], (Long) obj[2], (String) obj[3]))
-                .collect(Collectors.toList());
-    }
-
-    private List<ExpenseDTO> mapAllExpenses(List<Object[]> list) {
-        return list.stream()
-                .map(obj -> new ExpenseDTO((String) obj[0], (BigDecimal) obj[2], (String) obj[1], (String) obj[3]))
-                .collect(Collectors.toList());
-    }
-
-    private List<ExpensesCategories> mapByCategory(List<Object[]> list) {
-        return list.stream()
-                .map(obj -> new ExpensesCategories((BigDecimal) obj[0], (String) obj[1]))
-                .collect(Collectors.toList());
-    }
-    private List<NoteableDay> mapNoteableDays(List<Object[]> list) {
-        return list.stream()
-                .map(obj -> new NoteableDay((String) obj[0], (Long) obj[1], (BigDecimal) obj[2]))
-                .collect(Collectors.toList());
     }
 
     public byte[] exportReportCSV(String sessionId) {

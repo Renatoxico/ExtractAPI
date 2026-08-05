@@ -1,6 +1,12 @@
 package com.example.api.repo;
 
+import com.example.api.model.CategoryMapper;
 import com.example.api.model.Expense;
+import com.example.api.model.ExpenseDTO;
+import com.example.api.model.ExpensesCategories;
+import com.example.api.model.ExpensesGroupedDTO;
+import com.example.api.model.NoteableDay;
+
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -11,26 +17,27 @@ import java.util.List;
 
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
-    @Query(value = """
+    @Query("""
             SELECT
-            	TRANSACTION_NAME,
-            	DATE,
-            	VALUE,
-            	COALESCE(TRANSACTION_TYPE, 'Outros / Transferências') AS TRANSACTION_TYPE
-            FROM TB_EXPENSE
-            WHERE SESSION_ID = :sessionId
-            ORDER BY VALUE DESC
-            """, nativeQuery = true)
-    List<Object[]> getAllExpenses(@Param("sessionId") String sessionId);
+                e.transactionName,
+                e.value,
+                e.date,
+                COALESCE(e.transactionType, 'Outros / Transferências')
+            
+            FROM Expense e
+            WHERE e.sessionId = :sessionId
+            ORDER BY e.value DESC
+            """)
+    List<ExpenseDTO> getAllExpenses(@Param("sessionId") String sessionId);
 
     @Query(value = """
             SELECT
                 ID,
                 SESSION_ID,
-            	TRANSACTION_NAME,
-            	DATE,
-            	VALUE,
-            	COALESCE(TRANSACTION_TYPE, 'Outros / Transferências') AS TRANSACTION_TYPE
+                TRANSACTION_NAME,
+                DATE,
+                VALUE,
+                COALESCE(TRANSACTION_TYPE, 'Outros / Transferências') AS TRANSACTION_TYPE
             FROM TB_EXPENSE
             WHERE SESSION_ID = :sessionId
             ORDER BY VALUE DESC
@@ -51,7 +58,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             GROUP BY TE.DATE
             ORDER BY SUM(TE.VALUE ) DESC
             LIMIT 1)""", nativeQuery = true)
-    List<Object[]> getNoteableDays(@Param("sessionId") String sessionId);
+    List<NoteableDay> getNoteableDays(@Param("sessionId") String sessionId);
 
     @Query(value = """
             SELECT DISTINCT (TRANSACTION_NAME),
@@ -61,7 +68,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             ORDER BY TRANSACTION_NAME
             LIMIT 50
             """, nativeQuery = true)
-    List<Object[]> getExpenseNames();
+    List<CategoryMapper> getExpenseNames();
 
     @Query(value = """
             SELECT
@@ -74,20 +81,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
                 GROUP BY TRANSACTION_NAME, TRANSACTION_TYPE
                 ORDER BY TOTAL DESC, INSTANCES DESC, TRANSACTION_NAME
             """, nativeQuery = true)
-    List<Object[]> getGroupedExpenses(@Param("sessionId") String sessionId);
-
-    @Query(value = """
-            SELECT
-            	TRANSACTION_NAME,
-            	DATE,
-            	VALUE,
-            	COALESCE(TRANSACTION_TYPE, '') AS TRANSACTION_TYPE
-            FROM TB_EXPENSE
-            WHERE SESSION_ID = :sessionId
-            ORDER BY VALUE DESC
-            LIMIT 1
-            """, nativeQuery = true)
-    List<Object[]> getBiggestExpense(@Param("sessionId") String sessionId);
+    List<ExpensesGroupedDTO> getGroupedExpenses(@Param("sessionId") String sessionId);
 
     @Query(value = """
             SELECT SUM(TE.VALUE ), TE.TRANSACTION_TYPE
@@ -97,7 +91,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             GROUP BY TE.TRANSACTION_TYPE
             ORDER BY 1
             """, nativeQuery = true)
-    List<Object[]> getExpensesByType(@Param("sessionId") String sessionId);
+    List<ExpensesCategories> getExpensesByType(@Param("sessionId") String sessionId);
 
     @Modifying
     @Transactional
