@@ -21,7 +21,7 @@ WORKDIR /app
 
 RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser
 
-COPY --from=builder /app/target/API-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=builder /app/target/extract-api-0.0.1-SNAPSHOT.jar app.jar
 
 RUN chown -R appuser:appuser /app
 

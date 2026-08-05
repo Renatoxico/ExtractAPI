@@ -8,10 +8,10 @@
 		<version>3.5.3</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.example</groupId>
-	<artifactId>API</artifactId>
+	<groupId>io.github.renatoxico</groupId>
+	<artifactId>extract-api</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>API</name>
+	<name>Extract API</name>
 	<description>API for processing expenses from pdf files</description>
 	<url/>
 	<licenses>
