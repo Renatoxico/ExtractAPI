@@ -1,7 +1,10 @@
 package io.github.renatoxico.extract.service;
 
 import io.github.renatoxico.extract.exception.ProcessingException;
-import io.github.renatoxico.extract.model.*;
+import io.github.renatoxico.extract.model.CategoryMapper;
+import io.github.renatoxico.extract.model.Expense;
+import io.github.renatoxico.extract.model.ExpenseDTO;
+import io.github.renatoxico.extract.model.ReportExport;
 import io.github.renatoxico.extract.repo.ExpenseRepository;
 import com.opencsv.CSVWriter;
 import org.slf4j.Logger;
@@ -19,11 +22,9 @@ public class ExpenseReportingService {
     private static final Logger LOG = LoggerFactory.getLogger(ExpenseReportingService.class);
     private final ExpenseRepository expenseRepo;
     private static final SecureRandom random = new SecureRandom();
-    private final ValidationService validationService;
 
-    public ExpenseReportingService(ExpenseRepository expenseRepo, ValidationService validationService) {
+    public ExpenseReportingService(ExpenseRepository expenseRepo) {
         this.expenseRepo = expenseRepo;
-        this.validationService = validationService;
     }
 
     public String generateId () {
@@ -64,21 +65,8 @@ public class ExpenseReportingService {
         }
     }
 
-    public List<Expense> updateExpenses(String SessionId) {
-        List<Expense> expenses = expenseRepo.getAllExpenses2(SessionId);
-        expenses = validationService.validateExpenses(expenses);
-        for (Expense expense : expenses) {
-            expense = expenseRepo.save(expense);
-        }
-        return expenses;
-    }
-    public List<Expense> getAllExpensesEntities(String sessionId) {
-        return expenseRepo.getAllExpenses2(sessionId);
-    }
-
     public List<CategoryMapper> getExpenseNames() {
-        List<CategoryMapper> expenses = expenseRepo.getExpenseNames();
-        return expenses;
+        return expenseRepo.getExpenseNames();
     }
 
     public byte[] exportReportCSV(String sessionId) {
@@ -95,7 +83,7 @@ public class ExpenseReportingService {
         StringWriter sw = new StringWriter();
         try (CSVWriter csvWriter = new CSVWriter(sw)) {
             csvWriter.writeNext(header);
-            for (io.github.renatoxico.extract.model.Expense e : expenses) {
+            for (Expense e : expenses) {
                 String[] row = new String[]{
                         e.getId() == null ? "" : e.getId().toString(),
                         e.getTransactionName() == null ? "" : e.getTransactionName(),

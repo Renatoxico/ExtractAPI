@@ -9,7 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,7 +39,6 @@ public class ObjectifierService {
             String[] expensesDoc = splitByLine(inputText);
             List<String> filteredExpenses = getFilterCharges(expensesDoc);
 
-            // Validate that there is at least one candidate line to process; if not, throw a ProcessingException
             if (filteredExpenses == null || filteredExpenses.isEmpty()) {
                 LOG.warn("No candidate expense lines found after filtering for session: {}", sessionId);
                 throw new ProcessingException(
@@ -65,7 +65,6 @@ public class ObjectifierService {
     }
 
     public String[] splitByLine (String extractText) {
-        //LOG.info("Enter ObjectifierService.splitByLine");
         extractText = extractText.replace("\\n", "\n");
         return extractText.split("\\n");
 
@@ -79,10 +78,10 @@ public class ObjectifierService {
             Matcher valueMatcher = valuePattern.matcher(line);
 
             if (dateMatcher.find() && valueMatcher.find()){
-                String date = dateMatcher.group(1); // Extract date
+                String date = dateMatcher.group(1);
                 String valueStr = valueMatcher.group(1)
-                        .replace(".", "")//remove BR decimal
-                        .replace(",", "."); // Convert to double format
+                        .replace(".", "")
+                        .replace(",", ".");
                 BigDecimal value = new BigDecimal(valueStr);
                 value = value.abs();
                 if (!(valueMatcher.start()< dateMatcher.end())) {
@@ -90,10 +89,10 @@ public class ObjectifierService {
                             .replace("|", "")
                             .replaceAll("\\d{4,}", "")
                             .trim();
-                    if (!description.isEmpty()//no blank expenses
-                            && value.compareTo(BigDecimal.ZERO) != 0//no expenses without value
-                            && description.matches(".*[a-zA-Z].*") //must have letters
-                            && !(description.contains("CREDITO") || description.contains("FATURA") || description.contains("SALDO"))){//ignore balance value
+                    if (!description.isEmpty()
+                            && value.compareTo(BigDecimal.ZERO) != 0
+                            && description.matches(".*[a-zA-Z].*")
+                            && !(description.contains("CREDITO") || description.contains("FATURA") || description.contains("SALDO"))){
                         mapToObj(sessionId, expensesObj, value, description, date);
                     }
                 }
@@ -112,8 +111,6 @@ public class ObjectifierService {
             Matcher valueMatcher = valuePattern.matcher(line);
 
             if (dateMatcher.find() && valueMatcher.find()) {
-                //line has necessary items
-                //filteredCharges.add(line);
                 String firstMatch = line.substring(0, valueMatcher.end());
                 String secondMatch = line.substring(valueMatcher.end());
 

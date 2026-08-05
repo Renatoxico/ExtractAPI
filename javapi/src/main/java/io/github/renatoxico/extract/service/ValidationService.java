@@ -60,8 +60,7 @@ public class ValidationService {
     }
 
     public List<Expense> validateExpenses (List<Expense> expenses) {
-        expenses.removeIf(expense -> expense.getValue().doubleValue()<=0); // remove valores zerados ou negativos
-        //expenses.removeIf(expense -> !expense.getTransactionName().matches(".*[a-zA-Z].*"));
+        expenses.removeIf(expense -> expense.getValue().doubleValue()<=0);
         expenses.removeIf(expense -> expense.getTransactionName().isEmpty());
         expenses.forEach(expense -> {
             expense.setTransactionName(expense.getTransactionName().replaceAll("\\d{2}/\\d{2}", "").trim());// remove datas no formato dd/mm

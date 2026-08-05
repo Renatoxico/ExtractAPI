@@ -9,7 +9,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @DisplayName("AiProcessorService Tests")
 class AiProcessorServiceTest {
@@ -163,17 +165,16 @@ class AiProcessorServiceTest {
 
         List<CategoryMapper> result = callMapCategories(aiResponse);
 
-        // Should only include the normal expense (first one has too many pipes)
         assertEquals(1, result.size());
         assertEquals("NORMAL EXPENSE", result.getFirst().getExpenseName());
     }
 
     @Test
-    @DisplayName("Should create valid request body")
-    void testGetRequestBody() {
+    @DisplayName("Should create a valid local LLM request body")
+    void testGetLocalLlmRequestBody() {
         String prompt = "Test prompt";
 
-        Map<String, Object> body = callGetRequestBody(prompt);
+        Map<String, Object> body = callGetLocalLlmRequestBody(prompt);
 
         assertNotNull(body);
         assertEquals("gemma3:4b", body.get("model"));
@@ -197,36 +198,19 @@ class AiProcessorServiceTest {
 
         List<CategoryMapper> result = callMapCategories(aiResponse);
 
-        // Should be ignored because it has more than 1 pipe before category
         assertEquals(0, result.size());
     }
 
-    // ===== Helper Methods =====
-
-    /**
-     * Uses reflection to call the private mapCategories method
-     */
     @SuppressWarnings("unchecked")
     private List<CategoryMapper> callMapCategories(String aiResponse) {
-        try {
-            return (List<CategoryMapper>) ReflectionTestUtils.invokeMethod(
-                    aiProcessorService, "mapCategories", aiResponse);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to invoke mapCategories", e);
-        }
+        return (List<CategoryMapper>) ReflectionTestUtils.invokeMethod(
+                aiProcessorService, "mapCategories", aiResponse);
     }
 
-    /**
-     * Uses reflection to call the private getRequestBody method
-     */
     @SuppressWarnings("unchecked")
-    private Map<String, Object> callGetRequestBody(String prompt) {
-        try {
-            return (Map<String, Object>) ReflectionTestUtils.invokeMethod(
-                    aiProcessorService, "getRequestBody", prompt);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to invoke getRequestBody", e);
-        }
+    private Map<String, Object> callGetLocalLlmRequestBody(String prompt) {
+        return (Map<String, Object>) ReflectionTestUtils.invokeMethod(
+                aiProcessorService, "getLocalLlmRequestBody", prompt);
     }
 
 }

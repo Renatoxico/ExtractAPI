@@ -1,7 +1,5 @@
 package io.github.renatoxico.extract.model;
 
-import jakarta.persistence.Entity;
-
 import java.math.BigDecimal;
 
 public class NoteableDay {

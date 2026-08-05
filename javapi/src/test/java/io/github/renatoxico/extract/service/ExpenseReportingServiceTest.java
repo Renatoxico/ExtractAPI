@@ -29,13 +29,8 @@ class ExpenseReportingServiceTest {
     @Mock
     private ExpenseRepository expenseRepo;
 
-    @Mock
-    private ValidationService validationService;
-
     @InjectMocks
     private ExpenseReportingService service;
-
-    // --- generateId ---
 
     @Test
     void shouldGenerateUniqueIds() {
@@ -52,12 +47,9 @@ class ExpenseReportingServiceTest {
 
     @Test
     void shouldGenerateSufficientEntropy() {
-        // 24 bytes -> 32 base64 chars
         String id = service.generateId();
         assertThat(id.length()).isGreaterThanOrEqualTo(20);
     }
-
-    // --- getFullReport ---
 
     @Test
     void shouldReturnCompleteReportWithAllSections() {
@@ -104,8 +96,6 @@ class ExpenseReportingServiceTest {
         verify(expenseRepo).getAllExpenses(sessionId);
     }
 
-    // --- exportReportCSV ---
-
     @Test
     void shouldExportValidCSVWithHeaders() {
         String sessionId = "test-session";
@@ -142,7 +132,6 @@ class ExpenseReportingServiceTest {
         byte[] csv = service.exportReportCSV(sessionId);
         String csvContent = new String(csv);
 
-        // Should use empty strings for null fields
         assertThat(csvContent).contains("\"\"");
     }
 }
