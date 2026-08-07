@@ -64,14 +64,11 @@ Copy `svelte-frontend/.env.example` to `svelte-frontend/.env` and fill in the Fi
 
 Keep the service-account JSON under `secrets/`. Both `.env` files and `secrets/` are ignored by Git.
 
-Create the authentication tables in this order:
-
-```powershell
-psql -d extractor-dev -f database/create_app_user.sql
-psql -d extractor-dev -f database/create_expense_report.sql
-```
-
-Adjust the database connection arguments for your PostgreSQL installation.
+Database schema changes are managed by Flyway. An empty database is initialized
+from `javapi/src/main/resources/db/migration`, and an existing pre-Flyway
+database must follow the controlled baseline procedure in
+[`database/FLYWAY.md`](database/FLYWAY.md). Do not create or alter tables with
+ad hoc scripts.
 
 ## Run locally
 
