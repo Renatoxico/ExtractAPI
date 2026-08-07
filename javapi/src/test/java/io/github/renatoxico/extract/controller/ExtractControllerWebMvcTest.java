@@ -3,6 +3,7 @@ package io.github.renatoxico.extract.controller;
 import io.github.renatoxico.extract.exception.ProcessingException;
 import io.github.renatoxico.extract.model.AuthenticatedUserPrincipal;
 import io.github.renatoxico.extract.model.ReportExport;
+import io.github.renatoxico.extract.model.ValidationResponse;
 import io.github.renatoxico.extract.service.ExpenseReportAccessService;
 import io.github.renatoxico.extract.service.ExpenseReportingService;
 import io.github.renatoxico.extract.service.ExtractorService;
@@ -11,6 +12,10 @@ import io.github.renatoxico.extract.service.ValidationService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -20,14 +25,12 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.List;
+import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -40,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(ExtractController.class)
 @AutoConfigureMockMvc(addFilters = false)
-class ExtractControllerTest {
+class ExtractControllerWebMvcTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -61,11 +64,22 @@ class ExtractControllerTest {
     private ExpenseReportAccessService reportAccessService;
 
     private MockMultipartFile validPdfFile;
-    private MockMultipartFile invalidTypeFile;
     private AuthenticatedUserPrincipal principal;
 
     private static ReportExport emptyReport(String sessionId) {
         return new ReportExport(List.of(), List.of(), List.of(), List.of(), null, sessionId);
+    }
+
+    private static ValidationResponse validResponse() {
+        return new ValidationResponse(true, "OK", "OK", HttpStatus.OK);
+    }
+
+    private static Stream<Arguments> validationErrors() {
+        return Stream.of(
+            Arguments.of("INVALID_FILE_TYPE", "File is not a valid PDF"),
+            Arguments.of("FILE_TOO_BIG", "File is too large"),
+            Arguments.of("TOO_MANY_FILES", "Too many files")
+        );
     }
 
     @BeforeEach
@@ -88,13 +102,6 @@ class ExtractControllerTest {
             "application/pdf",
             "PDF content".getBytes()
         );
-
-        invalidTypeFile = new MockMultipartFile(
-            "file",
-            "test.txt",
-            "text/plain",
-            "Text content".getBytes()
-        );
     }
 
     @AfterEach
@@ -103,22 +110,18 @@ class ExtractControllerTest {
     }
 
     @Test
-    void testHome_Returns200() throws Exception {
+    void homeReturnsOk() throws Exception {
         mockMvc.perform(get("/extract/"))
             .andExpect(status().isOk());
     }
 
     @Test
-    void testProcess_WithValidFile_Returns200() throws Exception {
-        io.github.renatoxico.extract.model.ValidationResponse validResponse =
-            new io.github.renatoxico.extract.model.ValidationResponse(true, "OK", "OK", HttpStatus.OK);
-        when(validationService.validateFiles(any())).thenReturn(validResponse);
+    void processReturnsReportAndRegistersOwnership() throws Exception {
+        when(validationService.validateFiles(any())).thenReturn(validResponse());
         when(reportsService.generateId()).thenReturn("session-123");
         when(javaProcessor.extractText(any())).thenReturn("Sample expense text");
 
         when(reportsService.getFullReport("session-123")).thenReturn(emptyReport("session-123"));
-
-        doNothing().when(objService).process(anyString(), anyString());
 
         mockMvc.perform(multipart("/extract/")
             .file(validPdfFile))
@@ -132,131 +135,64 @@ class ExtractControllerTest {
     }
 
     @Test
-    void testProcess_WithNoFiles_Returns400() throws Exception {
+    void processWithoutFilesReturnsBadRequest() throws Exception {
         mockMvc.perform(multipart("/extract/"))
             .andExpect(status().isBadRequest());
     }
 
-    @Test
-    void testProcess_WithInvalidFileType_Returns400WithINVALID_FILE_TYPE() throws Exception {
-        io.github.renatoxico.extract.model.ValidationResponse validResponse =
-            new io.github.renatoxico.extract.model.ValidationResponse(false, "not a valid PDF file", "INVALID_FILE_TYPE", HttpStatus.BAD_REQUEST);
-        when(validationService.validateFiles(any())).thenReturn(validResponse);
+    @ParameterizedTest
+    @MethodSource("validationErrors")
+    void processReturnsStructuredValidationError(String errorCode, String message) throws Exception {
+        when(validationService.validateFiles(any())).thenReturn(
+            new ValidationResponse(false, message, errorCode, HttpStatus.BAD_REQUEST)
+        );
 
-        MvcResult result = mockMvc.perform(multipart("/extract/")
-            .file(invalidTypeFile))
+        mockMvc.perform(multipart("/extract/").file(validPdfFile))
             .andExpect(status().isBadRequest())
-            .andReturn();
-
-        String content = result.getResponse().getContentAsString();
-        assertTrue(content.contains("INVALID_FILE_TYPE"));
+            .andExpect(jsonPath("$.errorCode").value(errorCode))
+            .andExpect(jsonPath("$.message").value(message));
     }
 
-    @Test
-    void testProcess_WithFileTooLarge_Returns400WithFILE_TOO_BIG() throws Exception {
-        io.github.renatoxico.extract.model.ValidationResponse validResponse =
-            new io.github.renatoxico.extract.model.ValidationResponse(false, "File is too large", "FILE_TOO_BIG", HttpStatus.BAD_REQUEST);
-        when(validationService.validateFiles(any())).thenReturn(validResponse);
-
-        MvcResult result = mockMvc.perform(multipart("/extract/")
-            .file(validPdfFile))
-            .andExpect(status().isBadRequest())
-            .andReturn();
-
-        String content = result.getResponse().getContentAsString();
-        assertTrue(content.contains("FILE_TOO_BIG"));
-    }
-
-    @Test
-    void testProcess_WithTooManyFiles_Returns400WithTOO_MANY_FILES() throws Exception {
-        io.github.renatoxico.extract.model.ValidationResponse validResponse =
-            new io.github.renatoxico.extract.model.ValidationResponse(false, "Too many files", "TOO_MANY_FILES", HttpStatus.BAD_REQUEST);
-        when(validationService.validateFiles(any())).thenReturn(validResponse);
-
-        MvcResult result = mockMvc.perform(multipart("/extract/")
-            .file(validPdfFile)
-            .file(validPdfFile)
-            .file(validPdfFile)
-            .file(validPdfFile)
-            .file(validPdfFile)
-            .file(validPdfFile)
-            .file(validPdfFile))
-            .andExpect(status().isBadRequest())
-            .andReturn();
-
-        String content = result.getResponse().getContentAsString();
-        assertTrue(content.contains("TOO_MANY_FILES"));
-    }
-
-    @Test
-    void testProcess_WithEmptyPDF_Returns422WithEMPTY_PDF_CONTENT() throws Exception {
-        io.github.renatoxico.extract.model.ValidationResponse validResponse =
-            new io.github.renatoxico.extract.model.ValidationResponse(true, "OK", "OK", HttpStatus.OK);
-        when(validationService.validateFiles(any())).thenReturn(validResponse);
+    @ParameterizedTest
+    @NullAndEmptySource
+    void processRejectsPdfWithoutExtractedText(String extractedText) throws Exception {
+        when(validationService.validateFiles(any())).thenReturn(validResponse());
         when(reportsService.generateId()).thenReturn("session-123");
-        when(javaProcessor.extractText(any())).thenReturn("");
+        when(javaProcessor.extractText(any())).thenReturn(extractedText);
 
-        MvcResult result = mockMvc.perform(multipart("/extract/")
+        mockMvc.perform(multipart("/extract/")
             .file(validPdfFile))
             .andExpect(status().isUnprocessableEntity())
-            .andReturn();
-
-        String content = result.getResponse().getContentAsString();
-        assertTrue(content.contains("EMPTY_PDF_CONTENT"));
+            .andExpect(jsonPath("$.errorCode").value("EMPTY_PDF_CONTENT"));
     }
 
     @Test
-    void testProcess_WithNullPDFContent_Returns422WithEMPTY_PDF_CONTENT() throws Exception {
-        io.github.renatoxico.extract.model.ValidationResponse validResponse =
-            new io.github.renatoxico.extract.model.ValidationResponse(true, "OK", "OK", HttpStatus.OK);
-        when(validationService.validateFiles(any())).thenReturn(validResponse);
-        when(reportsService.generateId()).thenReturn("session-123");
-        when(javaProcessor.extractText(any())).thenReturn(null);
-
-        MvcResult result = mockMvc.perform(multipart("/extract/")
-            .file(validPdfFile))
-            .andExpect(status().isUnprocessableEntity())
-            .andReturn();
-
-        String content = result.getResponse().getContentAsString();
-        assertTrue(content.contains("EMPTY_PDF_CONTENT"));
-    }
-
-    @Test
-    void testProcess_WithProcessingError_Returns500WithFILE_PROCESSING_ERROR() throws Exception {
-        io.github.renatoxico.extract.model.ValidationResponse validResponse =
-            new io.github.renatoxico.extract.model.ValidationResponse(true, "OK", "OK", HttpStatus.OK);
-        when(validationService.validateFiles(any())).thenReturn(validResponse);
+    void processMapsFileFailureToProcessingError() throws Exception {
+        when(validationService.validateFiles(any())).thenReturn(validResponse());
         when(reportsService.generateId()).thenReturn("session-123");
         when(javaProcessor.extractText(any())).thenReturn("Sample expense text");
         doThrow(new RuntimeException("Processing failed"))
             .when(objService).process(anyString(), anyString());
 
-        MvcResult result = mockMvc.perform(multipart("/extract/")
+        mockMvc.perform(multipart("/extract/")
             .file(validPdfFile))
             .andExpect(status().isInternalServerError())
-            .andReturn();
-
-        String content = result.getResponse().getContentAsString();
-        assertTrue(content.contains("FILE_PROCESSING_ERROR"));
+            .andExpect(jsonPath("$.errorCode").value("FILE_PROCESSING_ERROR"));
     }
 
     @Test
-    void testProcess_WithUnexpectedError_Returns500WithUNEXPECTED_ERROR() throws Exception {
+    void processMapsUnexpectedFailureToSafeError() throws Exception {
         when(validationService.validateFiles(any()))
             .thenThrow(new RuntimeException("Unexpected error in validation"));
 
-        MvcResult result = mockMvc.perform(multipart("/extract/")
+        mockMvc.perform(multipart("/extract/")
             .file(validPdfFile))
             .andExpect(status().isInternalServerError())
-            .andReturn();
-
-        String content = result.getResponse().getContentAsString();
-        assertTrue(content.contains("UNEXPECTED_ERROR"));
+            .andExpect(jsonPath("$.errorCode").value("UNEXPECTED_ERROR"));
     }
 
     @Test
-    void testGetSummary_WithValidSessionId_Returns200() throws Exception {
+    void summaryReturnsOwnedReport() throws Exception {
         when(reportsService.getFullReport("session-123")).thenReturn(emptyReport("session-123"));
 
         mockMvc.perform(get("/extract/summary/session-123"))
@@ -268,7 +204,7 @@ class ExtractControllerTest {
     }
 
     @Test
-    void testGetSummary_OtherUsersSession_Returns404WithoutQueryingExpenses() throws Exception {
+    void summaryForAnotherUserReturnsNotFoundWithoutQueryingExpenses() throws Exception {
         doThrow(new ProcessingException(
             "No report found for the provided session ID",
             HttpStatus.NOT_FOUND,
@@ -283,7 +219,7 @@ class ExtractControllerTest {
     }
 
     @Test
-    void testExport_OtherUsersSession_Returns404WithoutExporting() throws Exception {
+    void exportForAnotherUserReturnsNotFoundWithoutExporting() throws Exception {
         doThrow(new ProcessingException(
             "No report found for the provided session ID",
             HttpStatus.NOT_FOUND,
@@ -298,54 +234,41 @@ class ExtractControllerTest {
     }
 
     @Test
-    void testGetSummary_WithBlankSessionId_Returns400WithINVALID_SESSION_ID() throws Exception {
-        MvcResult result = mockMvc.perform(get("/extract/summary/ "))
+    void summaryRejectsBlankSessionId() throws Exception {
+        mockMvc.perform(get("/extract/summary/ "))
             .andExpect(status().isBadRequest())
-            .andReturn();
-
-        String content = result.getResponse().getContentAsString();
-        assertTrue(content.contains("INVALID_SESSION_ID"));
+            .andExpect(jsonPath("$.errorCode").value("INVALID_SESSION_ID"));
     }
 
     @Test
-    void testGetSummary_WithNonExistentSession_Returns404WithSESSION_NOT_FOUND() throws Exception {
+    void summaryReturnsNotFoundWhenReportDoesNotExist() throws Exception {
         when(reportsService.getFullReport("non-existent")).thenReturn(null);
 
-        MvcResult result = mockMvc.perform(get("/extract/summary/non-existent"))
+        mockMvc.perform(get("/extract/summary/non-existent"))
             .andExpect(status().isNotFound())
-            .andReturn();
-
-        String content = result.getResponse().getContentAsString();
-        assertTrue(content.contains("SESSION_NOT_FOUND"));
+            .andExpect(jsonPath("$.errorCode").value("SESSION_NOT_FOUND"));
     }
 
     @Test
-    void testGetSummary_WithRetrievalError_Returns500WithSUMMARY_RETRIEVAL_ERROR() throws Exception {
+    void summaryMapsRetrievalFailureToSafeError() throws Exception {
         when(reportsService.getFullReport(anyString()))
             .thenThrow(new RuntimeException("Database error"));
 
-        MvcResult result = mockMvc.perform(get("/extract/summary/session-123"))
+        mockMvc.perform(get("/extract/summary/session-123"))
             .andExpect(status().isInternalServerError())
-            .andReturn();
-
-        String content = result.getResponse().getContentAsString();
-        assertTrue(content.contains("SUMMARY_RETRIEVAL_ERROR"));
+            .andExpect(jsonPath("$.errorCode").value("SUMMARY_RETRIEVAL_ERROR"));
     }
 
     @Test
-    void testProcess_WithMultipleValidFiles_Returns200() throws Exception {
+    void processHandlesEveryUploadedFile() throws Exception {
         MockMultipartFile file1 = new MockMultipartFile("file", "test1.pdf", "application/pdf", "PDF 1".getBytes());
         MockMultipartFile file2 = new MockMultipartFile("file", "test2.pdf", "application/pdf", "PDF 2".getBytes());
 
-        io.github.renatoxico.extract.model.ValidationResponse validResponse =
-            new io.github.renatoxico.extract.model.ValidationResponse(true, "OK", "OK", HttpStatus.OK);
-        when(validationService.validateFiles(any())).thenReturn(validResponse);
+        when(validationService.validateFiles(any())).thenReturn(validResponse());
         when(reportsService.generateId()).thenReturn("session-123");
         when(javaProcessor.extractText(any())).thenReturn("Sample expense text");
 
         when(reportsService.getFullReport("session-123")).thenReturn(emptyReport("session-123"));
-
-        doNothing().when(objService).process(anyString(), anyString());
 
         mockMvc.perform(multipart("/extract/")
             .file(file1)

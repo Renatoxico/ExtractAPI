@@ -21,11 +21,9 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Service
 public class AiProcessorService {
@@ -36,6 +34,11 @@ public class AiProcessorService {
     @Value("${api.key}")
     private String API_KEY;
 
+    private final AiCategoryResponseParser categoryResponseParser;
+
+    public AiProcessorService(AiCategoryResponseParser categoryResponseParser) {
+        this.categoryResponseParser = categoryResponseParser;
+    }
 
     public String getPrompt() {
         try {
@@ -52,19 +55,6 @@ public class AiProcessorService {
         }
     }
 
-    private static final Set<String> VALID_CATEGORIES = Set.of(
-            "Roupas / Acessórios",
-            "E-commerce / Compras online",
-            "Restaurante / Lanches",
-            "Investimentos / Assinaturas profissionais",
-            "Saúde / Farmácia / Bem-estar",
-            "Transporte / Auto",
-            "Lazer / Entretenimento / Pets",
-            "Supermercado",
-            "Outros / Transferências",
-            "Moradia / Contas"
-    );
-
     public List<CategoryMapper> processWithGemini(List<CategoryMapper> expenses) {
         String prompt = buildPrompt(expenses);
         try {
@@ -78,7 +68,7 @@ public class AiProcessorService {
             String aiResponse = response.text();
             if (aiResponse != null && !aiResponse.isBlank()) {
                 LOG.info("Received response from Gemini");
-                return mapCategories(aiResponse);
+                return categoryResponseParser.parse(aiResponse);
             }
         } catch (Exception ex) {
             LOG.error("Error calling Gemini API: {}", ex.getMessage(), ex);
@@ -140,7 +130,7 @@ public class AiProcessorService {
 
             LOG.info("Local Ollama API call completed");
             if (response != null) {
-                return mapCategories(response);
+                return categoryResponseParser.parse(response);
             }
         } catch (Exception ex) {
             LOG.error("Error calling local Ollama API", ex);
@@ -148,7 +138,7 @@ public class AiProcessorService {
         return expenses;
     }
 
-    private Map<String, Object> getLocalLlmRequestBody(String prompt) {
+    Map<String, Object> getLocalLlmRequestBody(String prompt) {
         Map<String, Object> options = new HashMap<>();
         options.put("num_ctx", 4096);
         options.put("num_predict", 4096);
@@ -162,23 +152,4 @@ public class AiProcessorService {
         return body;
     }
 
-    private List<CategoryMapper> mapCategories(String aiResponse){
-        List<CategoryMapper> res = new ArrayList<>();
-        String[] lines = aiResponse.split("\\r?\\n");
-        for(String line : lines){
-            if(line.isBlank() || !line.contains("|"))
-                continue;
-
-            String[] parts = line.split("\\|");
-
-            if(parts.length != 2)
-                continue;
-
-            if(!VALID_CATEGORIES.contains(parts[1].trim()))
-                continue;
-
-            res.add(new CategoryMapper(parts[0].trim(), parts[1].trim()));
-        }
-        return res;
-    }
 }
