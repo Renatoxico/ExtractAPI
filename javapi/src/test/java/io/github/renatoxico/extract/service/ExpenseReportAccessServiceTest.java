@@ -1,13 +1,9 @@
 package io.github.renatoxico.extract.service;
 
 import io.github.renatoxico.extract.exception.ProcessingException;
-import io.github.renatoxico.extract.model.AppUser;
-import io.github.renatoxico.extract.model.ExpenseReport;
-import io.github.renatoxico.extract.repo.AppUserRepository;
 import io.github.renatoxico.extract.repo.ExpenseReportRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -15,7 +11,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -24,24 +19,8 @@ class ExpenseReportAccessServiceTest {
     @Mock
     private ExpenseReportRepository expenseReportRepository;
 
-    @Mock
-    private AppUserRepository appUserRepository;
-
     @InjectMocks
     private ExpenseReportAccessService expenseReportAccessService;
-
-    @Test
-    void registerOwnershipUsesAuthenticatedLocalUser() {
-        AppUser owner = mock(AppUser.class);
-        when(appUserRepository.getReferenceById(42L)).thenReturn(owner);
-
-        expenseReportAccessService.registerOwnership("session-123", 42L);
-
-        ArgumentCaptor<ExpenseReport> reportCaptor = ArgumentCaptor.forClass(ExpenseReport.class);
-        verify(expenseReportRepository).save(reportCaptor.capture());
-        assertEquals("session-123", reportCaptor.getValue().getSessionId());
-        assertEquals(owner, reportCaptor.getValue().getOwner());
-    }
 
     @Test
     void requireOwnershipAllowsOwner() {

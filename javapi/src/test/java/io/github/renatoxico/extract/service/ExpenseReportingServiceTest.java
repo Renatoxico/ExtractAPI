@@ -1,20 +1,26 @@
 package io.github.renatoxico.extract.service;
 
 import io.github.renatoxico.extract.exception.ProcessingException;
+import io.github.renatoxico.extract.model.AppUser;
 import io.github.renatoxico.extract.model.Expense;
 import io.github.renatoxico.extract.model.ExpenseDTO;
+import io.github.renatoxico.extract.model.ExpenseReport;
 import io.github.renatoxico.extract.model.ExpensesCategories;
 import io.github.renatoxico.extract.model.ExpensesGroupedDTO;
 import io.github.renatoxico.extract.model.NoteableDay;
 import io.github.renatoxico.extract.model.ReportExport;
+import io.github.renatoxico.extract.repo.AppUserRepository;
+import io.github.renatoxico.extract.repo.ExpenseReportRepository;
 import io.github.renatoxico.extract.repo.ExpenseRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 
@@ -22,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class ExpenseReportingServiceTest {
@@ -29,26 +36,49 @@ class ExpenseReportingServiceTest {
     @Mock
     private ExpenseRepository expenseRepo;
 
+    @Mock
+    private ExpenseReportRepository expenseReportRepository;
+
+    @Mock
+    private AppUserRepository appUserRepository;
+
     @InjectMocks
     private ExpenseReportingService service;
 
     @Test
     void shouldGenerateUniqueIds() {
-        String id1 = service.generateId();
-        String id2 = service.generateId();
+        String id1 = service.generateId(42L);
+        String id2 = service.generateId(42L);
         assertThat(id1).isNotEqualTo(id2);
     }
 
     @Test
     void shouldGenerateUrlSafeId() {
-        String id = service.generateId();
+        String id = service.generateId(42L);
         assertThat(id).matches("[a-z0-9_-]+");
     }
 
     @Test
     void shouldGenerateSufficientEntropy() {
-        String id = service.generateId();
+        String id = service.generateId(42L);
         assertThat(id.length()).isGreaterThanOrEqualTo(20);
+    }
+
+    @Test
+    void shouldPersistReportWhenGeneratingId() {
+        AppUser owner = mock(AppUser.class);
+        when(appUserRepository.getReferenceById(42L)).thenReturn(owner);
+        Instant beforeGeneration = Instant.now();
+
+        String id = service.generateId(42L);
+
+        Instant afterGeneration = Instant.now();
+        ArgumentCaptor<ExpenseReport> reportCaptor = ArgumentCaptor.forClass(ExpenseReport.class);
+        verify(expenseReportRepository).save(reportCaptor.capture());
+        ExpenseReport report = reportCaptor.getValue();
+        assertThat(report.getSessionId()).isEqualTo(id);
+        assertThat(report.getOwner()).isEqualTo(owner);
+        assertThat(report.getCreationDate()).isBetween(beforeGeneration, afterGeneration);
     }
 
     @Test

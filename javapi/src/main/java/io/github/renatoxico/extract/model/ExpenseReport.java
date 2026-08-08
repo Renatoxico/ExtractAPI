@@ -8,6 +8,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "expense_report")
 public class ExpenseReport {
@@ -19,12 +21,16 @@ public class ExpenseReport {
     @JoinColumn(name = "app_user_id", nullable = false)
     private AppUser owner;
 
+    @Column(name = "creation_date", nullable = false, updatable = false)
+    private Instant creationDate;
+
     protected ExpenseReport() {
     }
 
     public ExpenseReport(String sessionId, AppUser owner) {
         this.sessionId = sessionId;
         this.owner = owner;
+        this.creationDate = Instant.now();
     }
 
     public String getSessionId() {
@@ -33,5 +39,9 @@ public class ExpenseReport {
 
     public AppUser getOwner() {
         return owner;
+    }
+
+    public Instant getCreationDate() {
+        return creationDate;
     }
 }

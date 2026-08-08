@@ -1,0 +1,2 @@
+ALTER TABLE public.expense_report
+    ADD COLUMN creation_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP;

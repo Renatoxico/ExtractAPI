@@ -116,9 +116,9 @@ class ExtractControllerWebMvcTest {
     }
 
     @Test
-    void processReturnsReportAndRegistersOwnership() throws Exception {
+    void processReturnsReportAndCreatesSessionForOwner() throws Exception {
         when(validationService.validateFiles(any())).thenReturn(validResponse());
-        when(reportsService.generateId()).thenReturn("session-123");
+        when(reportsService.generateId(42L)).thenReturn("session-123");
         when(javaProcessor.extractText(any())).thenReturn("Sample expense text");
 
         when(reportsService.getFullReport("session-123")).thenReturn(emptyReport("session-123"));
@@ -131,7 +131,7 @@ class ExtractControllerWebMvcTest {
         verify(validationService).validateFiles(any());
         verify(javaProcessor).extractText(any());
         verify(objService).process(anyString(), anyString());
-        verify(reportAccessService).registerOwnership("session-123", 42L);
+        verify(reportsService).generateId(42L);
     }
 
     @Test
@@ -157,7 +157,7 @@ class ExtractControllerWebMvcTest {
     @NullAndEmptySource
     void processRejectsPdfWithoutExtractedText(String extractedText) throws Exception {
         when(validationService.validateFiles(any())).thenReturn(validResponse());
-        when(reportsService.generateId()).thenReturn("session-123");
+        when(reportsService.generateId(42L)).thenReturn("session-123");
         when(javaProcessor.extractText(any())).thenReturn(extractedText);
 
         mockMvc.perform(multipart("/extract/")
@@ -169,7 +169,7 @@ class ExtractControllerWebMvcTest {
     @Test
     void processMapsFileFailureToProcessingError() throws Exception {
         when(validationService.validateFiles(any())).thenReturn(validResponse());
-        when(reportsService.generateId()).thenReturn("session-123");
+        when(reportsService.generateId(42L)).thenReturn("session-123");
         when(javaProcessor.extractText(any())).thenReturn("Sample expense text");
         doThrow(new RuntimeException("Processing failed"))
             .when(objService).process(anyString(), anyString());
@@ -265,7 +265,7 @@ class ExtractControllerWebMvcTest {
         MockMultipartFile file2 = new MockMultipartFile("file", "test2.pdf", "application/pdf", "PDF 2".getBytes());
 
         when(validationService.validateFiles(any())).thenReturn(validResponse());
-        when(reportsService.generateId()).thenReturn("session-123");
+        when(reportsService.generateId(42L)).thenReturn("session-123");
         when(javaProcessor.extractText(any())).thenReturn("Sample expense text");
 
         when(reportsService.getFullReport("session-123")).thenReturn(emptyReport("session-123"));

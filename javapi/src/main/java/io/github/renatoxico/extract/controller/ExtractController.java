@@ -66,7 +66,7 @@ public class ExtractController {
                 );
             }
 
-            String sessionId = reportsService.generateId();
+            String sessionId = reportsService.generateId(principal.localUserId());
             LOG.info("Generated session ID: {}", sessionId);
 
             for (MultipartFile file : files) {
@@ -96,8 +96,6 @@ public class ExtractController {
                     );
                 }
             }
-
-            reportAccessService.registerOwnership(sessionId, principal.localUserId());
 
             ReportExport expensesGrouped = reportsService.getFullReport(sessionId);
             LOG.info("Process completed successfully for session: {}", sessionId);
