@@ -101,9 +101,15 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     @Modifying
     @Transactional
     @Query(value = """
-            UPDATE TB_EXPENSE TE SET TRANSACTION_TYPE = (SELECT DISTINCT(TE2.TRANSACTION_TYPE)  FROM TB_EXPENSE TE2 WHERE TE2.TRANSACTION_NAME = TE.TRANSACTION_NAME AND te2.TRANSACTION_TYPE <> '' LIMIT 1)
+            UPDATE TB_EXPENSE TE SET TRANSACTION_TYPE = (
+                SELECT DISTINCT(TE2.TRANSACTION_TYPE)  
+                FROM TB_EXPENSE TE2 WHERE TE2.TRANSACTION_NAME = TE.TRANSACTION_NAME 
+                AND te2.TRANSACTION_TYPE <> '' LIMIT 1)
             WHERE TE.TRANSACTION_TYPE = ''
-            AND EXISTS (SELECT 1 FROM TB_EXPENSE TE2 WHERE TE2.TRANSACTION_NAME = TE.TRANSACTION_NAME AND te2.TRANSACTION_TYPE <> '')
+            AND EXISTS (
+                SELECT 1 FROM TB_EXPENSE TE2 
+                WHERE TE2.TRANSACTION_NAME = TE.TRANSACTION_NAME 
+                AND te2.TRANSACTION_TYPE <> '')
             """, nativeQuery = true)
     void updateMatchedExpenses();
 }
