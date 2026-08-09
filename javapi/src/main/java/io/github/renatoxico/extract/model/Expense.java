@@ -1,6 +1,7 @@
 package io.github.renatoxico.extract.model;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -9,29 +10,34 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "tbExpense")
+@Table(name = "expense")
 public class Expense {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private BigDecimal value;
+    @Column(name = "amount")
+    private BigDecimal amount;
 
-    private String transactionName;
+    @Column(name = "expense_name")
+    private String expenseName;
 
-    private String transactionType;
+    @Column(name = "category")
+    private String category;
 
+    @Column(name = "date")
     private String date;
 
-    private String sessionId;
+    @Column(name = "report_id", nullable = false, length = 32)
+    private String reportId;
 
-    public Expense (String sessionId, BigDecimal value, String name, String date, String type){
-        this.transactionName = name;
-        this.transactionType = type;
-        this.value = value;
+    public Expense (String reportId, BigDecimal amount, String expenseName, String date, String category){
+        this.expenseName = expenseName;
+        this.category = category;
+        this.amount = amount;
         this.date = date;
-        this.sessionId = sessionId;
+        this.reportId = reportId;
     }
 
     public Expense() {}
@@ -44,28 +50,28 @@ public class Expense {
         this.id = id;
     }
 
-    public BigDecimal getValue() {
-        return value;
+    public BigDecimal getAmount() {
+        return amount;
     }
 
-    public void setValue(BigDecimal value) {
-        this.value = value;
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
     }
 
-    public String getTransactionName() {
-        return transactionName;
+    public String getExpenseName() {
+        return expenseName;
     }
 
-    public void setTransactionName(String transactionName) {
-        this.transactionName = transactionName;
+    public void setExpenseName(String expenseName) {
+        this.expenseName = expenseName;
     }
 
-    public String getTransactionType() {
-        return transactionType;
+    public String getCategory() {
+        return category;
     }
 
-    public void setTransactionType(String transactionType) {
-        this.transactionType = transactionType;
+    public void setCategory(String category) {
+        this.category = category;
     }
 
     public String getDate() {
@@ -76,19 +82,19 @@ public class Expense {
         this.date = date;
     }
 
-    public String getSessionId() {
-        return sessionId;
+    public String getReportId() {
+        return reportId;
     }
 
-    public void setSessionId(String sessionId) {
-        this.sessionId = sessionId;
+    public void setReportId(String reportId) {
+        this.reportId = reportId;
     }
 
     @Override
     public String toString() {
         return "Expense{" +
-                "value=" + value +
-                ", transactionName='" + transactionName + '\'' +
+                "amount=" + amount +
+                ", expenseName='" + expenseName + '\'' +
                 ", date='" + date + '\'' +
                 '}';
     }

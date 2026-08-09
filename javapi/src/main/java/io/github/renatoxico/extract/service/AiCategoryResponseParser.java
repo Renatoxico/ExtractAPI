@@ -1,6 +1,6 @@
 package io.github.renatoxico.extract.service;
 
-import io.github.renatoxico.extract.model.CategoryMapper;
+import io.github.renatoxico.extract.model.ExpenseCategoryAssignment;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -23,8 +23,8 @@ public class AiCategoryResponseParser {
         "Moradia / Contas"
     );
 
-    public List<CategoryMapper> parse(String aiResponse) {
-        List<CategoryMapper> categories = new ArrayList<>();
+    public List<ExpenseCategoryAssignment> parse(String aiResponse) {
+        List<ExpenseCategoryAssignment> categories = new ArrayList<>();
 
         for (String line : aiResponse.split("\\r?\\n")) {
             if (line.isBlank() || !line.contains("|")) {
@@ -41,7 +41,7 @@ public class AiCategoryResponseParser {
                 continue;
             }
 
-            categories.add(new CategoryMapper(parts[0].trim(), category));
+            categories.add(new ExpenseCategoryAssignment(parts[0].trim(), category));
         }
 
         return categories;

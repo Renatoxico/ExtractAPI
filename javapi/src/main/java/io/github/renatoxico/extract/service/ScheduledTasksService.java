@@ -1,6 +1,6 @@
 package io.github.renatoxico.extract.service;
 
-import io.github.renatoxico.extract.model.CategoryMapper;
+import io.github.renatoxico.extract.model.ExpenseCategoryAssignment;
 import io.github.renatoxico.extract.repo.ExpenseRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,17 +32,17 @@ public class ScheduledTasksService {
     @Scheduled(cron = "0 */5 * * * *")
     private void enrichCategories() {
         LOG.info("Starting scheduled AI enrichment task...");
-        List<CategoryMapper> enrichedExpenses = expenseReportingService.getExpenseNames();
+        List<ExpenseCategoryAssignment> enrichedExpenses = expenseReportingService.getUnclassifiedExpenseNames();
         if (enrichedExpenses.stream().count() == 0) {
             LOG.info("No expenses found for enrichment.");
             return;
         }
         try {
             enrichedExpenses = aiProcessorService.processWithGemini(enrichedExpenses);
-            for (CategoryMapper cm : enrichedExpenses) {
-                if (cm.getTransactionType() != null && !cm.getTransactionType().isEmpty()) {
-                    LOG.info("Updating {} to category {}", cm.getExpenseName(), cm.getTransactionType());
-                    expenseRepo.updateTransactionType(cm.getExpenseName(), cm.getTransactionType());
+            for (ExpenseCategoryAssignment assignment : enrichedExpenses) {
+                if (assignment.category() != null && !assignment.category().isEmpty()) {
+                    LOG.info("Updating {} to category {}", assignment.expenseName(), assignment.category());
+                    expenseRepo.updateCategory(assignment.expenseName(), assignment.category());
                 }
             }
         } catch (Exception e) {

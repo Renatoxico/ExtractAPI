@@ -3,9 +3,9 @@ export function computeMonthWithMostTransactions(allExpenses) {
 
   const counts = {};
   for (const e of allExpenses) {
-    const parts = e.date?.split('/');
+    const parts = e.date?.split('-');
     if (!parts || parts.length < 3) continue;
-    const [, mm, yyyy] = parts;
+    const [yyyy, mm] = parts;
     const key = `${mm}/${yyyy}`;
     counts[key] = (counts[key] ?? 0) + 1;
   }

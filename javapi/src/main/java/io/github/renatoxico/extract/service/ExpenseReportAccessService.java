@@ -15,12 +15,12 @@ public class ExpenseReportAccessService {
     }
 
     @Transactional(readOnly = true)
-    public void requireOwnership(String sessionId, Long localUserId) {
-        if (!expenseReportRepository.existsBySessionIdAndOwnerId(sessionId, localUserId)) {
+    public void requireOwnership(String reportId, Long localUserId) {
+        if (!expenseReportRepository.existsByIdAndOwnerId(reportId, localUserId)) {
             throw new ProcessingException(
-                "No report found for the provided session ID",
+                "No report found for the provided report ID",
                 HttpStatus.NOT_FOUND,
-                "SESSION_NOT_FOUND"
+                "REPORT_NOT_FOUND"
             );
         }
     }

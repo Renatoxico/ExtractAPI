@@ -1,11 +1,11 @@
 <script>
   import { categoryColor } from '../lib/categoryColors.js';
   import { categoryIcon } from '../lib/categoryIcons.js';
-  import { formatBRL } from '../lib/formatters.js';
+  import { formatBRL, formatCategory } from '../lib/formatters.js';
 
   let { items } = $props();
 
-  let sortKey = $state('total');
+  let sortKey = $state('totalAmount');
   let sortDir = $state(-1); // -1 = desc, 1 = asc
 
   function toggleSort(key) {
@@ -48,13 +48,13 @@
           </button>
         </th>
         <th class="th-num">
-          <button onclick={() => toggleSort('instances')}>
-            Ocorrências {sortIcon('instances')}
+          <button onclick={() => toggleSort('occurrenceCount')}>
+            Ocorrências {sortIcon('occurrenceCount')}
           </button>
         </th>
         <th class="th-num">
-          <button onclick={() => toggleSort('total')}>
-            Total {sortIcon('total')}
+          <button onclick={() => toggleSort('totalAmount')}>
+            Total {sortIcon('totalAmount')}
           </button>
         </th>
       </tr>
@@ -66,11 +66,11 @@
           <td>
             <span class="cat-tag" style="--c: {categoryColor(item.category)}">
               <span class="cat-icon" style="color: var(--c)">{@html categoryIcon(item.category)}</span>
-              {item.category}
+              {formatCategory(item.category)}
             </span>
           </td>
-          <td class="td-num">{item.instances}×</td>
-          <td class="td-num td-value">{formatBRL(Number(item.total))}</td>
+          <td class="td-num">{item.occurrenceCount}×</td>
+          <td class="td-num td-value">{formatBRL(Number(item.totalAmount))}</td>
         </tr>
       {/each}
     </tbody>

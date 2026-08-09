@@ -19,23 +19,23 @@
   const MAX_SIZE = 512 * 1024
 
   let files = $state([])
-  let sessionId = $state('')
+  let reportId = $state('')
   let result = $state(null)
   let loading = $state(false)
   let error = $state(null)
 
   // Derived stats
-  let monthStat = $derived(computeMonthWithMostTransactions(result?.AllExpenses))
+  let monthStat = $derived(computeMonthWithMostTransactions(result?.expenses))
   let mostRecurring = $derived(
-    result?.SmartGroupExpenselist?.slice().sort((a, b) => b.instances - a.instances)[0] ?? null
+    result?.expenseGroups?.slice().sort((a, b) => b.occurrenceCount - a.occurrenceCount)[0] ?? null
   )
   let mostExpensiveDay = $derived(
-    result?.NotableDays?.slice().sort((a, b) => Number(b.total) - Number(a.total))[0] ?? null
+    result?.highlights?.highestSpendingDay ?? null
   )
 
   let hasOversized = $derived(files.some(f => f.size > MAX_SIZE))
   let canSubmitFiles = $derived(files.length > 0 && files.length <= MAX_FILES && !hasOversized && !loading)
-  let canSubmitSession = $derived(sessionId.trim().length > 0 && !loading)
+  let canSubmitReport = $derived(reportId.trim().length > 0 && !loading)
 
   function handleFilesChange(newFiles) {
     const merged = [...files, ...newFiles]
@@ -59,6 +59,7 @@
     error = null
     try {
       result = await processFiles(files)
+      reportId = result.reportId
     } catch (err) {
       error = { errorCode: err.errorCode, message: err.message, details: err.details }
     } finally {
@@ -66,12 +67,12 @@
     }
   }
 
-  async function handleSubmitSession() {
-    if (!canSubmitSession) return
+  async function handleSubmitReport() {
+    if (!canSubmitReport) return
     loading = true
     error = null
     try {
-      result = await fetchSummary(sessionId.trim())
+      result = await fetchSummary(reportId.trim())
     } catch (err) {
       error = { errorCode: err.errorCode, message: err.message, details: err.details }
     } finally {
@@ -82,7 +83,7 @@
   function reset() {
     result = null
     files = []
-    sessionId = ''
+    reportId = ''
     error = null
   }
 </script>
@@ -159,20 +160,20 @@
               </div>
             {/if}
 
-            <div class="divider"><span>ou buscar sessão existente</span></div>
+            <div class="divider"><span>ou buscar relatório existente</span></div>
 
-            <div class="session-row">
+            <div class="report-row">
               <input
-                class="session-input"
+                class="report-input"
                 type="text"
-                placeholder="Session ID"
-                bind:value={sessionId}
-                onkeydown={(e) => e.key === 'Enter' && handleSubmitSession()}
+                placeholder="Report ID"
+                bind:value={reportId}
+                onkeydown={(e) => e.key === 'Enter' && handleSubmitReport()}
               />
               <button
                 class="submit-btn"
-                disabled={!canSubmitSession}
-                onclick={handleSubmitSession}
+                disabled={!canSubmitReport}
+                onclick={handleSubmitReport}
               >
                 Buscar
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -199,21 +200,21 @@
           <div class="top-row">
             <div class="chart-panel panel">
               <h2 class="panel-title">Gastos por Categoria</h2>
-              {#if result.ExpensesByCategory?.length}
-                <DonutChart data={result.ExpensesByCategory} />
+              {#if result.categorySummaries?.length}
+                <DonutChart data={result.categorySummaries} />
               {:else}
                 <p class="empty">Sem dados de categoria</p>
               {/if}
             </div>
 
             <div class="stats-grid">
-              {#if result.BiggestSingularExpense}
+              {#if result.highlights?.largestExpense}
                 <StatCard
                   label="Maior gasto único"
-                  value={formatBRL(Number(result.BiggestSingularExpense.value))}
-                  sub="{result.BiggestSingularExpense.expenseName} · {formatDate(result.BiggestSingularExpense.date)}"
-                  color={categoryColor(result.BiggestSingularExpense.category)}
-                  icon={categoryIcon(result.BiggestSingularExpense.category)}
+                  value={formatBRL(Number(result.highlights.largestExpense.amount))}
+                  sub="{result.highlights.largestExpense.expenseName} · {formatDate(result.highlights.largestExpense.date)}"
+                  color={categoryColor(result.highlights.largestExpense.category)}
+                  icon={categoryIcon(result.highlights.largestExpense.category)}
                 />
               {/if}
 
@@ -231,7 +232,7 @@
                 <StatCard
                   label="Compra mais recorrente"
                   value={mostRecurring.expenseName}
-                  sub="{mostRecurring.instances}× · {formatBRL(Number(mostRecurring.total))}"
+                  sub="{mostRecurring.occurrenceCount}× · {formatBRL(Number(mostRecurring.totalAmount))}"
                   color={categoryColor(mostRecurring.category)}
                   icon={categoryIcon(mostRecurring.category)}
                 />
@@ -241,7 +242,7 @@
                 <StatCard
                   label="Dia mais caro"
                   value={formatDate(mostExpensiveDay.date)}
-                  sub="{formatBRL(Number(mostExpensiveDay.total))} · {mostExpensiveDay.transactions} transações"
+                  sub="{formatBRL(Number(mostExpensiveDay.totalAmount))} · {mostExpensiveDay.transactionCount} transações"
                   color="#FF3B30"
                   icon={'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 0.7c-0.2-0.4-0.7-0.6-1.1-0.4-0.4 0.2-0.6 0.7-0.4 1.1 0 0 0 0 0 0L12 2c-3 2-5 5-5 9 0 0.5 0 1 0.1 1.5C5.8 11.1 5 9.1 5 7c0-0.4-0.3-0.8-0.8-0.8S3.5 6.6 3.5 7c0 4.1 2.7 7.6 6.5 8.7V22h4v-6.3c3.8-1.1 6.5-4.6 6.5-8.7 0-3.2-2.7-6.3-7-7.3z"/></svg>'}
                 />
@@ -250,18 +251,18 @@
           </div>
 
           <!-- Smart group table -->
-          {#if result.SmartGroupExpenselist?.length}
+          {#if result.expenseGroups?.length}
             <div class="panel">
               <h2 class="panel-title">Top Gastos por Nome</h2>
-              <SmartGroupTable items={result.SmartGroupExpenselist} />
+              <SmartGroupTable items={result.expenseGroups} />
             </div>
           {/if}
 
           <!-- All expenses table -->
-          {#if result.AllExpenses?.length}
+          {#if result.expenses?.length}
             <div class="panel">
               <h2 class="panel-title">Todas as Despesas</h2>
-              <AllExpensesTable items={result.AllExpenses} />
+              <AllExpensesTable items={result.expenses} />
             </div>
           {/if}
         </section>
@@ -428,12 +429,12 @@
     background: var(--panel-border);
   }
 
-  .session-row {
+  .report-row {
     display: flex;
     gap: 0.75rem;
   }
 
-  .session-input {
+  .report-input {
     flex: 1;
     background: var(--surface-input);
     border: 1px solid var(--panel-border);
@@ -446,8 +447,8 @@
     transition: border-color var(--transition);
   }
 
-  .session-input::placeholder { color: var(--text-dim); font-family: inherit; }
-  .session-input:focus { border-color: var(--primary); }
+  .report-input::placeholder { color: var(--text-dim); font-family: inherit; }
+  .report-input:focus { border-color: var(--primary); }
 
   .submit-btn {
     display: flex;

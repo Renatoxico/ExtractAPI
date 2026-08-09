@@ -1,7 +1,7 @@
 <script>
   import { categoryColor } from '../lib/categoryColors.js';
   import { categoryIcon } from '../lib/categoryIcons.js';
-  import { formatBRL, formatDate } from '../lib/formatters.js';
+  import { formatBRL, formatCategory, formatDate } from '../lib/formatters.js';
 
   let { items } = $props();
 
@@ -53,17 +53,17 @@
         </tr>
       </thead>
       <tbody>
-        {#each paginated as expense, i (expense.expenseName + expense.date + i)}
+        {#each paginated as expense (expense.expenseId)}
           <tr>
             <td class="td-name">{expense.expenseName}</td>
             <td>
               <span class="cat-tag" style="--c: {categoryColor(expense.category)}">
                 <span class="cat-icon" style="color: var(--c)">{@html categoryIcon(expense.category)}</span>
-                {expense.category}
+                {formatCategory(expense.category)}
               </span>
             </td>
             <td class="td-num td-date">{formatDate(expense.date)}</td>
-            <td class="td-num td-value">{formatBRL(Number(expense.value))}</td>
+            <td class="td-num td-value">{formatBRL(Number(expense.amount))}</td>
           </tr>
         {/each}
       </tbody>

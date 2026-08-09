@@ -27,12 +27,12 @@ public class ObjectifierService {
         this.validationService = validationService;
     }
 
-    public void process (String sessionId, String inputText) {
+    public void process (String reportId, String inputText) {
         try {
-            LOG.info("Enter ObjectifierService.process for session: {}", sessionId);
+            LOG.info("Enter ObjectifierService.process for report: {}", reportId);
 
             if (inputText == null || inputText.trim().isEmpty()) {
-                LOG.warn("Empty input text provided for session: {}", sessionId);
+                LOG.warn("Empty input text provided for report: {}", reportId);
                 return;
             }
 
@@ -40,7 +40,7 @@ public class ObjectifierService {
             List<String> filteredExpenses = getFilterCharges(expensesDoc);
 
             if (filteredExpenses == null || filteredExpenses.isEmpty()) {
-                LOG.warn("No candidate expense lines found after filtering for session: {}", sessionId);
+                LOG.warn("No candidate expense lines found after filtering for report: {}", reportId);
                 throw new ProcessingException(
                     "No expenses could be extracted from the provided files",
                     HttpStatus.UNPROCESSABLE_ENTITY,
@@ -48,18 +48,18 @@ public class ObjectifierService {
                 );
             }
 
-            List<Expense> expensesObj = objectifyExtract(sessionId, filteredExpenses);
+            List<Expense> expensesObj = objectifyExtract(reportId, filteredExpenses);
 
-            LOG.info("Extracted {} expenses from document for session: {}", expensesObj.size(), sessionId);
+            LOG.info("Extracted {} expenses from document for report: {}", expensesObj.size(), reportId);
 
             expensesObj = validationService.validateExpenses(expensesObj);
 
-            LOG.info("Validated {} expenses, saving to database for session: {}", expensesObj.size(), sessionId);
+            LOG.info("Validated {} expenses, saving to database for report: {}", expensesObj.size(), reportId);
             expenseRepo.saveAll(expensesObj);
 
-            LOG.info("Successfully processed {} expenses for session: {}", expensesObj.size(), sessionId);
+            LOG.info("Successfully processed {} expenses for report: {}", expensesObj.size(), reportId);
         } catch (Exception ex) {
-            LOG.error("Error in ObjectifierService.process for session {}: {}", sessionId, ex.getMessage(), ex);
+            LOG.error("Error in ObjectifierService.process for report {}: {}", reportId, ex.getMessage(), ex);
             throw ex;
         }
     }
@@ -70,8 +70,8 @@ public class ObjectifierService {
 
     }
 
-    public List<Expense> objectifyExtract (String sessionId,List<String> expenses) {
-        LOG.info("Enter ObjectifierService.objectifyExtract for session: {}", sessionId);
+    public List<Expense> objectifyExtract (String reportId,List<String> expenses) {
+        LOG.info("Enter ObjectifierService.objectifyExtract for report: {}", reportId);
         List<Expense> expensesObj = new ArrayList<>();
         expenses.forEach(line -> {
             Matcher dateMatcher = datePattern.matcher(line);
@@ -93,12 +93,12 @@ public class ObjectifierService {
                             && value.compareTo(BigDecimal.ZERO) != 0
                             && description.matches(".*[a-zA-Z].*")
                             && !(description.contains("CREDITO") || description.contains("FATURA") || description.contains("SALDO"))){
-                        mapToObj(sessionId, expensesObj, value, description, date);
+                        mapToObj(reportId, expensesObj, value, description, date);
                     }
                 }
             }
         });
-        LOG.info("Extracted {} valid expenses from {} lines for session: {}", expensesObj.size(), expenses.size(), sessionId);
+        LOG.info("Extracted {} valid expenses from {} lines for report: {}", expensesObj.size(), expenses.size(), reportId);
         return expensesObj;
     }
     
@@ -125,8 +125,8 @@ public class ObjectifierService {
         return filteredCharges;
     }
 
-    public void mapToObj (String sessionId, List<Expense> expenses, BigDecimal amount, String transaction, String data){
-        expenses.add(new Expense(sessionId, amount, transaction, data, ""));
+    public void mapToObj (String reportId, List<Expense> expenses, BigDecimal amount, String expenseName, String date){
+        expenses.add(new Expense(reportId, amount, expenseName, date, null));
     }
 
 }

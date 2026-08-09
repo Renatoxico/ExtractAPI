@@ -14,34 +14,34 @@ import java.time.Instant;
 @Table(name = "expense_report")
 public class ExpenseReport {
     @Id
-    @Column(name = "session_id", length = 32)
-    private String sessionId;
+    @Column(name = "id", length = 32)
+    private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_user_id", nullable = false)
     private AppUser owner;
 
-    @Column(name = "creation_date", nullable = false, updatable = false)
-    private Instant creationDate;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
 
     protected ExpenseReport() {
     }
 
-    public ExpenseReport(String sessionId, AppUser owner) {
-        this.sessionId = sessionId;
+    public ExpenseReport(String reportId, AppUser owner) {
+        this.id = reportId;
         this.owner = owner;
-        this.creationDate = Instant.now();
+        this.createdAt = Instant.now();
     }
 
-    public String getSessionId() {
-        return sessionId;
+    public String getId() {
+        return id;
     }
 
     public AppUser getOwner() {
         return owner;
     }
 
-    public Instant getCreationDate() {
-        return creationDate;
+    public Instant getCreatedAt() {
+        return createdAt;
     }
 }

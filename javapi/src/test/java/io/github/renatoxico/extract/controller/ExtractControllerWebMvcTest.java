@@ -2,334 +2,156 @@ package io.github.renatoxico.extract.controller;
 
 import io.github.renatoxico.extract.exception.ProcessingException;
 import io.github.renatoxico.extract.model.AuthenticatedUserPrincipal;
-import io.github.renatoxico.extract.model.ReportExport;
-import io.github.renatoxico.extract.model.ValidationResponse;
+import io.github.renatoxico.extract.model.CategorySummary;
+import io.github.renatoxico.extract.model.DaySummary;
+import io.github.renatoxico.extract.model.ExpenseData;
+import io.github.renatoxico.extract.model.ExpenseGroup;
+import io.github.renatoxico.extract.model.ReportData;
+import io.github.renatoxico.extract.model.ReportHighlights;
 import io.github.renatoxico.extract.service.ExpenseReportAccessService;
-import io.github.renatoxico.extract.service.ExpenseClassificationCatalogService;
 import io.github.renatoxico.extract.service.ExpenseReportingService;
+import io.github.renatoxico.extract.service.ExtractionFacade;
 import io.github.renatoxico.extract.service.ExtractorService;
-import io.github.renatoxico.extract.service.ObjectifierService;
-import io.github.renatoxico.extract.service.ValidationService;
-import org.mockito.InOrder;
+import io.github.renatoxico.extract.service.V1ReportMapper;
+import io.github.renatoxico.extract.service.V2ReportMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
-import java.util.stream.Stream;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(ExtractController.class)
+@WebMvcTest({ExtractController.class, ExtractV2Controller.class})
+@Import({V1ReportMapper.class, V2ReportMapper.class})
 @AutoConfigureMockMvc(addFilters = false)
 class ExtractControllerWebMvcTest {
+    @Autowired MockMvc mockMvc;
+    @MockitoBean ExtractionFacade extractionFacade;
+    @MockitoBean ExpenseReportingService reportingService;
+    @MockitoBean ExpenseReportAccessService accessService;
+    @MockitoBean ExtractorService extractorService;
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockitoBean
-    private ValidationService validationService;
-
-    @MockitoBean
-    private ObjectifierService objService;
-
-    @MockitoBean
-    private ExpenseReportingService reportsService;
-
-    @MockitoBean
-    private ExtractorService javaProcessor;
-
-    @MockitoBean
-    private ExpenseReportAccessService reportAccessService;
-
-    @MockitoBean
-    private ExpenseClassificationCatalogService catalogService;
-
-    private MockMultipartFile validPdfFile;
     private AuthenticatedUserPrincipal principal;
-
-    private static ReportExport emptyReport(String sessionId) {
-        return new ReportExport(List.of(), List.of(), List.of(), List.of(), null, sessionId);
-    }
-
-    private static ValidationResponse validResponse() {
-        return new ValidationResponse(true, "OK", "OK", HttpStatus.OK);
-    }
-
-    private static Stream<Arguments> validationErrors() {
-        return Stream.of(
-            Arguments.of("INVALID_FILE_TYPE", "File is not a valid PDF"),
-            Arguments.of("FILE_TOO_BIG", "File is too large"),
-            Arguments.of("TOO_MANY_FILES", "Too many files")
-        );
-    }
+    private MockMultipartFile pdf;
 
     @BeforeEach
     void setUp() {
         principal = new AuthenticatedUserPrincipal(
-            42L,
-            "firebase-uid-123",
-            "user@example.com",
-            "Example User",
-            null,
-            true
-        );
+            42L, "firebase-uid", "user@example.com", "User", null, true);
         SecurityContextHolder.getContext().setAuthentication(
-            new UsernamePasswordAuthenticationToken(principal, null, List.of())
-        );
-
-        validPdfFile = new MockMultipartFile(
-            "file",
-            "test.pdf",
-            "application/pdf",
-            "PDF content".getBytes()
-        );
+            new UsernamePasswordAuthenticationToken(principal, null, List.of()));
+        pdf = new MockMultipartFile("file", "test.pdf", "application/pdf", "pdf".getBytes());
     }
 
     @AfterEach
-    void clearSecurityContext() {
+    void clearContext() {
         SecurityContextHolder.clearContext();
     }
 
     @Test
-    void homeReturnsOk() throws Exception {
-        mockMvc.perform(get("/extract/"))
-            .andExpect(status().isOk());
-    }
+    void v2SummaryUsesOnlySemanticCamelCaseContract() throws Exception {
+        when(reportingService.getReport("report-123")).thenReturn(report());
 
-    @Test
-    void processReturnsReportAndCreatesSessionForOwner() throws Exception {
-        when(validationService.validateFiles(any())).thenReturn(validResponse());
-        when(reportsService.generateId(42L)).thenReturn("session-123");
-        when(javaProcessor.extractText(any())).thenReturn("Sample expense text");
-
-        when(reportsService.getFullReport("session-123")).thenReturn(emptyReport("session-123"));
-
-        mockMvc.perform(multipart("/extract/")
-            .file(validPdfFile))
+        mockMvc.perform(get("/v2/extract/summary/report-123"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.sessionToken").value("session-123"));
+            .andExpect(jsonPath("$.reportId").value("report-123"))
+            .andExpect(jsonPath("$.createdAt").value("2025-03-17T10:15:30Z"))
+            .andExpect(jsonPath("$.expenses[0].expenseId").value(1))
+            .andExpect(jsonPath("$.expenses[0].expenseName").value("MARKET"))
+            .andExpect(jsonPath("$.expenses[0].amount").value(100.25))
+            .andExpect(jsonPath("$.expenses[0].date").value("2025-03-15"))
+            .andExpect(jsonPath("$.expenses[1].category").doesNotExist())
+            .andExpect(jsonPath("$.expenseGroups[0].occurrenceCount").value(2))
+            .andExpect(jsonPath("$.categorySummaries[0].totalAmount").value(100.25))
+            .andExpect(jsonPath("$.categorySummaries[0].occurrenceCount").value(1))
+            .andExpect(jsonPath("$.categorySummaries[1].category").doesNotExist())
+            .andExpect(jsonPath("$.highlights.largestExpense.expenseId").value(1))
+            .andExpect(jsonPath("$.highlights.mostActiveDay.transactionCount").value(2))
+            .andExpect(jsonPath("$.highlights.highestSpendingDay.totalAmount").value(150.25))
+            .andExpect(jsonPath("$.sessionToken").doesNotExist())
+            .andExpect(jsonPath("$.SmartGroupExpenselist").doesNotExist());
 
-        verify(validationService).validateFiles(any());
-        verify(javaProcessor).extractText(any());
-        verify(objService).process(anyString(), anyString());
-        verify(reportsService).generateId(42L);
-        verify(catalogService).populateFromReport("session-123");
-        verify(catalogService).applyCategoriesToReport("session-123");
+        verify(accessService).requireOwnership("report-123", 42L);
     }
 
     @Test
-    void processWithoutFilesReturnsBadRequest() throws Exception {
-        mockMvc.perform(multipart("/extract/"))
-            .andExpect(status().isBadRequest());
+    void v1SummaryPreservesLegacyContract() throws Exception {
+        when(reportingService.getReport("report-123")).thenReturn(report());
+
+        mockMvc.perform(get("/extract/summary/report-123"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.sessionToken").value("report-123"))
+            .andExpect(jsonPath("$.SmartGroupExpenselist[0].instances").value(2))
+            .andExpect(jsonPath("$.AllExpenses[0].value").value(100.25))
+            .andExpect(jsonPath("$.BiggestSingularExpense.expenseName").value("MARKET"));
     }
 
-    @ParameterizedTest
-    @MethodSource("validationErrors")
-    void processReturnsStructuredValidationError(String errorCode, String message) throws Exception {
-        when(validationService.validateFiles(any())).thenReturn(
-            new ValidationResponse(false, message, errorCode, HttpStatus.BAD_REQUEST)
+    @Test
+    void v2UploadUsesSharedFacade() throws Exception {
+        when(extractionFacade.process(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(42L)))
+            .thenReturn(report());
+
+        mockMvc.perform(multipart("/v2/extract").file(pdf))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.reportId").value("report-123"));
+    }
+
+    @Test
+    void v1MapsCanonicalNotFoundErrorToSessionCode() throws Exception {
+        doThrow(new ProcessingException(
+            "No report found", HttpStatus.NOT_FOUND, "REPORT_NOT_FOUND"))
+            .when(accessService).requireOwnership("other-report", 42L);
+
+        mockMvc.perform(get("/extract/summary/other-report"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.errorCode").value("SESSION_NOT_FOUND"));
+    }
+
+    @Test
+    void v2ExportUsesNewCsvContract() throws Exception {
+        when(reportingService.exportReportCsvV2("report-123"))
+            .thenReturn("expenseId,expenseName,category,amount,date,reportId".getBytes());
+
+        mockMvc.perform(get("/v2/extract/export/report-123"))
+            .andExpect(status().isOk())
+            .andExpect(content().string("expenseId,expenseName,category,amount,date,reportId"));
+    }
+
+    private static ReportData report() {
+        ExpenseData largest = new ExpenseData(
+            1L, "MARKET", new BigDecimal("100.25"), "15/03/2025", "Supermercado");
+        ExpenseData pending = new ExpenseData(
+            2L, "PIX JOAO", new BigDecimal("50.00"), "15/03/2025", null);
+        DaySummary day = new DaySummary("15/03/2025", 2, new BigDecimal("150.25"));
+        return new ReportData(
+            "report-123",
+            Instant.parse("2025-03-17T10:15:30Z"),
+            List.of(largest, pending),
+            List.of(new ExpenseGroup("MARKET", new BigDecimal("150.25"), 2L, "Supermercado")),
+            List.of(
+                new CategorySummary("Supermercado", new BigDecimal("100.25"), 1L),
+                new CategorySummary(null, new BigDecimal("50.00"), 1L)),
+            new ReportHighlights(largest, day, day)
         );
-
-        mockMvc.perform(multipart("/extract/").file(validPdfFile))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.errorCode").value(errorCode))
-            .andExpect(jsonPath("$.message").value(message));
-    }
-
-    @ParameterizedTest
-    @NullAndEmptySource
-    void processRejectsPdfWithoutExtractedText(String extractedText) throws Exception {
-        when(validationService.validateFiles(any())).thenReturn(validResponse());
-        when(reportsService.generateId(42L)).thenReturn("session-123");
-        when(javaProcessor.extractText(any())).thenReturn(extractedText);
-
-        mockMvc.perform(multipart("/extract/")
-            .file(validPdfFile))
-            .andExpect(status().isUnprocessableEntity())
-            .andExpect(jsonPath("$.errorCode").value("EMPTY_PDF_CONTENT"));
-
-        verify(catalogService, never()).populateFromReport(anyString());
-    }
-
-    @Test
-    void processMapsFileFailureToProcessingError() throws Exception {
-        when(validationService.validateFiles(any())).thenReturn(validResponse());
-        when(reportsService.generateId(42L)).thenReturn("session-123");
-        when(javaProcessor.extractText(any())).thenReturn("Sample expense text");
-        doThrow(new RuntimeException("Processing failed"))
-            .when(objService).process(anyString(), anyString());
-
-        mockMvc.perform(multipart("/extract/")
-            .file(validPdfFile))
-            .andExpect(status().isInternalServerError())
-            .andExpect(jsonPath("$.errorCode").value("FILE_PROCESSING_ERROR"));
-
-        verify(catalogService, never()).populateFromReport(anyString());
-    }
-
-    @Test
-    void processMapsUnexpectedFailureToSafeError() throws Exception {
-        when(validationService.validateFiles(any()))
-            .thenThrow(new RuntimeException("Unexpected error in validation"));
-
-        mockMvc.perform(multipart("/extract/")
-            .file(validPdfFile))
-            .andExpect(status().isInternalServerError())
-            .andExpect(jsonPath("$.errorCode").value("UNEXPECTED_ERROR"));
-    }
-
-    @Test
-    void processReturnsReportWhenCatalogPopulationFails() throws Exception {
-        when(validationService.validateFiles(any())).thenReturn(validResponse());
-        when(reportsService.generateId(42L)).thenReturn("session-123");
-        when(javaProcessor.extractText(any())).thenReturn("Sample expense text");
-        when(reportsService.getFullReport("session-123")).thenReturn(emptyReport("session-123"));
-        doThrow(new RuntimeException("Catalog unavailable"))
-            .when(catalogService).populateFromReport("session-123");
-
-        mockMvc.perform(multipart("/extract/")
-            .file(validPdfFile))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.sessionToken").value("session-123"));
-
-        verify(catalogService).populateFromReport("session-123");
-        verify(reportsService).getFullReport("session-123");
-        verify(catalogService, never()).applyCategoriesToReport(anyString());
-    }
-
-    @Test
-    void processReturnsReportWhenApplyingCatalogCategoriesFails() throws Exception {
-        when(validationService.validateFiles(any())).thenReturn(validResponse());
-        when(reportsService.generateId(42L)).thenReturn("session-123");
-        when(javaProcessor.extractText(any())).thenReturn("Sample expense text");
-        when(reportsService.getFullReport("session-123")).thenReturn(emptyReport("session-123"));
-        doThrow(new RuntimeException("Catalog update unavailable"))
-            .when(catalogService).applyCategoriesToReport("session-123");
-
-        mockMvc.perform(multipart("/extract/")
-            .file(validPdfFile))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.sessionToken").value("session-123"));
-
-        verify(catalogService).populateFromReport("session-123");
-        verify(catalogService).applyCategoriesToReport("session-123");
-        verify(reportsService).getFullReport("session-123");
-    }
-
-    @Test
-    void summaryReturnsOwnedReport() throws Exception {
-        when(reportsService.getFullReport("session-123")).thenReturn(emptyReport("session-123"));
-
-        mockMvc.perform(get("/extract/summary/session-123"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.sessionToken").value("session-123"));
-
-        verify(reportsService).getFullReport("session-123");
-        verify(reportAccessService).requireOwnership("session-123", 42L);
-    }
-
-    @Test
-    void summaryForAnotherUserReturnsNotFoundWithoutQueryingExpenses() throws Exception {
-        doThrow(new ProcessingException(
-            "No report found for the provided session ID",
-            HttpStatus.NOT_FOUND,
-            "SESSION_NOT_FOUND"
-        )).when(reportAccessService).requireOwnership("other-session", 42L);
-
-        mockMvc.perform(get("/extract/summary/other-session"))
-            .andExpect(status().isNotFound())
-            .andExpect(jsonPath("$.errorCode").value("SESSION_NOT_FOUND"));
-
-        verify(reportsService, never()).getFullReport("other-session");
-    }
-
-    @Test
-    void exportForAnotherUserReturnsNotFoundWithoutExporting() throws Exception {
-        doThrow(new ProcessingException(
-            "No report found for the provided session ID",
-            HttpStatus.NOT_FOUND,
-            "SESSION_NOT_FOUND"
-        )).when(reportAccessService).requireOwnership("other-session", 42L);
-
-        mockMvc.perform(get("/extract/export/other-session"))
-            .andExpect(status().isNotFound())
-            .andExpect(jsonPath("$.errorCode").value("SESSION_NOT_FOUND"));
-
-        verify(reportsService, never()).exportReportCSV("other-session");
-    }
-
-    @Test
-    void summaryRejectsBlankSessionId() throws Exception {
-        mockMvc.perform(get("/extract/summary/ "))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.errorCode").value("INVALID_SESSION_ID"));
-    }
-
-    @Test
-    void summaryReturnsNotFoundWhenReportDoesNotExist() throws Exception {
-        when(reportsService.getFullReport("non-existent")).thenReturn(null);
-
-        mockMvc.perform(get("/extract/summary/non-existent"))
-            .andExpect(status().isNotFound())
-            .andExpect(jsonPath("$.errorCode").value("SESSION_NOT_FOUND"));
-    }
-
-    @Test
-    void summaryMapsRetrievalFailureToSafeError() throws Exception {
-        when(reportsService.getFullReport(anyString()))
-            .thenThrow(new RuntimeException("Database error"));
-
-        mockMvc.perform(get("/extract/summary/session-123"))
-            .andExpect(status().isInternalServerError())
-            .andExpect(jsonPath("$.errorCode").value("SUMMARY_RETRIEVAL_ERROR"));
-    }
-
-    @Test
-    void processHandlesEveryUploadedFile() throws Exception {
-        MockMultipartFile file1 = new MockMultipartFile("file", "test1.pdf", "application/pdf", "PDF 1".getBytes());
-        MockMultipartFile file2 = new MockMultipartFile("file", "test2.pdf", "application/pdf", "PDF 2".getBytes());
-
-        when(validationService.validateFiles(any())).thenReturn(validResponse());
-        when(reportsService.generateId(42L)).thenReturn("session-123");
-        when(javaProcessor.extractText(any())).thenReturn("Sample expense text");
-
-        when(reportsService.getFullReport("session-123")).thenReturn(emptyReport("session-123"));
-
-        mockMvc.perform(multipart("/extract/")
-            .file(file1)
-            .file(file2))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.sessionToken").value("session-123"));
-
-        verify(javaProcessor, times(2)).extractText(any());
-        InOrder persistenceOrder = inOrder(objService, catalogService);
-        persistenceOrder.verify(objService, times(2)).process(anyString(), anyString());
-        persistenceOrder.verify(catalogService).populateFromReport("session-123");
-        persistenceOrder.verify(catalogService).applyCategoriesToReport("session-123");
     }
 }

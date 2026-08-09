@@ -24,20 +24,20 @@ class ExpenseReportAccessServiceTest {
 
     @Test
     void requireOwnershipAllowsOwner() {
-        when(expenseReportRepository.existsBySessionIdAndOwnerId("session-123", 42L)).thenReturn(true);
+        when(expenseReportRepository.existsByIdAndOwnerId("session-123", 42L)).thenReturn(true);
 
         assertDoesNotThrow(() -> expenseReportAccessService.requireOwnership("session-123", 42L));
     }
 
     @Test
     void requireOwnershipRejectsDifferentUserForSameReport() {
-        when(expenseReportRepository.existsBySessionIdAndOwnerId("session-123", 99L)).thenReturn(false);
+        when(expenseReportRepository.existsByIdAndOwnerId("session-123", 99L)).thenReturn(false);
 
         ProcessingException exception = assertThrows(
             ProcessingException.class,
             () -> expenseReportAccessService.requireOwnership("session-123", 99L)
         );
 
-        assertEquals("SESSION_NOT_FOUND", exception.getErrorCode());
+        assertEquals("REPORT_NOT_FOUND", exception.getErrorCode());
     }
 }

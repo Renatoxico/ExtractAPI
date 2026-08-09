@@ -38,7 +38,7 @@ For each API call, the frontend obtains the current ID token through the Firebas
 - All other backend endpoints require a valid Firebase ID token.
 - Creating a report records its owner using the authenticated local user ID.
 - Reading a summary or exporting CSV requires ownership of that report.
-- A missing report and another user's report both return `404 SESSION_NOT_FOUND`, avoiding disclosure that another user's session ID exists.
+- A missing report and another user's report both return `404 REPORT_NOT_FOUND` in v2, avoiding disclosure that another user's report ID exists. The deprecated v1 contract still returns `SESSION_NOT_FOUND`.
 - Reports created before ownership tracking was introduced remain inaccessible until deliberately assigned.
 
 The backend never accepts a frontend-provided user ID as proof of ownership. It obtains the local user ID from the validated principal.
@@ -89,6 +89,24 @@ npm run dev
 
 The default development URLs are `http://localhost:5173` for the frontend and `http://localhost:9090` for the API.
 
+## Report API contracts
+
+The frontend consumes the v2 report contract:
+
+- `POST /v2/extract`
+- `GET /v2/extract/summary/{reportId}`
+- `GET /v2/extract/export/{reportId}`
+
+V2 uses camelCase names such as `reportId`, `createdAt`, `expenses`,
+`expenseGroups`, `categorySummaries`, and `highlights`. Category summaries
+contain both `totalAmount` and `occurrenceCount`; expense dates are serialized
+as ISO `yyyy-MM-dd`. A missing category remains `null`, and the frontend alone
+applies the display label `Outros / Transferências`.
+
+The `/extract` endpoints remain temporarily available as v1 adapters for
+existing clients. They preserve the legacy JSON and CSV names and can be
+removed after all consumers have moved to v2.
+
 Docker Compose reads backend values from the root `.env` and mounts the Firebase credential as a Docker secret:
 
 ```powershell
@@ -127,6 +145,6 @@ Then use the frontend to:
 1. Sign in with Google and call `/api/auth/me`; confirm the backend returns the expected email and local user ID.
 2. Generate a report and confirm an ownership row appears in `expense_report`.
 3. Load and export that report with the same account.
-4. Sign in with a different Google account and confirm the same session ID returns `404 SESSION_NOT_FOUND`.
+4. Sign in with a different Google account and confirm the same report ID returns `404 REPORT_NOT_FOUND` from the v2 endpoint.
 
 Do not copy ID tokens into logs, screenshots, documentation, or Git. They are short-lived credentials even though they are visible to the browser that owns the Firebase session.

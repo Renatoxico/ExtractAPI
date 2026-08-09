@@ -1,45 +1,51 @@
 ## Error Handling Summary
 
-### Códigos de Erro Padronizados da API
+### File validation — 400
 
-#### **FILE VALIDATION (400 BAD_REQUEST)**
-- `INVALID_FILE_TYPE` - Tipo de arquivo inválido (apenas PDF aceito)
-- `FILE_TOO_BIG` - Arquivo excede o tamanho máximo permitido (512KB)
-- `NO_FILES_PROVIDED` - Nenhum arquivo foi enviado
-- `TOO_MANY_FILES` - Mais de 6 arquivos foram enviados
-- `VALIDATION_FAILED` - Falha genérica na validação dos arquivos (formato, tamanho, tipo, etc.)
+- `INVALID_FILE_TYPE` — only PDF files are accepted.
+- `FILE_TOO_BIG` — file exceeds 512 KB.
+- `NO_FILES_PROVIDED` — no file was sent.
+- `TOO_MANY_FILES` — more than six files were sent.
+- `VALIDATION_FAILED` — generic file validation failure.
 
-#### **PDF PROCESSING (422 UNPROCESSABLE_ENTITY)**
-- `EMPTY_PDF_CONTENT` - PDF não contém texto ou está vazio
-- `PDF_EXTRACTION_FAILED` - Falha ao extrair texto do PDF
-- `NO_TEXT_EXTRACTED` - Nenhum texto foi extraído de todos os arquivos fornecidos
+### PDF processing — 422
 
-#### **FILE PROCESSING (500 INTERNAL_SERVER_ERROR)**
-- `FILE_PROCESSING_ERROR` - Erro ao processar um arquivo específico
-- `FILE_IO_ERROR` - Erro de entrada/saída ao manipular arquivo
-- `TEXT_EXTRACTION_ERROR` - Erro ao extrair texto de um arquivo durante processamento
+- `EMPTY_PDF_CONTENT` — the PDF contains no extractable text.
+- `PDF_EXTRACTION_FAILED` — PDF text extraction failed.
+- `NO_TEXT_EXTRACTED` — none of the supplied files produced text.
 
-#### **SESSION MANAGEMENT (400/404)**
-- `INVALID_SESSION_ID` - SessionID nulo ou vazio (400 BAD_REQUEST)
-- `SESSION_NOT_FOUND` - SessionID válido mas sem dados (404 NOT_FOUND)
+### File processing — 500
 
-#### **REPORTING (500 INTERNAL_SERVER_ERROR)**
-- `SUMMARY_RETRIEVAL_ERROR` - Erro ao gerar relatório de despesas
-- `CSV_EXPORT_ERROR` - Erro ao exportar relatório em CSV
+- `FILE_PROCESSING_ERROR` — processing failed for a specific file.
+- `FILE_IO_ERROR` — file I/O failed.
+- `TEXT_EXTRACTION_ERROR` — text extraction failed during processing.
 
-#### **GENERAL (500 INTERNAL_SERVER_ERROR)**
-- `UNEXPECTED_ERROR` - Erro inesperado na API
-- `INTERNAL_SERVER_ERROR` - Erro interno do servidor
+### Report contract v2
 
----
+- `INVALID_REPORT_ID` — report ID is empty or invalid (400).
+- `REPORT_NOT_FOUND` — report does not exist or belongs to another user (404).
+- `REPORT_DATA_INVALID` — stored report data cannot satisfy the v2 contract, such as an invalid historical date (500).
+- `REPORT_RETRIEVAL_ERROR` — unexpected report retrieval failure (500).
+- `CSV_EXPORT_ERROR` — CSV export failed (500).
 
-### Estrutura de Resposta de Erro
+### Legacy contract v1
+
+- `INVALID_SESSION_ID` — legacy session ID is empty or invalid (400).
+- `SESSION_NOT_FOUND` — legacy session has no accessible report (404).
+- `SUMMARY_RETRIEVAL_ERROR` — legacy summary retrieval failed (500).
+
+### General — 500
+
+- `UNEXPECTED_ERROR` — unexpected API error.
+- `INTERNAL_SERVER_ERROR` — unhandled internal error.
+
+### Error response
 
 ```json
 {
-  "errorCode": "FILE_VALIDATION_FAILED",
-  "message": "File validation failed: Invalid file type",
-  "details": "Optional details about the error",
-  "timestamp": "2024-02-20T10:30:45.123456"
+  "errorCode": "REPORT_NOT_FOUND",
+  "message": "No report found for the provided report ID",
+  "details": null,
+  "timestamp": "2026-08-09T20:30:00"
 }
 ```

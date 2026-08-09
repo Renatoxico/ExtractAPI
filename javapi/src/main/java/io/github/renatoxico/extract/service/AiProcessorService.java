@@ -1,7 +1,7 @@
 package io.github.renatoxico.extract.service;
 
 import io.github.renatoxico.extract.exception.ProcessingException;
-import io.github.renatoxico.extract.model.CategoryMapper;
+import io.github.renatoxico.extract.model.ExpenseCategoryAssignment;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
@@ -55,7 +55,7 @@ public class AiProcessorService {
         }
     }
 
-    public List<CategoryMapper> processWithGemini(List<CategoryMapper> expenses) {
+    public List<ExpenseCategoryAssignment> processWithGemini(List<ExpenseCategoryAssignment> expenses) {
         String prompt = buildPrompt(expenses);
         try {
             Client client = Client.builder().apiKey(API_KEY).build();
@@ -83,17 +83,17 @@ public class AiProcessorService {
         return expenses;
     }
 
-    private String buildPrompt(List<CategoryMapper> expenses) {
+    private String buildPrompt(List<ExpenseCategoryAssignment> expenses) {
         StringBuilder prompt = new StringBuilder();
         prompt.append(getPrompt());
 
-        for(CategoryMapper expense : expenses){
-            prompt.append(expense.getExpenseName()).append(" | \n");
+        for(ExpenseCategoryAssignment expense : expenses){
+            prompt.append(expense.expenseName()).append(" | \n");
         }
         return prompt.toString();
     }
 
-    public List<CategoryMapper> processWithLocalLLM(List<CategoryMapper> expenses) {
+    public List<ExpenseCategoryAssignment> processWithLocalLLM(List<ExpenseCategoryAssignment> expenses) {
         RestTemplate restTemplate = new RestTemplate();
         String prompt = buildPrompt(expenses);
         Map<String, Object> body = getLocalLlmRequestBody(prompt);

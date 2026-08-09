@@ -3,7 +3,7 @@
   import { Chart, ArcElement, DoughnutController, Tooltip } from 'chart.js';
   import { categoryColor } from '../lib/categoryColors.js';
   import { categoryIcon } from '../lib/categoryIcons.js';
-  import { formatBRL } from '../lib/formatters.js';
+  import { formatBRL, formatCategory } from '../lib/formatters.js';
 
   Chart.register(ArcElement, DoughnutController, Tooltip);
 
@@ -22,9 +22,9 @@
     chartInstance = new Chart(canvas, {
       type: 'doughnut',
       data: {
-        labels: data.map(d => d.category),
+        labels: data.map(d => formatCategory(d.category)),
         datasets: [{
-          data: data.map(d => Number(d.value)),
+          data: data.map(d => Number(d.totalAmount)),
           backgroundColor: data.map(d => categoryColor(d.category)),
           borderWidth: 0,
           hoverOffset: 10
@@ -36,7 +36,10 @@
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: (ctx) => ` ${formatBRL(ctx.parsed)}`
+              label: (ctx) => {
+                const count = data[ctx.dataIndex]?.occurrenceCount ?? 0;
+                return ` ${formatBRL(ctx.parsed)} · ${count} ocorrência${count === 1 ? '' : 's'}`;
+              }
             }
           }
         },
@@ -54,7 +57,7 @@
     buildChart();
   });
 
-  let total = $derived(data?.reduce((sum, d) => sum + Number(d.value), 0) ?? 0);
+  let total = $derived(data?.reduce((sum, d) => sum + Number(d.totalAmount), 0) ?? 0);
 </script>
 
 <div class="donut-wrap">
@@ -70,8 +73,8 @@
     {#each data as item}
       <li class="legend-item">
         <span class="legend-icon" style="color: {categoryColor(item.category)}">{@html categoryIcon(item.category)}</span>
-        <span class="legend-name">{item.category}</span>
-        <span class="legend-value">{formatBRL(Number(item.value))}</span>
+        <span class="legend-name">{formatCategory(item.category)} · {item.occurrenceCount}×</span>
+        <span class="legend-value">{formatBRL(Number(item.totalAmount))}</span>
       </li>
     {/each}
   </ul>

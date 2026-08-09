@@ -11,11 +11,11 @@ async function buildAuthHeaders() {
   return { Authorization: `Bearer ${idToken}` }
 }
 
-export async function fetchSummary(sessionId) {
+export async function fetchSummary(reportId) {
   const headers = await buildAuthHeaders()
   let res
   try {
-    res = await fetch(`${host}/extract/summary/${encodeURIComponent(sessionId)}`, { headers })
+    res = await fetch(`${host}/v2/extract/summary/${encodeURIComponent(reportId)}`, { headers })
   } catch {
     const err = new Error('Não foi possível conectar ao servidor. Verifique se a API está rodando.')
     err.errorCode = 'NETWORK_ERROR'
@@ -42,7 +42,7 @@ export async function processFiles(fileArray) {
   const headers = await buildAuthHeaders()
   let res
   try {
-    res = await fetch(`${host}/extract/`, {
+    res = await fetch(`${host}/v2/extract`, {
       method: 'POST',
       headers,
       body: form

@@ -78,7 +78,21 @@ FLYWAY_BASELINE_ON_MIGRATE=false
 Leaving automatic baselining enabled removes an important wrong-database
 safety check and is not supported for normal application operation.
 
-## Verification gates before V2
+## Version 4 naming migration
+
+`V4__standardize_report_and_expense_names.sql` migrates the application to the
+canonical report/expense vocabulary. It renames `tb_expense` to `expense`,
+uses `expense_report.id` and `expense.report_id`, and renames the expense
+description, category, amount, and creation timestamp columns. It also adds
+the expense primary key, mandatory report foreign key, and report index.
+
+The migration deliberately stops when orphan expenses exist. Before applying
+it to an existing database, verify that every `tb_expense.session_id` matches
+an `expense_report.session_id`, take a backup, and record row counts and total
+expense values for comparison after migration. Blank categories are normalized
+to `NULL`; the legacy `users` table is intentionally preserved.
+
+## Verification gates before later migrations
 
 - A new empty PostgreSQL database reaches version 1 by executing V1.
 - A production clone reaches version 1 through controlled baseline adoption.
@@ -86,3 +100,5 @@ safety check and is not supported for normal application operation.
 - Hibernate validation and the backend test suite pass.
 - `FLYWAY_BASELINE_ON_MIGRATE` is false in normal configuration.
 - No manual schema-creation step remains in the runbook.
+- V4 preserves report and expense row counts and monetary totals.
+- `expense.report_id` is non-null, indexed, and references `expense_report.id`.

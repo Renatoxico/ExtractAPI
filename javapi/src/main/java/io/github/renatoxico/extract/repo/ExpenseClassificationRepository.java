@@ -18,16 +18,16 @@ public interface ExpenseClassificationRepository extends JpaRepository<ExpenseCl
                 updated_at
             )
             SELECT DISTINCT
-                transaction_name,
-                NULLIF(transaction_type, ''),
+                expense_name,
+                category,
                 CASE
-                    WHEN NULLIF(transaction_type, '') IS NOT NULL THEN 'RULE'
+                    WHEN category IS NOT NULL THEN 'RULE'
                     ELSE NULL
                 END,
                 CURRENT_TIMESTAMP,
                 CURRENT_TIMESTAMP
-            FROM tb_expense
-            WHERE session_id = :reportId
+            FROM expense expense
+            WHERE report_id = :reportId
             ON CONFLICT (expense_name) DO NOTHING
             """, nativeQuery = true)
     int populateFromReport(@Param("reportId") String reportId);
@@ -42,20 +42,20 @@ public interface ExpenseClassificationRepository extends JpaRepository<ExpenseCl
                 updated_at
             )
             SELECT DISTINCT
-                expense.transaction_name,
-                NULLIF(expense.transaction_type, ''),
+                expense.expense_name,
+                expense.category,
                 CASE
-                    WHEN NULLIF(expense.transaction_type, '') IS NOT NULL THEN 'RULE'
+                    WHEN expense.category IS NOT NULL THEN 'RULE'
                     ELSE NULL
                 END,
                 CURRENT_TIMESTAMP,
                 CURRENT_TIMESTAMP
-            FROM tb_expense expense
-            WHERE expense.transaction_name IS NOT NULL
+            FROM expense expense
+            WHERE expense.expense_name IS NOT NULL
               AND NOT EXISTS (
                   SELECT 1
                   FROM expense_classification classification
-                  WHERE classification.expense_name = expense.transaction_name
+                  WHERE classification.expense_name = expense.expense_name
               )
             ON CONFLICT (expense_name) DO NOTHING
             """, nativeQuery = true)
@@ -63,23 +63,23 @@ public interface ExpenseClassificationRepository extends JpaRepository<ExpenseCl
 
     @Modifying
     @Query(value = """
-            UPDATE tb_expense expense
-            SET transaction_type = classification.category
+            UPDATE expense AS expense
+            SET category = classification.category
             FROM expense_classification classification
-            WHERE classification.expense_name = expense.transaction_name
-              AND expense.session_id = :reportId
-              AND NULLIF(expense.transaction_type, '') IS NULL
+            WHERE classification.expense_name = expense.expense_name
+              AND expense.report_id = :reportId
+              AND expense.category IS NULL
               AND NULLIF(classification.category, '') IS NOT NULL
             """, nativeQuery = true)
     int applyCategoriesToReport(@Param("reportId") String reportId);
 
     @Modifying
     @Query(value = """
-            UPDATE tb_expense expense
-            SET transaction_type = classification.category
+            UPDATE expense AS expense
+            SET category = classification.category
             FROM expense_classification classification
-            WHERE classification.expense_name = expense.transaction_name
-              AND NULLIF(expense.transaction_type, '') IS NULL
+            WHERE classification.expense_name = expense.expense_name
+              AND expense.category IS NULL
               AND NULLIF(classification.category, '') IS NOT NULL
             """, nativeQuery = true)
     int applyCategoriesToMissingExpenses();

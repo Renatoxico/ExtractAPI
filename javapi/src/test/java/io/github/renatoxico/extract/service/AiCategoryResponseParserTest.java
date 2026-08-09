@@ -1,6 +1,6 @@
 package io.github.renatoxico.extract.service;
 
-import io.github.renatoxico.extract.model.CategoryMapper;
+import io.github.renatoxico.extract.model.ExpenseCategoryAssignment;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -22,15 +22,15 @@ class AiCategoryResponseParserTest {
             IFD*JEFFERSON BORGES DE LIMA|Restaurante / Lanches
             """;
 
-        List<CategoryMapper> result = parser.parse(response);
+        List<ExpenseCategoryAssignment> result = parser.parse(response);
 
         assertEquals(3, result.size());
-        assertEquals("PAGAMENTO DE BOLETO ROCA ADMINISTRADORA DE IM", result.get(0).getExpenseName());
-        assertEquals("Moradia / Contas", result.get(0).getTransactionType());
-        assertEquals("PIX ENVIADO Amazon Servicos de Varejo", result.get(1).getExpenseName());
-        assertEquals("E-commerce / Compras online", result.get(1).getTransactionType());
-        assertEquals("IFD*JEFFERSON BORGES DE LIMA", result.get(2).getExpenseName());
-        assertEquals("Restaurante / Lanches", result.get(2).getTransactionType());
+        assertEquals("PAGAMENTO DE BOLETO ROCA ADMINISTRADORA DE IM", result.get(0).expenseName());
+        assertEquals("Moradia / Contas", result.get(0).category());
+        assertEquals("PIX ENVIADO Amazon Servicos de Varejo", result.get(1).expenseName());
+        assertEquals("E-commerce / Compras online", result.get(1).category());
+        assertEquals("IFD*JEFFERSON BORGES DE LIMA", result.get(2).expenseName());
+        assertEquals("Restaurante / Lanches", result.get(2).category());
     }
 
     @Test
@@ -43,11 +43,11 @@ class AiCategoryResponseParserTest {
             VALID EXPENSE|Supermercado
             """;
 
-        List<CategoryMapper> result = parser.parse(response);
+        List<ExpenseCategoryAssignment> result = parser.parse(response);
 
         assertEquals(1, result.size());
-        assertEquals("VALID EXPENSE", result.getFirst().getExpenseName());
-        assertEquals("Supermercado", result.getFirst().getTransactionType());
+        assertEquals("VALID EXPENSE", result.getFirst().expenseName());
+        assertEquals("Supermercado", result.getFirst().category());
     }
 
     @ParameterizedTest
@@ -64,10 +64,10 @@ class AiCategoryResponseParserTest {
         "Moradia / Contas"
     })
     void acceptsEverySupportedCategory(String category) {
-        List<CategoryMapper> result = parser.parse("EXPENSE|" + category);
+        List<ExpenseCategoryAssignment> result = parser.parse("EXPENSE|" + category);
 
         assertEquals(1, result.size());
-        assertEquals(category, result.getFirst().getTransactionType());
+        assertEquals(category, result.getFirst().category());
     }
 
     @Test
