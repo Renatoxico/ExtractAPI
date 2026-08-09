@@ -4,6 +4,7 @@ import io.github.renatoxico.extract.model.AuthenticatedUserPrincipal;
 import io.github.renatoxico.extract.model.ReportExport;
 import io.github.renatoxico.extract.model.ValidationResponse;
 import io.github.renatoxico.extract.service.ExpenseReportAccessService;
+import io.github.renatoxico.extract.service.ExpenseClassificationCatalogService;
 import io.github.renatoxico.extract.service.ExpenseReportingService;
 import io.github.renatoxico.extract.service.ExtractorService;
 import io.github.renatoxico.extract.service.ObjectifierService;
@@ -34,13 +35,22 @@ public class ExtractController {
     private final ValidationService validationService;
     private final ExtractorService javaProcessor;
     private final ExpenseReportAccessService reportAccessService;
+    private final ExpenseClassificationCatalogService catalogService;
 
-    public ExtractController(ValidationService validationService,  ObjectifierService objService, ExpenseReportingService reportsService, ExtractorService javaProcessor, ExpenseReportAccessService reportAccessService) {
+    public ExtractController(
+        ValidationService validationService,
+        ObjectifierService objService,
+        ExpenseReportingService reportsService,
+        ExtractorService javaProcessor,
+        ExpenseReportAccessService reportAccessService,
+        ExpenseClassificationCatalogService catalogService
+    ) {
         this.objService = objService;
         this.validationService = validationService;
         this.reportsService = reportsService;
         this.javaProcessor = javaProcessor;
         this.reportAccessService = reportAccessService;
+        this.catalogService = catalogService;
     }
 
     @GetMapping("/")
@@ -97,6 +107,12 @@ public class ExtractController {
                 }
             }
 
+            try {
+                catalogService.populateFromReport(sessionId);
+                catalogService.applyCategoriesToReport(sessionId);
+            } catch (Exception ex) {
+                LOG.error("Failed to synchronize catalog for report {}: {}", sessionId, ex.getMessage(), ex);
+            }
             ReportExport expensesGrouped = reportsService.getFullReport(sessionId);
             LOG.info("Process completed successfully for session: {}", sessionId);
             return ResponseEntity.ok(expensesGrouped);

@@ -15,11 +15,18 @@ public class ScheduledTasksService {
     private final AiProcessorService aiProcessorService;
     private final ExpenseReportingService expenseReportingService;
     private final ExpenseRepository expenseRepo;
+    private final ExpenseClassificationCatalogService catalogService;
 
-    public ScheduledTasksService(AiProcessorService aiProcessorService, ExpenseReportingService expenseReportingService, ExpenseRepository expenseRepo) {
+    public ScheduledTasksService(
+        AiProcessorService aiProcessorService,
+        ExpenseReportingService expenseReportingService,
+        ExpenseRepository expenseRepo,
+        ExpenseClassificationCatalogService catalogService
+    ) {
         this.aiProcessorService = aiProcessorService;
         this.expenseReportingService = expenseReportingService;
         this.expenseRepo = expenseRepo;
+        this.catalogService = catalogService;
     }
 
     @Scheduled(cron = "0 */5 * * * *")
@@ -48,5 +55,19 @@ public class ScheduledTasksService {
         LOG.info("Starting scheduled Matched Expenses update task...");
         expenseRepo.updateMatchedExpenses();
         LOG.info("Finished scheduled Matched Expenses update task...");
+    }
+
+    @Scheduled(cron = "${catalog.backfill.cron:-}")
+    public void populateMissingClassifications() {
+        LOG.info("Starting expense classification catalog backfill");
+        catalogService.populateMissing();
+        LOG.info("Finished expense classification catalog backfill");
+    }
+
+    @Scheduled(cron = "${catalog.expense-update.cron:-}")
+    public void applyCatalogCategoriesToMissingExpenses() {
+        LOG.info("Starting catalog category application to expenses");
+        catalogService.applyCategoriesToMissingExpenses();
+        LOG.info("Finished catalog category application to expenses");
     }
 }

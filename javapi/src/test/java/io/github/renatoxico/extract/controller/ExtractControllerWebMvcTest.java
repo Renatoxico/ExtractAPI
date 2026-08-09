@@ -5,10 +5,12 @@ import io.github.renatoxico.extract.model.AuthenticatedUserPrincipal;
 import io.github.renatoxico.extract.model.ReportExport;
 import io.github.renatoxico.extract.model.ValidationResponse;
 import io.github.renatoxico.extract.service.ExpenseReportAccessService;
+import io.github.renatoxico.extract.service.ExpenseClassificationCatalogService;
 import io.github.renatoxico.extract.service.ExpenseReportingService;
 import io.github.renatoxico.extract.service.ExtractorService;
 import io.github.renatoxico.extract.service.ObjectifierService;
 import io.github.renatoxico.extract.service.ValidationService;
+import org.mockito.InOrder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +34,7 @@ import java.util.stream.Stream;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -62,6 +65,9 @@ class ExtractControllerWebMvcTest {
 
     @MockitoBean
     private ExpenseReportAccessService reportAccessService;
+
+    @MockitoBean
+    private ExpenseClassificationCatalogService catalogService;
 
     private MockMultipartFile validPdfFile;
     private AuthenticatedUserPrincipal principal;
@@ -132,6 +138,8 @@ class ExtractControllerWebMvcTest {
         verify(javaProcessor).extractText(any());
         verify(objService).process(anyString(), anyString());
         verify(reportsService).generateId(42L);
+        verify(catalogService).populateFromReport("session-123");
+        verify(catalogService).applyCategoriesToReport("session-123");
     }
 
     @Test
@@ -164,6 +172,8 @@ class ExtractControllerWebMvcTest {
             .file(validPdfFile))
             .andExpect(status().isUnprocessableEntity())
             .andExpect(jsonPath("$.errorCode").value("EMPTY_PDF_CONTENT"));
+
+        verify(catalogService, never()).populateFromReport(anyString());
     }
 
     @Test
@@ -178,6 +188,8 @@ class ExtractControllerWebMvcTest {
             .file(validPdfFile))
             .andExpect(status().isInternalServerError())
             .andExpect(jsonPath("$.errorCode").value("FILE_PROCESSING_ERROR"));
+
+        verify(catalogService, never()).populateFromReport(anyString());
     }
 
     @Test
@@ -189,6 +201,44 @@ class ExtractControllerWebMvcTest {
             .file(validPdfFile))
             .andExpect(status().isInternalServerError())
             .andExpect(jsonPath("$.errorCode").value("UNEXPECTED_ERROR"));
+    }
+
+    @Test
+    void processReturnsReportWhenCatalogPopulationFails() throws Exception {
+        when(validationService.validateFiles(any())).thenReturn(validResponse());
+        when(reportsService.generateId(42L)).thenReturn("session-123");
+        when(javaProcessor.extractText(any())).thenReturn("Sample expense text");
+        when(reportsService.getFullReport("session-123")).thenReturn(emptyReport("session-123"));
+        doThrow(new RuntimeException("Catalog unavailable"))
+            .when(catalogService).populateFromReport("session-123");
+
+        mockMvc.perform(multipart("/extract/")
+            .file(validPdfFile))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.sessionToken").value("session-123"));
+
+        verify(catalogService).populateFromReport("session-123");
+        verify(reportsService).getFullReport("session-123");
+        verify(catalogService, never()).applyCategoriesToReport(anyString());
+    }
+
+    @Test
+    void processReturnsReportWhenApplyingCatalogCategoriesFails() throws Exception {
+        when(validationService.validateFiles(any())).thenReturn(validResponse());
+        when(reportsService.generateId(42L)).thenReturn("session-123");
+        when(javaProcessor.extractText(any())).thenReturn("Sample expense text");
+        when(reportsService.getFullReport("session-123")).thenReturn(emptyReport("session-123"));
+        doThrow(new RuntimeException("Catalog update unavailable"))
+            .when(catalogService).applyCategoriesToReport("session-123");
+
+        mockMvc.perform(multipart("/extract/")
+            .file(validPdfFile))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.sessionToken").value("session-123"));
+
+        verify(catalogService).populateFromReport("session-123");
+        verify(catalogService).applyCategoriesToReport("session-123");
+        verify(reportsService).getFullReport("session-123");
     }
 
     @Test
@@ -277,6 +327,9 @@ class ExtractControllerWebMvcTest {
             .andExpect(jsonPath("$.sessionToken").value("session-123"));
 
         verify(javaProcessor, times(2)).extractText(any());
-        verify(objService, times(2)).process(anyString(), anyString());
+        InOrder persistenceOrder = inOrder(objService, catalogService);
+        persistenceOrder.verify(objService, times(2)).process(anyString(), anyString());
+        persistenceOrder.verify(catalogService).populateFromReport("session-123");
+        persistenceOrder.verify(catalogService).applyCategoriesToReport("session-123");
     }
 }
