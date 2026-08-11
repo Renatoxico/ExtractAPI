@@ -24,12 +24,12 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             expense.category
         )
         FROM Expense expense
-        WHERE expense.reportId = :reportId
+        WHERE expense.report.id = :reportId
         ORDER BY expense.amount DESC, expense.id
         """)
     List<ExpenseData> findExpenseDataByReportId(@Param("reportId") String reportId);
 
-    List<Expense> findAllByReportIdOrderByAmountDescIdAsc(String reportId);
+    List<Expense> findAllByReport_IdOrderByAmountDescIdAsc(String reportId);
 
     @Query("""
         SELECT new io.github.renatoxico.extract.model.ExpenseGroup(
@@ -39,7 +39,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             expense.category
         )
         FROM Expense expense
-        WHERE expense.reportId = :reportId
+        WHERE expense.report.id = :reportId
         GROUP BY expense.expenseName, expense.category
         ORDER BY SUM(expense.amount) DESC, COUNT(expense) DESC, expense.expenseName
         """)
@@ -52,7 +52,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             COUNT(expense)
         )
         FROM Expense expense
-        WHERE expense.reportId = :reportId
+        WHERE expense.report.id = :reportId
         GROUP BY expense.category
         ORDER BY SUM(expense.amount) DESC
         """)

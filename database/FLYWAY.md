@@ -92,6 +92,15 @@ an `expense_report.session_id`, take a backup, and record row counts and total
 expense values for comparison after migration. Blank categories are normalized
 to `NULL`; the legacy `users` table is intentionally preserved.
 
+## Version 5 report cleanup
+
+`V5__cascade_expenses_on_report_delete.sql` replaces the report foreign key
+with the same mandatory relationship plus `ON DELETE CASCADE`. The extraction
+flow itself is transactional, so a processing failure rolls back the new
+report and every expense already extracted from earlier files. The database
+cascade is an additional invariant: explicitly deleting an `expense_report`
+also deletes every `expense` linked through `report_id`.
+
 ## Verification gates before later migrations
 
 - A new empty PostgreSQL database reaches version 1 by executing V1.
@@ -102,3 +111,4 @@ to `NULL`; the legacy `users` table is intentionally preserved.
 - No manual schema-creation step remains in the runbook.
 - V4 preserves report and expense row counts and monetary totals.
 - `expense.report_id` is non-null, indexed, and references `expense_report.id`.
+- Deleting an `expense_report` cascades only to its linked `expense` rows.

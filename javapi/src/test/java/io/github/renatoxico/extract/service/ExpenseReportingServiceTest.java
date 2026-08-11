@@ -46,7 +46,8 @@ class ExpenseReportingServiceTest {
     void createReportGeneratesOpaqueIdAndPersistsOwner() {
         when(appUserRepository.getReferenceById(42L)).thenReturn(owner);
 
-        String reportId = service.createReport(42L);
+        ExpenseReport report = service.createReport(42L);
+        String reportId = report.getId();
 
         assertThat(reportId).hasSize(32).matches("[a-z0-9_-]{32}");
         ArgumentCaptor<ExpenseReport> captor = ArgumentCaptor.forClass(ExpenseReport.class);
@@ -90,8 +91,9 @@ class ExpenseReportingServiceTest {
     @Test
     void v2CsvUsesSemanticHeadersAndIsoDates() {
         Expense expense = new Expense(
-            "report-123", new BigDecimal("99.90"), "UBER", "15/03/2025", "Transporte / Auto");
-        when(expenseRepository.findAllByReportIdOrderByAmountDescIdAsc("report-123"))
+            new ExpenseReport("report-123", owner),
+            new BigDecimal("99.90"), "UBER", "15/03/2025", "Transporte / Auto");
+        when(expenseRepository.findAllByReport_IdOrderByAmountDescIdAsc("report-123"))
             .thenReturn(List.of(expense));
 
         String v2 = new String(service.exportReportCsvV2("report-123"), StandardCharsets.UTF_8);
@@ -101,8 +103,9 @@ class ExpenseReportingServiceTest {
 
     @Test
     void v2CsvRejectsInvalidHistoricalDate() {
-        Expense expense = new Expense("report-123", BigDecimal.ONE, "TEST", "invalid", null);
-        when(expenseRepository.findAllByReportIdOrderByAmountDescIdAsc("report-123"))
+        Expense expense = new Expense(
+            new ExpenseReport("report-123", owner), BigDecimal.ONE, "TEST", "invalid", null);
+        when(expenseRepository.findAllByReport_IdOrderByAmountDescIdAsc("report-123"))
             .thenReturn(List.of(expense));
 
         assertThatThrownBy(() -> service.exportReportCsvV2("report-123"))

@@ -2,11 +2,13 @@ package io.github.renatoxico.extract.service;
 
 import io.github.renatoxico.extract.exception.ProcessingException;
 import io.github.renatoxico.extract.model.FileValidationResult;
+import io.github.renatoxico.extract.model.ExpenseReport;
 import io.github.renatoxico.extract.model.ReportData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -32,9 +34,11 @@ public class ExtractionFacade {
         this.catalogService = catalogService;
     }
 
+    @Transactional
     public ReportData process(MultipartFile[] files, Long ownerId) {
         requireValid(files);
-        String reportId = reportingService.createReport(ownerId);
+        ExpenseReport report = reportingService.createReport(ownerId);
+        String reportId = report.getId();
 
         for (MultipartFile file : files) {
             String fileName = file.getOriginalFilename();
@@ -47,9 +51,14 @@ public class ExtractionFacade {
                         "EMPTY_PDF_CONTENT"
                     );
                 }
-                objectifierService.process(reportId, pdfText);
+                objectifierService.process(report, pdfText);
             } catch (ProcessingException ex) {
-                throw ex;
+                throw new ProcessingException(
+                    "Failed to process file '" + fileName + "': " + ex.getMessage(),
+                    ex.getHttpStatus(),
+                    ex.getErrorCode(),
+                    ex
+                );
             } catch (Exception ex) {
                 throw new ProcessingException(
                     "Failed to process file: " + fileName,

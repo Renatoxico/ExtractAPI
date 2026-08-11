@@ -52,13 +52,14 @@ public class ExpenseReportingService {
     }
 
     @Transactional
-    public String createReport(Long ownerId) {
+    public ExpenseReport createReport(Long ownerId) {
         byte[] randomBytes = new byte[24];
         RANDOM.nextBytes(randomBytes);
         String reportId = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes).toLowerCase();
         AppUser owner = appUserRepository.getReferenceById(ownerId);
-        reportRepository.save(new ExpenseReport(reportId, owner));
-        return reportId;
+        ExpenseReport report = new ExpenseReport(reportId, owner);
+        reportRepository.save(report);
+        return report;
     }
 
     @Transactional(readOnly = true)
@@ -120,7 +121,7 @@ public class ExpenseReportingService {
     }
 
     private List<Expense> requireExpenses(String reportId) {
-        List<Expense> expenses = expenseRepository.findAllByReportIdOrderByAmountDescIdAsc(reportId);
+        List<Expense> expenses = expenseRepository.findAllByReport_IdOrderByAmountDescIdAsc(reportId);
         if (expenses.isEmpty()) {
             throw reportNotFound();
         }

@@ -1,6 +1,7 @@
 package io.github.renatoxico.extract.service;
 
 import io.github.renatoxico.extract.model.Expense;
+import io.github.renatoxico.extract.model.ExpenseReport;
 import io.github.renatoxico.extract.repo.ExpenseRepository;
 import io.github.renatoxico.extract.exception.ProcessingException;
 import org.slf4j.Logger;
@@ -27,7 +28,8 @@ public class ObjectifierService {
         this.validationService = validationService;
     }
 
-    public void process (String reportId, String inputText) {
+    public void process (ExpenseReport report, String inputText) {
+        String reportId = report.getId();
         try {
             LOG.info("Enter ObjectifierService.process for report: {}", reportId);
 
@@ -48,7 +50,7 @@ public class ObjectifierService {
                 );
             }
 
-            List<Expense> expensesObj = objectifyExtract(reportId, filteredExpenses);
+            List<Expense> expensesObj = objectifyExtract(report, filteredExpenses);
 
             LOG.info("Extracted {} expenses from document for report: {}", expensesObj.size(), reportId);
 
@@ -70,7 +72,8 @@ public class ObjectifierService {
 
     }
 
-    public List<Expense> objectifyExtract (String reportId,List<String> expenses) {
+    public List<Expense> objectifyExtract (ExpenseReport report,List<String> expenses) {
+        String reportId = report.getId();
         LOG.info("Enter ObjectifierService.objectifyExtract for report: {}", reportId);
         List<Expense> expensesObj = new ArrayList<>();
         expenses.forEach(line -> {
@@ -93,7 +96,7 @@ public class ObjectifierService {
                             && value.compareTo(BigDecimal.ZERO) != 0
                             && description.matches(".*[a-zA-Z].*")
                             && !(description.contains("CREDITO") || description.contains("FATURA") || description.contains("SALDO"))){
-                        mapToObj(reportId, expensesObj, value, description, date);
+                        mapToObj(report, expensesObj, value, description, date);
                     }
                 }
             }
@@ -125,8 +128,8 @@ public class ObjectifierService {
         return filteredCharges;
     }
 
-    public void mapToObj (String reportId, List<Expense> expenses, BigDecimal amount, String expenseName, String date){
-        expenses.add(new Expense(reportId, amount, expenseName, date, null));
+    public void mapToObj (ExpenseReport report, List<Expense> expenses, BigDecimal amount, String expenseName, String date){
+        expenses.add(new Expense(report, amount, expenseName, date, null));
     }
 
 }
