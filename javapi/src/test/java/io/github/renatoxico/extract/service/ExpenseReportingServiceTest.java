@@ -88,16 +88,14 @@ class ExpenseReportingServiceTest {
     }
 
     @Test
-    void csvContractsUseVersionSpecificHeadersAndDates() {
+    void v2CsvUsesSemanticHeadersAndIsoDates() {
         Expense expense = new Expense(
             "report-123", new BigDecimal("99.90"), "UBER", "15/03/2025", "Transporte / Auto");
         when(expenseRepository.findAllByReportIdOrderByAmountDescIdAsc("report-123"))
             .thenReturn(List.of(expense));
 
-        String v1 = new String(service.exportReportCsvV1("report-123"), StandardCharsets.UTF_8);
         String v2 = new String(service.exportReportCsvV2("report-123"), StandardCharsets.UTF_8);
 
-        assertThat(v1).contains("transactionName", "transactionType", "value", "sessionId", "15/03/2025");
         assertThat(v2).contains("expenseId", "expenseName", "category", "amount", "reportId", "2025-03-15");
     }
 

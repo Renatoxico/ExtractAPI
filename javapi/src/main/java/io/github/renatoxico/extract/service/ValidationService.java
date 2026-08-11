@@ -111,8 +111,8 @@ public class ValidationService {
             else if (expName.contains("SAUDE") || expName.contains("FARMACIA")){
                 expense.setCategory("Saúde / Farmácia / Bem-estar");
             }
-            else if (expName.contains("PIX ") || expName.contains("PIX*") || expName.contains("PIX-")
-                    || expName.contains("TRANSFERENCIA") || expName.contains("TRANSFERÊNCIA")
+            else if (//expName.contains("PIX ") || expName.contains("PIX*") || expName.contains("PIX-")|| 
+                    expName.contains("TRANSFERENCIA") || expName.contains("TRANSFERÊNCIA")
                     || expName.contains("TED ") || expName.contains("TED*") || expName.contains("TED-")
                     || expName.contains("DOC ") || expName.contains("DOC*") || expName.contains("DOC-")){
                 expense.setCategory("Outros / Transferências");

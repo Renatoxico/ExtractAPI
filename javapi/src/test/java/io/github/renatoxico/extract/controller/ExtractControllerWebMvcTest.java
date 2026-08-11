@@ -1,6 +1,5 @@
 package io.github.renatoxico.extract.controller;
 
-import io.github.renatoxico.extract.exception.ProcessingException;
 import io.github.renatoxico.extract.model.AuthenticatedUserPrincipal;
 import io.github.renatoxico.extract.model.CategorySummary;
 import io.github.renatoxico.extract.model.DaySummary;
@@ -12,7 +11,6 @@ import io.github.renatoxico.extract.service.ExpenseReportAccessService;
 import io.github.renatoxico.extract.service.ExpenseReportingService;
 import io.github.renatoxico.extract.service.ExtractionFacade;
 import io.github.renatoxico.extract.service.ExtractorService;
-import io.github.renatoxico.extract.service.V1ReportMapper;
 import io.github.renatoxico.extract.service.V2ReportMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,7 +29,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -42,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest({ExtractController.class, ExtractV2Controller.class})
-@Import({V1ReportMapper.class, V2ReportMapper.class})
+@Import(V2ReportMapper.class)
 @AutoConfigureMockMvc(addFilters = false)
 class ExtractControllerWebMvcTest {
     @Autowired MockMvc mockMvc;
@@ -95,18 +91,6 @@ class ExtractControllerWebMvcTest {
     }
 
     @Test
-    void v1SummaryPreservesLegacyContract() throws Exception {
-        when(reportingService.getReport("report-123")).thenReturn(report());
-
-        mockMvc.perform(get("/extract/summary/report-123"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.sessionToken").value("report-123"))
-            .andExpect(jsonPath("$.SmartGroupExpenselist[0].instances").value(2))
-            .andExpect(jsonPath("$.AllExpenses[0].value").value(100.25))
-            .andExpect(jsonPath("$.BiggestSingularExpense.expenseName").value("MARKET"));
-    }
-
-    @Test
     void v2UploadUsesSharedFacade() throws Exception {
         when(extractionFacade.process(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(42L)))
             .thenReturn(report());
@@ -117,14 +101,11 @@ class ExtractControllerWebMvcTest {
     }
 
     @Test
-    void v1MapsCanonicalNotFoundErrorToSessionCode() throws Exception {
-        doThrow(new ProcessingException(
-            "No report found", HttpStatus.NOT_FOUND, "REPORT_NOT_FOUND"))
-            .when(accessService).requireOwnership("other-report", 42L);
-
-        mockMvc.perform(get("/extract/summary/other-report"))
-            .andExpect(status().isNotFound())
-            .andExpect(jsonPath("$.errorCode").value("SESSION_NOT_FOUND"));
+    void removedV1ReportRoutesReturnNotFound() throws Exception {
+        mockMvc.perform(get("/extract/summary/report-123"))
+            .andExpect(status().isNotFound());
+        mockMvc.perform(get("/extract/export/report-123"))
+            .andExpect(status().isNotFound());
     }
 
     @Test

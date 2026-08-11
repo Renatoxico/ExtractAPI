@@ -38,7 +38,7 @@ For each API call, the frontend obtains the current ID token through the Firebas
 - All other backend endpoints require a valid Firebase ID token.
 - Creating a report records its owner using the authenticated local user ID.
 - Reading a summary or exporting CSV requires ownership of that report.
-- A missing report and another user's report both return `404 REPORT_NOT_FOUND` in v2, avoiding disclosure that another user's report ID exists. The deprecated v1 contract still returns `SESSION_NOT_FOUND`.
+- A missing report and another user's report both return `404 REPORT_NOT_FOUND`, avoiding disclosure that another user's report ID exists.
 - Reports created before ownership tracking was introduced remain inaccessible until deliberately assigned.
 
 The backend never accepts a frontend-provided user ID as proof of ownership. It obtains the local user ID from the validated principal.
@@ -103,9 +103,9 @@ contain both `totalAmount` and `occurrenceCount`; expense dates are serialized
 as ISO `yyyy-MM-dd`. A missing category remains `null`, and the frontend alone
 applies the display label `Outros / Transferências`.
 
-The `/extract` endpoints remain temporarily available as v1 adapters for
-existing clients. They preserve the legacy JSON and CSV names and can be
-removed after all consumers have moved to v2.
+The former v1 report endpoints under `/extract` have been removed. The
+unversioned `/extract/raw-text/` diagnostic utility remains available because
+it is not part of the report contract.
 
 Docker Compose reads backend values from the root `.env` and mounts the Firebase credential as a Docker secret:
 

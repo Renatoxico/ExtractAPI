@@ -28,12 +28,6 @@
 - `REPORT_RETRIEVAL_ERROR` — unexpected report retrieval failure (500).
 - `CSV_EXPORT_ERROR` — CSV export failed (500).
 
-### Legacy contract v1
-
-- `INVALID_SESSION_ID` — legacy session ID is empty or invalid (400).
-- `SESSION_NOT_FOUND` — legacy session has no accessible report (404).
-- `SUMMARY_RETRIEVAL_ERROR` — legacy summary retrieval failed (500).
-
 ### General — 500
 
 - `UNEXPECTED_ERROR` — unexpected API error.

@@ -85,22 +85,6 @@ public class ExpenseReportingService {
     }
 
     @Transactional(readOnly = true)
-    public byte[] exportReportCsvV1(String reportId) {
-        List<Expense> expenses = requireExpenses(reportId);
-        String[] header = {"id", "transactionName", "transactionType", "value", "date", "sessionId"};
-        return writeCsv(header, expenses.stream().map(expense -> new String[]{
-            value(expense.getId()),
-            value(expense.getExpenseName()),
-            expense.getCategory() == null || expense.getCategory().isBlank()
-                ? "Outros / Transferências"
-                : expense.getCategory(),
-            value(expense.getAmount()),
-            value(expense.getDate()),
-            value(expense.getReportId())
-        }).toList());
-    }
-
-    @Transactional(readOnly = true)
     public byte[] exportReportCsvV2(String reportId) {
         List<Expense> expenses = requireExpenses(reportId);
         String[] header = {"expenseId", "expenseName", "category", "amount", "date", "reportId"};
