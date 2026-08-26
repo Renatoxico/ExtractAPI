@@ -1,6 +1,5 @@
 package io.github.renatoxico.extract.service;
 
-import io.github.renatoxico.extract.repo.ExpenseRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -13,31 +12,57 @@ import static org.mockito.Mockito.verify;
 class ScheduledTasksServiceTest {
 
     @Mock
-    private AiProcessorService aiProcessorService;
-
-    @Mock
-    private ExpenseReportingService expenseReportingService;
-
-    @Mock
-    private ExpenseRepository expenseRepo;
-
-    @Mock
-    private ExpenseClassificationCatalogService catalogService;
+    private ClassificationPipelineService classificationPipeline;
 
     @InjectMocks
     private ScheduledTasksService service;
 
     @Test
-    void shouldPopulateMissingClassificationsWhenTriggered() {
-        service.populateMissingClassifications();
+    void delegatesCatalogRegistration() {
+        service.registerMissingCatalogEntries();
 
-        verify(catalogService).populateMissing();
+        verify(classificationPipeline).registerMissingCatalogEntries();
     }
 
     @Test
-    void shouldApplyCatalogCategoriesToMissingExpensesWhenTriggered() {
-        service.applyCatalogCategoriesToMissingExpenses();
+    void delegatesBatchCreation() {
+        service.createClassificationBatch();
 
-        verify(catalogService).applyCategoriesToMissingExpenses();
+        verify(classificationPipeline).createNextClassificationBatch();
+    }
+
+    @Test
+    void delegatesAiProcessing() {
+        service.processAiClassificationBatch();
+
+        verify(classificationPipeline).processNextAiBatch();
+    }
+
+    @Test
+    void delegatesAiRecovery() {
+        service.recoverExpiredAiBatches();
+
+        verify(classificationPipeline).recoverExpiredAiBatches();
+    }
+
+    @Test
+    void delegatesCatalogApplication() {
+        service.applyClassificationTasks();
+
+        verify(classificationPipeline).applyReadyTasks();
+    }
+
+    @Test
+    void delegatesApplyRecovery() {
+        service.recoverExpiredApplyTasks();
+
+        verify(classificationPipeline).recoverExpiredApplyTasks();
+    }
+
+    @Test
+    void delegatesExpensePropagation() {
+        service.propagateCatalogCategories();
+
+        verify(classificationPipeline).propagateCatalogCategories();
     }
 }

@@ -31,14 +31,15 @@ Preciso que você categorize/classifique algumas despesas financeiras, utilize a
                 **Outros / Transferências**
                     (Inclui PIX entre pessoas, saques, transferências entre contas, doações e tudo que não se encaixa claramente nas categorias acima.)
 
-                Como retorno, por favor escreva exatamente o nome da despesa, seguido de um caractere pipe `|`, seguido pela categoria apropriada.
+                Cada despesa abaixo começa com um identificador numérico, seguido de um pipe `|` e do nome da despesa.
+                Como retorno, escreva exatamente o identificador numérico, seguido de um pipe `|`, seguido pela categoria apropriada.
                 Algumas despesas podem estar abreviadas ou faltando espaço, tente perceber e categorizar apropriadamente esses casos também.
                 Por favor categorize cada uma das despesas, preciso de uma lista 1:1
 
                 Exemplo do formato esperado:
 
-                PAGAMENTO DE BOLETO ROCA ADMINISTRADORA DE IM|Moradia / Contas
-                PIX ENVIADO Amazon Servicos de Varejo|E-commerce
-                IFD*JEFFERSON BORGES DE LIMA|Restaurante / Lanches
+                101|Moradia / Contas
+                102|E-commerce / Compras online
+                103|Restaurante / Lanches
 
                 Despesas:

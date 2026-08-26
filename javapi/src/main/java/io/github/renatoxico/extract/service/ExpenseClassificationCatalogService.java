@@ -37,10 +37,4 @@ public class ExpenseClassificationCatalogService {
         return updatedExpenses;
     }
 
-    @Transactional
-    public int applyCategoriesToMissingExpenses() {
-        int updatedExpenses = classificationRepository.applyCategoriesToMissingExpenses();
-        LOG.info("Applied catalog categories to {} expenses without a category", updatedExpenses);
-        return updatedExpenses;
-    }
 }

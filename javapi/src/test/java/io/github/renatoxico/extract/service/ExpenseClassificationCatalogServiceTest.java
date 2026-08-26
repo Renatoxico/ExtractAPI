@@ -50,13 +50,4 @@ class ExpenseClassificationCatalogServiceTest {
         verify(classificationRepository).applyCategoriesToReport("report-123");
     }
 
-    @Test
-    void shouldApplyCategoriesToMissingExpenses() {
-        when(classificationRepository.applyCategoriesToMissingExpenses()).thenReturn(7);
-
-        int updatedExpenses = service.applyCategoriesToMissingExpenses();
-
-        assertThat(updatedExpenses).isEqualTo(7);
-        verify(classificationRepository).applyCategoriesToMissingExpenses();
-    }
 }

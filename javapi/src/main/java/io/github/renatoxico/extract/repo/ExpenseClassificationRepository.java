@@ -73,14 +73,4 @@ public interface ExpenseClassificationRepository extends JpaRepository<ExpenseCl
             """, nativeQuery = true)
     int applyCategoriesToReport(@Param("reportId") String reportId);
 
-    @Modifying
-    @Query(value = """
-            UPDATE expense AS expense
-            SET category = classification.category
-            FROM expense_classification classification
-            WHERE classification.expense_name = expense.expense_name
-              AND expense.category IS NULL
-              AND NULLIF(classification.category, '') IS NOT NULL
-            """, nativeQuery = true)
-    int applyCategoriesToMissingExpenses();
 }

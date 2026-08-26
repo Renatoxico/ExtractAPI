@@ -6,7 +6,6 @@ import io.github.renatoxico.extract.model.AppUser;
 import io.github.renatoxico.extract.model.CategorySummary;
 import io.github.renatoxico.extract.model.DaySummary;
 import io.github.renatoxico.extract.model.Expense;
-import io.github.renatoxico.extract.model.ExpenseCategoryAssignment;
 import io.github.renatoxico.extract.model.ExpenseData;
 import io.github.renatoxico.extract.model.ExpenseReport;
 import io.github.renatoxico.extract.model.ReportData;
@@ -79,10 +78,6 @@ public class ExpenseReportingService {
             expenseRepository.findCategorySummariesByReportId(reportId),
             buildHighlights(expenses)
         );
-    }
-
-    public List<ExpenseCategoryAssignment> getUnclassifiedExpenseNames() {
-        return expenseRepository.findUnclassifiedExpenseNames().stream().distinct().limit(50).toList();
     }
 
     @Transactional(readOnly = true)

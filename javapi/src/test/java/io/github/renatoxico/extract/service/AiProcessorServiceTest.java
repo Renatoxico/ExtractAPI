@@ -2,30 +2,39 @@ package io.github.renatoxico.extract.service;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class AiProcessorServiceTest {
 
     private final AiProcessorService service = new AiProcessorService(new AiCategoryResponseParser());
 
     @Test
-    void buildsLocalLlmRequestBody() {
-        String prompt = "Test prompt";
+    void buildsPromptWithStableTaskIds() {
+        String prompt = service.buildPrompt(List.of(
+            new AiProcessorService.RequestItem(41L, "PADARIA CENTRAL"),
+            new AiProcessorService.RequestItem(42L, "MERCADO LOCAL")
+        ));
 
-        Map<String, Object> body = service.getLocalLlmRequestBody(prompt);
+        assertThat(prompt).contains("41|PADARIA CENTRAL");
+        assertThat(prompt).contains("42|MERCADO LOCAL");
+        assertThat(prompt).contains("identificador numérico");
+    }
 
-        assertEquals("gemma3:4b", body.get("model"));
-        assertEquals(prompt, body.get("prompt"));
-        assertEquals(true, body.get("stream"));
+    @Test
+    void buildsLocalOllamaRequestBody() {
+        Map<String, Object> body = service.getLocalLlmRequestBody("Test prompt");
 
-        @SuppressWarnings("unchecked")
-        Map<String, Object> options = (Map<String, Object>) body.get("options");
-        assertNotNull(options);
-        assertEquals(4096, options.get("num_ctx"));
-        assertEquals(4096, options.get("num_predict"));
-        assertEquals(0, options.get("temperature"));
+        assertThat(body)
+            .containsEntry("model", "gemma3:4b")
+            .containsEntry("prompt", "Test prompt")
+            .containsEntry("stream", true);
+        assertThat(body.get("options")).isEqualTo(Map.of(
+            "num_ctx", 4096,
+            "num_predict", 4096,
+            "temperature", 0
+        ));
     }
 }

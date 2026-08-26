@@ -1,11 +1,11 @@
 package io.github.renatoxico.extract.service;
 
-import io.github.renatoxico.extract.model.ExpenseCategoryAssignment;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,20 +17,20 @@ class AiCategoryResponseParserTest {
     @Test
     void parsesValidLinesAndTrimsValues() {
         String response = """
-            PAGAMENTO DE BOLETO ROCA ADMINISTRADORA DE IM|Moradia / Contas
-              PIX ENVIADO Amazon Servicos de Varejo  |  E-commerce / Compras online
-            IFD*JEFFERSON BORGES DE LIMA|Restaurante / Lanches
+            101|Moradia / Contas
+              102  |  E-commerce / Compras online
+            103|Restaurante / Lanches
             """;
 
-        List<ExpenseCategoryAssignment> result = parser.parse(response);
+        AiCategoryResponseParser.ParseResult result = parser.parse(response, Set.of(101L, 102L, 103L));
 
-        assertEquals(3, result.size());
-        assertEquals("PAGAMENTO DE BOLETO ROCA ADMINISTRADORA DE IM", result.get(0).expenseName());
-        assertEquals("Moradia / Contas", result.get(0).category());
-        assertEquals("PIX ENVIADO Amazon Servicos de Varejo", result.get(1).expenseName());
-        assertEquals("E-commerce / Compras online", result.get(1).category());
-        assertEquals("IFD*JEFFERSON BORGES DE LIMA", result.get(2).expenseName());
-        assertEquals("Restaurante / Lanches", result.get(2).category());
+        assertEquals(3, result.acceptedItems().size());
+        assertEquals(101L, result.acceptedItems().get(0).taskId());
+        assertEquals("Moradia / Contas", result.acceptedItems().get(0).category());
+        assertEquals(102L, result.acceptedItems().get(1).taskId());
+        assertEquals("E-commerce / Compras online", result.acceptedItems().get(1).category());
+        assertEquals(103L, result.acceptedItems().get(2).taskId());
+        assertEquals("Restaurante / Lanches", result.acceptedItems().get(2).category());
     }
 
     @Test
@@ -38,16 +38,17 @@ class AiCategoryResponseParserTest {
         String response = """
 
             Missing separator
-            UNKNOWN|InvalidCategory
-            COMPANY|SUBSIDIARY|Supermercado
-            VALID EXPENSE|Supermercado
+            abc|Supermercado
+            999|Supermercado
+            101|InvalidCategory
+            102|Supermercado
+            102|Moradia / Contas
             """;
 
-        List<ExpenseCategoryAssignment> result = parser.parse(response);
+        AiCategoryResponseParser.ParseResult result = parser.parse(response, Set.of(101L, 102L));
 
-        assertEquals(1, result.size());
-        assertEquals("VALID EXPENSE", result.getFirst().expenseName());
-        assertEquals("Supermercado", result.getFirst().category());
+        assertTrue(result.acceptedItems().isEmpty());
+        assertEquals(5, result.diagnostics().size());
     }
 
     @ParameterizedTest
@@ -64,14 +65,14 @@ class AiCategoryResponseParserTest {
         "Moradia / Contas"
     })
     void acceptsEverySupportedCategory(String category) {
-        List<ExpenseCategoryAssignment> result = parser.parse("EXPENSE|" + category);
+        AiCategoryResponseParser.ParseResult result = parser.parse("1|" + category, Set.of(1L));
 
-        assertEquals(1, result.size());
-        assertEquals(category, result.getFirst().category());
+        assertEquals(1, result.acceptedItems().size());
+        assertEquals(category, result.acceptedItems().getFirst().category());
     }
 
     @Test
     void returnsEmptyListForEmptyResponse() {
-        assertTrue(parser.parse("").isEmpty());
+        assertTrue(parser.parse("", Set.of(1L)).acceptedItems().isEmpty());
     }
 }

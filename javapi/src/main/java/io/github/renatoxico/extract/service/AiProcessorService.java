@@ -1,7 +1,6 @@
 package io.github.renatoxico.extract.service;
 
 import io.github.renatoxico.extract.exception.ProcessingException;
-import io.github.renatoxico.extract.model.ExpenseCategoryAssignment;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
@@ -24,6 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class AiProcessorService {
@@ -55,7 +56,7 @@ public class AiProcessorService {
         }
     }
 
-    public List<ExpenseCategoryAssignment> processWithGemini(List<ExpenseCategoryAssignment> expenses) {
+    public AiResponse processWithGemini(List<RequestItem> expenses) {
         String prompt = buildPrompt(expenses);
         try {
             Client client = Client.builder().apiKey(API_KEY).build();
@@ -65,36 +66,33 @@ public class AiProcessorService {
             prompt,
             null);
 
-            String aiResponse = response.text();
-            if (aiResponse != null && !aiResponse.isBlank()) {
-                LOG.info("Received response from Gemini");
-                return categoryResponseParser.parse(aiResponse);
-            }
-        } catch (Exception ex) {
-            LOG.error("Error calling Gemini API: {}", ex.getMessage(), ex);
+            String rawResponse = response.text();
+            if (rawResponse == null || rawResponse.isBlank()) {
                 throw new ProcessingException(
-                        "Error calling Gemini API",
-                        HttpStatus.INTERNAL_SERVER_ERROR,
-                        "GEMINI_API_ERROR",
-                        ex
+                    "Gemini returned an empty response",
+                    HttpStatus.BAD_GATEWAY,
+                    "EMPTY_GEMINI_RESPONSE"
                 );
-
+            }
+            LOG.info("Received response from Gemini for {} classification tasks", expenses.size());
+            return parseResponse(rawResponse, expenses);
+        } catch (Exception ex) {
+            if (ex instanceof ProcessingException processingException) {
+                throw processingException;
+            }
+            LOG.error("Error calling Gemini API: {}", ex.getMessage(), ex);
+            throw new ProcessingException(
+                "Error calling Gemini API",
+                HttpStatus.BAD_GATEWAY,
+                "GEMINI_API_ERROR",
+                ex
+            );
         }
-        return expenses;
     }
 
-    private String buildPrompt(List<ExpenseCategoryAssignment> expenses) {
-        StringBuilder prompt = new StringBuilder();
-        prompt.append(getPrompt());
-
-        for(ExpenseCategoryAssignment expense : expenses){
-            prompt.append(expense.expenseName()).append(" | \n");
-        }
-        return prompt.toString();
-    }
-
-    public List<ExpenseCategoryAssignment> processWithLocalLLM(List<ExpenseCategoryAssignment> expenses) {
+    public AiResponse processWithLocalLLM(List<RequestItem> expenses) {
         RestTemplate restTemplate = new RestTemplate();
+        ObjectMapper objectMapper = new ObjectMapper();
         String prompt = buildPrompt(expenses);
         Map<String, Object> body = getLocalLlmRequestBody(prompt);
 
@@ -103,17 +101,17 @@ public class AiProcessorService {
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
         try {
-            LOG.info("Calling local Ollama API");
+            LOG.info("Calling local Ollama API for {} classification tasks", expenses.size());
             ResponseExtractor<String> responseExtractor = response -> {
                 StringBuilder content = new StringBuilder();
                 try (BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(response.getBody(), StandardCharsets.UTF_8))) {
+                    new InputStreamReader(response.getBody(), StandardCharsets.UTF_8))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
                         if (line.isBlank()) {
                             continue;
                         }
-                        Map<?, ?> chunk = new ObjectMapper().readValue(line, Map.class);
+                        Map<?, ?> chunk = objectMapper.readValue(line, Map.class);
                         Object responseContent = chunk.get("response");
                         if (responseContent != null) {
                             content.append(responseContent);
@@ -123,19 +121,45 @@ public class AiProcessorService {
                 return content.toString();
             };
 
-            String response = restTemplate.execute(OLLAMA_URL, HttpMethod.POST, request -> {
+            String rawResponse = restTemplate.execute(OLLAMA_URL, HttpMethod.POST, request -> {
                 request.getHeaders().putAll(requestEntity.getHeaders());
-                new ObjectMapper().writeValue(request.getBody(), requestEntity.getBody());
+                objectMapper.writeValue(request.getBody(), requestEntity.getBody());
             }, responseExtractor);
 
-            LOG.info("Local Ollama API call completed");
-            if (response != null) {
-                return categoryResponseParser.parse(response);
+            if (rawResponse == null || rawResponse.isBlank()) {
+                throw new ProcessingException(
+                    "Ollama returned an empty response",
+                    HttpStatus.BAD_GATEWAY,
+                    "EMPTY_OLLAMA_RESPONSE"
+                );
             }
-        } catch (Exception ex) {
-            LOG.error("Error calling local Ollama API", ex);
+            LOG.info("Local Ollama API completed for {} classification tasks", expenses.size());
+            return parseResponse(rawResponse, expenses);
+        } catch (Exception exception) {
+            if (exception instanceof ProcessingException processingException) {
+                throw processingException;
+            }
+            LOG.error("Error calling local Ollama API: {}", exception.getMessage(), exception);
+            throw new ProcessingException(
+                "Error calling local Ollama API",
+                HttpStatus.BAD_GATEWAY,
+                "OLLAMA_API_ERROR",
+                exception
+            );
         }
-        return expenses;
+    }
+
+    String buildPrompt(List<RequestItem> expenses) {
+        StringBuilder prompt = new StringBuilder();
+        prompt.append(getPrompt());
+
+        for (RequestItem expense : expenses) {
+            prompt.append(expense.taskId())
+                .append('|')
+                .append(expense.expenseName())
+                .append('\n');
+        }
+        return prompt.toString();
     }
 
     Map<String, Object> getLocalLlmRequestBody(String prompt) {
@@ -152,4 +176,22 @@ public class AiProcessorService {
         return body;
     }
 
+    private AiResponse parseResponse(String rawResponse, List<RequestItem> expenses) {
+        Set<Long> expectedTaskIds = expenses.stream()
+            .map(RequestItem::taskId)
+            .collect(Collectors.toSet());
+        return new AiResponse(
+            rawResponse,
+            categoryResponseParser.parse(rawResponse, expectedTaskIds)
+        );
+    }
+
+    public record RequestItem(long taskId, String expenseName) {
+    }
+
+    public record AiResponse(
+        String rawResponse,
+        AiCategoryResponseParser.ParseResult parseResult
+    ) {
+    }
 }

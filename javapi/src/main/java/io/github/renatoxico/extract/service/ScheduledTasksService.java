@@ -1,73 +1,58 @@
 package io.github.renatoxico.extract.service;
 
-import io.github.renatoxico.extract.model.ExpenseCategoryAssignment;
-import io.github.renatoxico.extract.repo.ExpenseRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
 public class ScheduledTasksService {
     private static final Logger LOG = LoggerFactory.getLogger(ScheduledTasksService.class);
-    private final AiProcessorService aiProcessorService;
-    private final ExpenseReportingService expenseReportingService;
-    private final ExpenseRepository expenseRepo;
-    private final ExpenseClassificationCatalogService catalogService;
+    private final ClassificationPipelineService classificationPipeline;
 
-    public ScheduledTasksService(
-        AiProcessorService aiProcessorService,
-        ExpenseReportingService expenseReportingService,
-        ExpenseRepository expenseRepo,
-        ExpenseClassificationCatalogService catalogService
-    ) {
-        this.aiProcessorService = aiProcessorService;
-        this.expenseReportingService = expenseReportingService;
-        this.expenseRepo = expenseRepo;
-        this.catalogService = catalogService;
+    public ScheduledTasksService(ClassificationPipelineService classificationPipeline) {
+        this.classificationPipeline = classificationPipeline;
     }
 
-    @Scheduled(cron = "0 */5 * * * *")
-    private void enrichCategories() {
-        LOG.info("Starting scheduled AI enrichment task...");
-        List<ExpenseCategoryAssignment> enrichedExpenses = expenseReportingService.getUnclassifiedExpenseNames();
-        if (enrichedExpenses.stream().count() == 0) {
-            LOG.info("No expenses found for enrichment.");
-            return;
-        }
-        try {
-            enrichedExpenses = aiProcessorService.processWithGemini(enrichedExpenses);
-            for (ExpenseCategoryAssignment assignment : enrichedExpenses) {
-                if (assignment.category() != null && !assignment.category().isEmpty()) {
-                    LOG.info("Updating {} to category {}", assignment.expenseName(), assignment.category());
-                    expenseRepo.updateCategory(assignment.expenseName(), assignment.category());
-                }
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    @Scheduled(cron = "${classification.catalog-registration-cron:0 * * * * *}")
+    public void registerMissingCatalogEntries() {
+        LOG.info("Starting expense-to-catalog registration");
+        classificationPipeline.registerMissingCatalogEntries();
     }
 
-    @Scheduled(cron = "0 */1 * * * *")
-    private void updateMatchedExpenses() {
-        LOG.info("Starting scheduled Matched Expenses update task...");
-        expenseRepo.updateMatchedExpenses();
-        LOG.info("Finished scheduled Matched Expenses update task...");
+    @Scheduled(cron = "${classification.batch-creation-cron:10 * * * * *}")
+    public void createClassificationBatch() {
+        LOG.info("Starting classification batch creation");
+        classificationPipeline.createNextClassificationBatch();
     }
 
-    @Scheduled(cron = "${catalog.backfill.cron:-}")
-    public void populateMissingClassifications() {
-        LOG.info("Starting expense classification catalog backfill");
-        catalogService.populateMissing();
-        LOG.info("Finished expense classification catalog backfill");
+    @Scheduled(cron = "${classification.ai-cron:0 */5 * * * *}")
+    public void processAiClassificationBatch() {
+        LOG.info("Starting durable AI classification worker");
+        classificationPipeline.processNextAiBatch();
     }
 
-    @Scheduled(cron = "${catalog.expense-update.cron:-}")
-    public void applyCatalogCategoriesToMissingExpenses() {
-        LOG.info("Starting catalog category application to expenses");
-        catalogService.applyCategoriesToMissingExpenses();
-        LOG.info("Finished catalog category application to expenses");
+    @Scheduled(cron = "${classification.ai-recovery-cron:20 * * * * *}")
+    public void recoverExpiredAiBatches() {
+        LOG.info("Starting expired AI batch recovery");
+        classificationPipeline.recoverExpiredAiBatches();
+    }
+
+    @Scheduled(cron = "${classification.apply-cron:30 * * * * *}")
+    public void applyClassificationTasks() {
+        LOG.info("Starting catalog classification apply worker");
+        classificationPipeline.applyReadyTasks();
+    }
+
+    @Scheduled(cron = "${classification.apply-recovery-cron:40 * * * * *}")
+    public void recoverExpiredApplyTasks() {
+        LOG.info("Starting expired classification apply recovery");
+        classificationPipeline.recoverExpiredApplyTasks();
+    }
+
+    @Scheduled(cron = "${classification.propagation-cron:45 * * * * *}")
+    public void propagateCatalogCategories() {
+        LOG.info("Starting catalog-to-expense propagation worker");
+        classificationPipeline.propagateCatalogCategories();
     }
 }
