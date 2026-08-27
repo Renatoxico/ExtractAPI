@@ -15,10 +15,14 @@ public class FirebaseAdminConfig {
 
     @Bean
     @Lazy
-    public FirebaseApp firebaseApp() throws IOException {
+    public FirebaseApp firebaseApp(AiProperties properties) throws IOException {
         if (FirebaseApp.getApps().isEmpty()) {
+            int timeoutMillis = Math.toIntExact(properties.getDefaultTimeout().toMillis());
             FirebaseOptions options = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.getApplicationDefault())
+                .setConnectTimeout(timeoutMillis)
+                .setReadTimeout(timeoutMillis)
+                .setWriteTimeout(timeoutMillis)
                 .build();
 
             return FirebaseApp.initializeApp(options);

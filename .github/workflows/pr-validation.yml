@@ -24,8 +24,24 @@ jobs:
           cache: maven
           cache-dependency-path: javapi/pom.xml
 
+      - name: Verify Docker availability for Testcontainers
+        run: docker info
+
       - name: Run tests with coverage
         run: ./javapi/mvnw verify -f javapi/pom.xml
+
+      - name: Require PostgreSQL integration tests
+        shell: bash
+        run: |
+          report="javapi/target/surefire-reports/TEST-io.github.renatoxico.extract.service.ClassificationPipelinePostgresIntegrationTest.xml"
+          if [[ ! -f "$report" ]]; then
+            echo "PostgreSQL integration test report was not generated"
+            exit 1
+          fi
+          if grep -Eq 'skipped="[1-9][0-9]*"' "$report"; then
+            echo "PostgreSQL integration tests were skipped"
+            exit 1
+          fi
 
       - name: Generate JaCoCo coverage report
         uses: madrapps/jacoco-report@v1.7.1

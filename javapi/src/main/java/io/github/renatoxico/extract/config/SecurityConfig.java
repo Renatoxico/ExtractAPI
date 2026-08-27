@@ -1,7 +1,7 @@
 package io.github.renatoxico.extract.config;
 
-import io.github.renatoxico.extract.service.AppUserService;
 import com.google.firebase.auth.FirebaseAuth;
+import io.github.renatoxico.extract.service.AppUserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,7 +34,6 @@ public class SecurityConfig {
     ) throws Exception {
         FirebaseAuthenticationFilter firebaseAuthenticationFilter =
             new FirebaseAuthenticationFilter(firebaseAuth, authenticationEntryPoint, appUserService);
-
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
@@ -44,7 +43,11 @@ public class SecurityConfig {
             .exceptionHandling(exception -> exception.authenticationEntryPoint(authenticationEntryPoint))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/terms").permitAll()
+                .requestMatchers("/terms", "/actuator/health").permitAll()
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/admin/email-notifications/*/resend"
+                ).permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(firebaseAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -57,7 +60,11 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(corsAllowedOrigin));
         config.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Content-Type", "Authorization"));
+        config.setAllowedHeaders(List.of(
+            "Content-Type",
+            "Authorization",
+            "X-Admin-API-Key"
+        ));
         config.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

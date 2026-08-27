@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -27,15 +28,18 @@ public class ClassificationTransactionService {
     private final ClassificationWorkRepository workRepository;
     private final ClassificationProperties properties;
     private final ObjectMapper objectMapper;
+    private final AdminEmailService adminEmailService;
 
     public ClassificationTransactionService(
         ClassificationWorkRepository workRepository,
         ClassificationProperties properties,
-        ObjectMapper objectMapper
+        ObjectMapper objectMapper,
+        AdminEmailService adminEmailService
     ) {
         this.workRepository = workRepository;
         this.properties = properties;
         this.objectMapper = objectMapper;
+        this.adminEmailService = adminEmailService;
     }
 
     @Transactional
@@ -81,24 +85,36 @@ public class ClassificationTransactionService {
                     Function.identity()
                 ));
 
-        int unresolvedItems = 0;
+        List<TaskItem> unresolvedItems = new ArrayList<>();
         for (TaskItem item : claim.items()) {
             AiCategoryResponseParser.ParsedItem accepted = acceptedByTask.get(item.taskId());
             if (accepted != null) {
                 workRepository.markTaskReady(item.taskId(), claim.batchId(), accepted.category());
             } else {
-                unresolvedItems++;
+                unresolvedItems.add(item);
             }
         }
 
         JsonNode outputPayload = toOutputPayload(response);
-        if (unresolvedItems == 0) {
+        if (unresolvedItems.isEmpty()) {
             workRepository.markBatchSucceeded(claim.batchId(), outputPayload);
         } else if (claim.attempt() >= properties.getMaxAiAttempts()) {
-            failWaitingTasks(claim, "AI response did not contain a valid result for every task");
+            ClaimedBatch failedClaim = new ClaimedBatch(
+                claim.batchId(),
+                claim.attempt(),
+                unresolvedItems
+            );
+            failWaitingTasks(
+                failedClaim,
+                "AI response did not contain a valid result for every task"
+            );
             workRepository.markBatchFailed(
                 claim.batchId(),
                 outputPayload,
+                "AI response did not contain a valid result for every task"
+            );
+            adminEmailService.enqueueAiFailure(
+                failedClaim,
                 "AI response did not contain a valid result for every task"
             );
         } else {
@@ -133,6 +149,7 @@ public class ClassificationTransactionService {
         } else {
             failWaitingTasks(claim, error);
             workRepository.markBatchFailed(claim.batchId(), outputPayload, error);
+            adminEmailService.enqueueAiFailure(claim, error);
         }
         return true;
     }
@@ -167,6 +184,10 @@ public class ClassificationTransactionService {
                 null,
                 "AI worker lease expired"
             );
+            adminEmailService.enqueueAiFailure(
+                new ClaimedBatch(expiredClaim.id(), expiredClaim.attempt(), items),
+                "AI worker lease expired"
+            );
         }
     }
 
@@ -192,24 +213,20 @@ public class ClassificationTransactionService {
         if (!workRepository.lockApplyingTask(claim.taskId(), claim.attempt())) {
             return false;
         }
-        recordApplyFailure(claim.taskId(), claim.attempt(), error);
+        recordApplyFailure(claim, error);
         return true;
     }
 
-    public List<ExpiredClaim> findExpiredApplyClaims() {
+    public List<ApplyClaim> findExpiredApplyClaims() {
         return workRepository.findExpiredApplyClaims();
     }
 
     @Transactional
-    public void recoverExpiredApplyTask(ExpiredClaim expiredClaim) {
-        if (!workRepository.lockApplyingTask(expiredClaim.id(), expiredClaim.attempt())) {
+    public void recoverExpiredApplyTask(ApplyClaim expiredClaim) {
+        if (!workRepository.lockApplyingTask(expiredClaim.taskId(), expiredClaim.attempt())) {
             return;
         }
-        recordApplyFailure(
-            expiredClaim.id(),
-            expiredClaim.attempt(),
-            "Catalog apply worker lease expired"
-        );
+        recordApplyFailure(expiredClaim, "Catalog apply worker lease expired");
     }
 
     public List<Long> findExpenseIdsReadyForPropagation() {
@@ -246,14 +263,15 @@ public class ClassificationTransactionService {
         }
     }
 
-    private void recordApplyFailure(long taskId, int attempt, String error) {
-        if (attempt >= properties.getMaxApplyAttempts()) {
-            workRepository.markTaskFailed(taskId, error);
+    private void recordApplyFailure(ApplyClaim claim, String error) {
+        if (claim.attempt() >= properties.getMaxApplyAttempts()) {
+            workRepository.markTaskFailed(claim.taskId(), error);
+            adminEmailService.enqueueApplyFailure(claim, error);
         } else {
             workRepository.markTaskApplyRetry(
-                taskId,
+                claim.taskId(),
                 error,
-                Instant.now().plus(properties.retryDelay(attempt))
+                Instant.now().plus(properties.retryDelay(claim.attempt()))
             );
         }
     }

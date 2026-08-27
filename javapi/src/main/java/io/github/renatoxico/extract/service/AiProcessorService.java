@@ -1,18 +1,20 @@
 package io.github.renatoxico.extract.service;
 
 import io.github.renatoxico.extract.exception.ProcessingException;
+import io.github.renatoxico.extract.config.AiProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.HttpOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestTemplate;
 
@@ -32,13 +34,21 @@ public class AiProcessorService {
     private static final String OLLAMA_URL = "http://localhost:11434/api/generate";
     private static final String OLLAMA_MODEL = "gemma3:4b";
 
-    @Value("${api.key}")
-    private String API_KEY;
-
     private final AiCategoryResponseParser categoryResponseParser;
+    private final AiProperties properties;
+    private final RestTemplate localLlmClient;
 
-    public AiProcessorService(AiCategoryResponseParser categoryResponseParser) {
+    public AiProcessorService(
+        AiCategoryResponseParser categoryResponseParser,
+        AiProperties properties
+    ) {
         this.categoryResponseParser = categoryResponseParser;
+        this.properties = properties;
+
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(properties.getDefaultTimeout());
+        requestFactory.setReadTimeout(properties.getDefaultTimeout());
+        this.localLlmClient = new RestTemplate(requestFactory);
     }
 
     public String getPrompt() {
@@ -58,13 +68,17 @@ public class AiProcessorService {
 
     public AiResponse processWithGemini(List<RequestItem> expenses) {
         String prompt = buildPrompt(expenses);
-        try {
-            Client client = Client.builder().apiKey(API_KEY).build();
-
+        try (Client client = Client.builder()
+            .apiKey(properties.getApiKey())
+            .httpOptions(HttpOptions.builder()
+                .timeout(timeoutMillis(properties.getGeminiTimeout()))
+                .build())
+            .build()) {
             GenerateContentResponse response = client.models.generateContent(
-            "gemini-3-flash-preview",
-            prompt,
-            null);
+                properties.getGeminiModel(),
+                prompt,
+                null
+            );
 
             String rawResponse = response.text();
             if (rawResponse == null || rawResponse.isBlank()) {
@@ -91,7 +105,6 @@ public class AiProcessorService {
     }
 
     public AiResponse processWithLocalLLM(List<RequestItem> expenses) {
-        RestTemplate restTemplate = new RestTemplate();
         ObjectMapper objectMapper = new ObjectMapper();
         String prompt = buildPrompt(expenses);
         Map<String, Object> body = getLocalLlmRequestBody(prompt);
@@ -121,7 +134,7 @@ public class AiProcessorService {
                 return content.toString();
             };
 
-            String rawResponse = restTemplate.execute(OLLAMA_URL, HttpMethod.POST, request -> {
+            String rawResponse = localLlmClient.execute(OLLAMA_URL, HttpMethod.POST, request -> {
                 request.getHeaders().putAll(requestEntity.getHeaders());
                 objectMapper.writeValue(request.getBody(), requestEntity.getBody());
             }, responseExtractor);
@@ -184,6 +197,10 @@ public class AiProcessorService {
             rawResponse,
             categoryResponseParser.parse(rawResponse, expectedTaskIds)
         );
+    }
+
+    private static int timeoutMillis(java.time.Duration timeout) {
+        return Math.toIntExact(timeout.toMillis());
     }
 
     public record RequestItem(long taskId, String expenseName) {

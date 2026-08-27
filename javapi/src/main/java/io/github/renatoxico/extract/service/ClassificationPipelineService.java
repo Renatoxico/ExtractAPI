@@ -114,7 +114,7 @@ public class ClassificationPipelineService {
     }
 
     public void recoverExpiredApplyTasks() {
-        for (ExpiredClaim claim : transactions.findExpiredApplyClaims()) {
+        for (ApplyClaim claim : transactions.findExpiredApplyClaims()) {
             transactions.recoverExpiredApplyTask(claim);
         }
     }

@@ -8,10 +8,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class ScheduledTasksService {
     private static final Logger LOG = LoggerFactory.getLogger(ScheduledTasksService.class);
+    private static final String REPORT_ZONE = "America/Sao_Paulo";
     private final ClassificationPipelineService classificationPipeline;
+    private final AdminEmailService adminEmailService;
 
-    public ScheduledTasksService(ClassificationPipelineService classificationPipeline) {
+    public ScheduledTasksService(
+        ClassificationPipelineService classificationPipeline,
+        AdminEmailService adminEmailService
+    ) {
         this.classificationPipeline = classificationPipeline;
+        this.adminEmailService = adminEmailService;
     }
 
     @Scheduled(cron = "${classification.catalog-registration-cron:0 * * * * *}")
@@ -54,5 +60,23 @@ public class ScheduledTasksService {
     public void propagateCatalogCategories() {
         LOG.info("Starting catalog-to-expense propagation worker");
         classificationPipeline.propagateCatalogCategories();
+    }
+
+    @Scheduled(cron = "0 * * * * *", zone = REPORT_ZONE)
+    public void deliverAdminEmails() {
+        LOG.info("Starting admin email delivery worker");
+        adminEmailService.deliverPendingEmails();
+    }
+
+    @Scheduled(cron = "0 55 23 * * *", zone = REPORT_ZONE)
+    public void sendDailyFailureReport() {
+        LOG.info("Creating daily classification failure report");
+        adminEmailService.enqueueDailyFailureReport();
+    }
+
+    @Scheduled(cron = "0 0 8 * * SAT", zone = REPORT_ZONE)
+    public void sendWeeklyStatusReport() {
+        LOG.info("Creating weekly admin status report");
+        adminEmailService.enqueueWeeklyStatusReport();
     }
 }

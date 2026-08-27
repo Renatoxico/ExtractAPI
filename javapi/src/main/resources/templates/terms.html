@@ -153,7 +153,7 @@
 
 <main>
     <h1 class="page-title">Termos e Condições</h1>
-    <p class="last-updated">Última atualização: 21 de março de 2025</p>
+    <p class="last-updated">Última atualização: 26 de agosto de 2026</p>
 
     <div class="intro">
         Ao utilizar o Extract, você concorda com os termos descritos neste documento. Leia com atenção antes de usar o serviço.
@@ -161,8 +161,8 @@
 
     <section>
         <h2>1. Sobre o Serviço</h2>
-        <p>O Extract é um serviço de análise de extratos bancários em PDF. Utilizamos inteligência artificial para categorizar e resumir suas despesas, gerando relatórios detalhados para uso pessoal.</p>
-        <p>O serviço está disponível nas plataformas web e iOS, mediante assinatura mensal ativa.</p>
+        <p>O Extract é um serviço web de análise de extratos bancários em PDF. O sistema extrai transações, gera relatórios para uso pessoal e utiliza inteligência artificial como etapa complementar de categorização.</p>
+        <p>Quando uma categoria não está disponível, o relatório utiliza a categoria padrão “Outros / Transferências”. A extração de valores e transações permanece disponível independentemente do resultado da categorização.</p>
     </section>
 
     <section>
@@ -170,23 +170,22 @@
         <p>Para usar o Extract, você deve:</p>
         <ul>
             <li>Ter ao menos 18 anos de idade</li>
-            <li>Possuir uma conta válida (via autenticação com Google, Apple ou Microsoft)</li>
-            <li>Ter uma assinatura ativa e em dia</li>
+            <li>Possuir uma conta Google válida para autenticação</li>
+            <li>Fornecer apenas arquivos que você esteja autorizado a processar</li>
         </ul>
     </section>
 
     <section>
-        <h2>3. Assinatura e Pagamento</h2>
-        <p>O acesso ao Extract é condicionado a uma assinatura mensal recorrente. O valor é cobrado automaticamente no cartão cadastrado a cada ciclo de cobrança.</p>
-        <p>O cancelamento pode ser feito a qualquer momento. O acesso permanece ativo até o final do período já pago. Não realizamos reembolsos por períodos parcialmente utilizados.</p>
-        <p>Em caso de falha no pagamento, o acesso será suspenso até a regularização da cobrança.</p>
+        <h2>3. Acesso e Disponibilidade</h2>
+        <p>O acesso depende da disponibilidade da aplicação, do banco de dados e dos provedores externos utilizados para autenticação e processamento. Funcionalidades, limites e condições de acesso podem ser alterados conforme a evolução do serviço.</p>
     </section>
 
     <section>
         <h2>4. Uso dos Dados</h2>
-        <p>Os arquivos PDF enviados são processados exclusivamente para gerar o relatório solicitado. Não armazenamos o conteúdo dos seus extratos bancários além do tempo necessário para o processamento.</p>
-        <p>Os dados de análise (categorias, totais, sessões) ficam disponíveis temporariamente por meio do ID de sessão gerado. Não associamos seus dados financeiros a terceiros.</p>
-        <p>Utilizamos seus dados de conta (e-mail, ID de usuário) apenas para gerenciar o acesso ao serviço e o status da assinatura.</p>
+        <p>Os arquivos PDF enviados são processados para extrair as transações e gerar o relatório solicitado. O arquivo original não é mantido após o processamento; as transações extraídas, categorias e totais são armazenados no banco de dados associados à conta autenticada para permitir a consulta do relatório.</p>
+        <p>Para categorização, o sistema pode enviar descrições de transações ao serviço Google Gemini. Valores, datas, o arquivo PDF completo e identificadores da conta não fazem parte dessa solicitação de categorização.</p>
+        <p>A autenticação utiliza Firebase Authentication, do Google. Um provedor SMTP processa mensagens operacionais destinadas aos administradores, que podem conter informações necessárias para investigar falhas de categorização. Esses serviços atuam como provedores técnicos do Extract.</p>
+        <p>Utilizamos dados da conta, como e-mail e identificador de usuário, para autenticação, controle de acesso, associação e suporte dos relatórios. Não vendemos dados pessoais ou financeiros.</p>
     </section>
 
     <section>
@@ -194,7 +193,7 @@
         <p>Você concorda em utilizar o Extract apenas para fins pessoais e lícitos. É proibido:</p>
         <ul>
             <li>Compartilhar ou revender o acesso à sua conta</li>
-            <li>Tentar burlar os mecanismos de autenticação ou assinatura</li>
+            <li>Tentar burlar os mecanismos de autenticação ou controle de acesso</li>
             <li>Enviar arquivos que não sejam extratos bancários pessoais</li>
             <li>Utilizar o serviço de forma automatizada sem autorização prévia</li>
         </ul>
@@ -213,12 +212,12 @@
 
     <section>
         <h2>8. Alterações nos Termos</h2>
-        <p>Podemos atualizar estes termos periodicamente. Em caso de alterações relevantes, notificaremos os usuários por e-mail com antecedência mínima de 7 dias. O uso continuado do serviço após esse prazo implica aceitação dos novos termos.</p>
+        <p>Podemos atualizar estes termos periodicamente. A data da versão vigente será indicada nesta página. O uso do serviço após a publicação de uma nova versão representa a aceitação dos termos atualizados.</p>
     </section>
 
     <section>
         <h2>9. Encerramento de Conta</h2>
-        <p>Você pode encerrar sua conta a qualquer momento cancelando a assinatura e entrando em contato conosco. Nos reservamos o direito de suspender contas que violem estes termos.</p>
+        <p>Você pode solicitar o encerramento da conta e a exclusão dos dados associados entrando em contato conosco. Nos reservamos o direito de suspender contas que violem estes termos.</p>
     </section>
 
     <section>
@@ -228,7 +227,7 @@
 </main>
 
 <footer>
-    &copy; 2025 Extract. Todos os direitos reservados.
+    &copy; 2026 Extract. Todos os direitos reservados.
     &nbsp;·&nbsp;
     <a href="/extract/">Voltar ao app</a>
 </footer>

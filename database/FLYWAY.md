@@ -101,6 +101,32 @@ report and every expense already extracted from earlier files. The database
 cascade is an additional invariant: explicitly deleting an `expense_report`
 also deletes every `expense` linked through `report_id`.
 
+## Versions 6 and 7 durable classification work
+
+`V6__create_durable_classification_work.sql` creates the persisted AI batch and
+per-classification task state machines. Status checks, partial indexes, leases,
+attempt counters, and `FOR UPDATE SKIP LOCKED` queries support concurrent
+workers without introducing a separate message broker. Existing uncategorized
+catalog entries are backfilled into bounded batches.
+
+`V7__align_durable_classification_work.sql` normalizes any intermediate durable
+task shape, repairs tasks orphaned by the previous nullable batch relationship,
+and establishes the final mandatory batch foreign key, status set, and active
+task indexes. Both migrations preserve terminal task history.
+
+Automatic retries stop at `FAILED`. Batch creation consults the latest task for
+each catalog entry and does not recreate work after a terminal failure. Manual
+resolution updates the catalog classification with source `MANUAL`; historical
+failed tasks are not deleted or rewritten.
+
+## Version 8 admin email outbox
+
+`V8__create_admin_email_outbox.sql` creates the durable operational-email
+outbox. A unique deduplication key ties immediate alerts to their originating
+classification failure. Delivery claims use states, attempts, retry timestamps,
+and leases; sent notifications remain immutable, while an explicit resend
+creates a linked audit record.
+
 ## Verification gates before later migrations
 
 - A new empty PostgreSQL database reaches version 1 by executing V1.
@@ -112,3 +138,8 @@ also deletes every `expense` linked through `report_id`.
 - V4 preserves report and expense row counts and monetary totals.
 - `expense.report_id` is non-null, indexed, and references `expense_report.id`.
 - Deleting an `expense_report` cascades only to its linked `expense` rows.
+- A clean PostgreSQL database reaches V8 and uses JSONB for durable payloads.
+- Concurrent classification workers claim different batches and tasks.
+- A latest `FAILED` classification task blocks automatic task recreation.
+- A terminal classification transaction inserts exactly one deduplicated
+  admin-email notification.

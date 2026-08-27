@@ -1,5 +1,6 @@
 package io.github.renatoxico.extract.service;
 
+import io.github.renatoxico.extract.config.AiProperties;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -9,7 +10,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class AiProcessorServiceTest {
 
-    private final AiProcessorService service = new AiProcessorService(new AiCategoryResponseParser());
+    private final AiProcessorService service = new AiProcessorService(
+        new AiCategoryResponseParser(),
+        testProperties()
+    );
 
     @Test
     void buildsPromptWithStableTaskIds() {
@@ -36,5 +40,11 @@ class AiProcessorServiceTest {
             "num_predict", 4096,
             "temperature", 0
         ));
+    }
+
+    private static AiProperties testProperties() {
+        AiProperties properties = new AiProperties();
+        properties.setApiKey("test-gemini-api-key-1234567890123456");
+        return properties;
     }
 }

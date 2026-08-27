@@ -28,6 +28,14 @@
 - `REPORT_RETRIEVAL_ERROR` — unexpected report retrieval failure (500).
 - `CSV_EXPORT_ERROR` — CSV export failed (500).
 
+### Authentication and administration
+
+- `AUTH_TOKEN_MISSING` — a protected endpoint was called without a Firebase ID token (401).
+- `AUTH_TOKEN_INVALID` — the supplied Firebase ID token could not be verified (401).
+- `ADMIN_API_KEY_INVALID` — the admin email endpoint received no valid admin API key (401).
+- `EMAIL_NOTIFICATION_NOT_FOUND` — the requested outbox notification does not exist (404).
+- `EMAIL_NOTIFICATION_BUSY` — the notification is currently being delivered and cannot be resent (409).
+
 ### General — 500
 
 - `UNEXPECTED_ERROR` — unexpected API error.

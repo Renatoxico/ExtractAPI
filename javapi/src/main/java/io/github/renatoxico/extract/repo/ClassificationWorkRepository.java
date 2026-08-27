@@ -32,12 +32,13 @@ public class ClassificationWorkRepository {
             SELECT classification.id, classification.expense_name
             FROM expense_classification classification
             WHERE NULLIF(classification.category, '') IS NULL
-              AND NOT EXISTS (
-                  SELECT 1
+              AND COALESCE((
+                  SELECT task.status
                   FROM expense_classification_task task
                   WHERE task.classification_id = classification.id
-                    AND task.status NOT IN ('APPLIED', 'FAILED')
-              )
+                  ORDER BY task.created_at DESC, task.id DESC
+                  LIMIT 1
+              ), 'APPLIED') = 'APPLIED'
             ORDER BY classification.id
             LIMIT ?
             FOR UPDATE OF classification SKIP LOCKED
@@ -77,7 +78,7 @@ public class ClassificationWorkRepository {
         if (taskId == null) {
             throw new IllegalStateException("Database did not return a classification task id");
         }
-        return new TaskItem(taskId, candidate.expenseName());
+        return new TaskItem(taskId, candidate.classificationId(), candidate.expenseName());
     }
 
     public Optional<BatchHeader> lockNextEligibleBatch() {
@@ -133,7 +134,7 @@ public class ClassificationWorkRepository {
 
     public List<TaskItem> findWaitingBatchItems(long batchId) {
         return jdbc.query("""
-            SELECT task.id, classification.expense_name
+            SELECT task.id, task.classification_id, classification.expense_name
             FROM expense_classification_task task
             JOIN expense_classification classification
               ON classification.id = task.classification_id
@@ -143,6 +144,7 @@ public class ClassificationWorkRepository {
             ORDER BY task.id
             """, (resultSet, rowNumber) -> new TaskItem(
                 resultSet.getLong("id"),
+                resultSet.getLong("classification_id"),
                 resultSet.getString("expense_name")
             ), batchId);
     }
@@ -249,8 +251,11 @@ public class ClassificationWorkRepository {
     public Optional<ApplyClaim> lockNextApplyTask(int maxAttempts, Instant leaseExpiresAt) {
         try {
             ApplyClaim claim = jdbc.queryForObject("""
-                SELECT task.id, task.classification_id, task.suggested_category, task.apply_attempts
+                SELECT task.id, task.batch_id, task.classification_id,
+                       classification.expense_name, task.suggested_category, task.apply_attempts
                 FROM expense_classification_task task
+                JOIN expense_classification classification
+                  ON classification.id = task.classification_id
                 WHERE task.suggested_category IS NOT NULL
                   AND task.apply_attempts < ?
                   AND (
@@ -262,7 +267,9 @@ public class ClassificationWorkRepository {
                 FOR UPDATE SKIP LOCKED
                 """, (resultSet, rowNumber) -> new ApplyClaim(
                     resultSet.getLong("id"),
+                    resultSet.getLong("batch_id"),
                     resultSet.getLong("classification_id"),
+                    resultSet.getString("expense_name"),
                     resultSet.getString("suggested_category"),
                     resultSet.getInt("apply_attempts") + 1
                 ), maxAttempts);
@@ -332,16 +339,23 @@ public class ClassificationWorkRepository {
             """, error, Timestamp.from(nextAttemptAt), taskId);
     }
 
-    public List<ExpiredClaim> findExpiredApplyClaims() {
+    public List<ApplyClaim> findExpiredApplyClaims() {
         return jdbc.query("""
-            SELECT id, apply_attempts AS attempts
-            FROM expense_classification_task
-            WHERE status = 'APPLYING'
-              AND lease_expires_at < CURRENT_TIMESTAMP
-            ORDER BY id
-            """, (resultSet, rowNumber) -> new ExpiredClaim(
+            SELECT task.id, task.batch_id, task.classification_id,
+                   classification.expense_name, task.suggested_category, task.apply_attempts
+            FROM expense_classification_task task
+            JOIN expense_classification classification
+              ON classification.id = task.classification_id
+            WHERE task.status = 'APPLYING'
+              AND task.lease_expires_at < CURRENT_TIMESTAMP
+            ORDER BY task.id
+            """, (resultSet, rowNumber) -> new ApplyClaim(
                 resultSet.getLong("id"),
-                resultSet.getInt("attempts")
+                resultSet.getLong("batch_id"),
+                resultSet.getLong("classification_id"),
+                resultSet.getString("expense_name"),
+                resultSet.getString("suggested_category"),
+                resultSet.getInt("apply_attempts")
             ));
     }
 
@@ -396,7 +410,7 @@ public class ClassificationWorkRepository {
     public record ClassificationCandidate(long classificationId, String expenseName) {
     }
 
-    public record TaskItem(long taskId, String expenseName) {
+    public record TaskItem(long taskId, long classificationId, String expenseName) {
     }
 
     public record BatchHeader(long batchId, int attempts) {
@@ -407,7 +421,9 @@ public class ClassificationWorkRepository {
 
     public record ApplyClaim(
         long taskId,
+        long batchId,
         long classificationId,
+        String expenseName,
         String suggestedCategory,
         int attempt
     ) {

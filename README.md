@@ -34,8 +34,10 @@ For each API call, the frontend obtains the current ID token through the Firebas
 
 ## Access rules
 
-- `GET /terms` and CORS preflight requests are public.
-- All other backend endpoints require a valid Firebase ID token.
+- `GET /terms`, `GET /actuator/health`, and CORS preflight requests are public.
+- Report and account endpoints require a valid Firebase ID token.
+- `POST /api/admin/email-notifications/{id}/resend` uses a separate admin API
+  key because it is an operational endpoint, not a user endpoint.
 - Creating a report records its owner using the authenticated local user ID.
 - Reading a summary or exporting CSV requires ownership of that report.
 - A missing report and another user's report both return `404 REPORT_NOT_FOUND`, avoiding disclosure that another user's report ID exists.
@@ -56,6 +58,9 @@ Copy `env.example` to `.env` and configure the database values plus the path to 
 
 ```dotenv
 GEMINI_API_KEY=
+GEMINI_MODEL=gemini-3-flash-preview
+GEMINI_TIMEOUT=3m
+EXTERNAL_CALL_TIMEOUT=90s
 CORS_ALLOWED_ORIGIN=http://localhost:5173
 FIREBASE_CREDENTIALS_PATH=./secrets/firebase-service-account.json
 ```
@@ -63,6 +68,8 @@ FIREBASE_CREDENTIALS_PATH=./secrets/firebase-service-account.json
 Copy `svelte-frontend/.env.example` to `svelte-frontend/.env` and fill in the Firebase web-app configuration. Variables beginning with `VITE_` are compiled into frontend JavaScript and must not contain secrets.
 
 Keep the service-account JSON under `secrets/`. Both `.env` files and `secrets/` are ignored by Git.
+The backend validates required Gemini and admin-email settings during startup;
+example placeholders and short API keys are rejected before workers start.
 
 Database schema changes are managed by Flyway. An empty database is initialized
 from `javapi/src/main/resources/db/migration`, and an existing pre-Flyway
@@ -107,11 +114,58 @@ The former v1 report endpoints under `/extract` have been removed. The
 unversioned `/extract/raw-text/` diagnostic utility remains available because
 it is not part of the report contract.
 
+## Durable classification workflow
+
+Expense classification is asynchronous and uses PostgreSQL as a durable work
+queue. Workers claim batches and tasks with `FOR UPDATE SKIP LOCKED`; leases
+recover abandoned work, while status and attempt checks reject late worker
+completions. Gemini calls run outside database transactions and have a
+three-minute timeout. Other external calls use a 90-second timeout.
+
+Automatic retries are bounded. The latest `FAILED` task blocks automatic task
+recreation so a poison input cannot create an unbounded Gemini-call loop.
+Terminal failures are intentionally inspected and corrected in the database by
+an administrator; they are not exposed to users. Reports degrade to the public
+`Outros / Transferências` fallback when no category is available.
+
 Docker Compose reads backend values from the root `.env` and mounts the Firebase credential as a Docker secret:
 
 ```powershell
 docker compose up --build
 ```
+
+## Admin email reporting
+
+The backend sends terminal classification alerts, a failure-only daily status
+at 23:55, and a Saturday 08:00 weekly status. Schedules use
+`America/Sao_Paulo` and are fixed in the application.
+
+Copy the Gmail SMTP and admin-email variables from `env.example` into `.env`.
+Set `SMTP_USERNAME` to the full Gmail address. For `SMTP_PASSWORD`, enable
+2-Step Verification on that Google account and create a Google App Password;
+do not use the account's normal password. Port 587 is configured with required
+STARTTLS. `ADMIN_EMAIL_FROM` defaults to `SMTP_USERNAME` and should only be
+overridden with a sender alias configured in Gmail. `ADMIN_EMAIL_RECIPIENTS`
+accepts a comma-separated list. Keep `ADMIN_EMAIL_API_KEY` long, random, and
+separate from the Google App Password.
+The application refuses to start when the key is shorter than 32 characters or
+still contains the example placeholder. SMTP connect, read, and write timeouts
+default to 90 seconds.
+
+To retry or resend one outbox notification, use the notification ID printed in
+the email or permanent-failure log:
+
+```powershell
+curl.exe -i -X POST -H "X-Admin-API-Key: $env:ADMIN_EMAIL_API_KEY" http://localhost:9090/api/admin/email-notifications/42/resend
+```
+
+A failed notification gets a fresh retry budget, a pending notification is
+made immediately eligible, and a delivered notification is copied into a new
+outbox entry so its original audit record remains intact.
+
+Email delivery is at-least-once: a process failure after SMTP accepts a message
+but before the outbox marks it as sent may result in a duplicate. Notification
+payloads are deduplicated by their originating classification failure.
 
 ## Automated verification
 
@@ -120,6 +174,11 @@ Run all backend tests from the repository root:
 ```powershell
 .\javapi\mvnw.cmd -f javapi\pom.xml test
 ```
+
+Docker must be available for the PostgreSQL/Testcontainers suite. Pull-request
+and release workflows fail when that suite is absent or skipped, because it
+validates Flyway, concurrent claims, leases, terminal retries, and the outbox
+insert committed with a terminal failure.
 
 Build the frontend:
 
@@ -136,6 +195,7 @@ With the backend running, verify that the public endpoint works and the protecte
 
 ```powershell
 curl.exe -i http://localhost:9090/terms
+curl.exe -i http://localhost:9090/actuator/health
 curl.exe -i http://localhost:9090/api/auth/me
 curl.exe -i -H "Authorization: Bearer invalid-token" http://localhost:9090/api/auth/me
 ```

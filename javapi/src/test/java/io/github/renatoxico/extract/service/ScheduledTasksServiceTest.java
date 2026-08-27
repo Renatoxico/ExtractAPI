@@ -13,6 +13,8 @@ class ScheduledTasksServiceTest {
 
     @Mock
     private ClassificationPipelineService classificationPipeline;
+    @Mock
+    private AdminEmailService adminEmailService;
 
     @InjectMocks
     private ScheduledTasksService service;
@@ -64,5 +66,26 @@ class ScheduledTasksServiceTest {
         service.propagateCatalogCategories();
 
         verify(classificationPipeline).propagateCatalogCategories();
+    }
+
+    @Test
+    void delegatesAdminEmailDelivery() {
+        service.deliverAdminEmails();
+
+        verify(adminEmailService).deliverPendingEmails();
+    }
+
+    @Test
+    void delegatesDailyAdminReport() {
+        service.sendDailyFailureReport();
+
+        verify(adminEmailService).enqueueDailyFailureReport();
+    }
+
+    @Test
+    void delegatesWeeklyAdminReport() {
+        service.sendWeeklyStatusReport();
+
+        verify(adminEmailService).enqueueWeeklyStatusReport();
     }
 }

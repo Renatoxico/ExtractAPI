@@ -1,5 +1,6 @@
 package io.github.renatoxico.extract.service;
 
+import com.google.firebase.auth.FirebaseAuth;
 import io.github.renatoxico.extract.repo.ClassificationWorkRepository.ApplyClaim;
 import io.github.renatoxico.extract.repo.ClassificationWorkRepository.ClaimedBatch;
 import io.github.renatoxico.extract.repo.ClassificationWorkRepository.ExpiredClaim;
@@ -9,12 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -38,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
     "classification.apply-cron=-",
     "classification.apply-recovery-cron=-",
     "classification.propagation-cron=-",
-    "api.key=test-api-key",
+    "ai.api-key=test-gemini-api-key-1234567890123456",
     "cors.allowed-origin=http://localhost:5173"
 })
 @Testcontainers(disabledWithoutDocker = true)
@@ -53,10 +54,14 @@ class ClassificationPipelinePostgresIntegrationTest {
     @Autowired
     private ClassificationTransactionService transactions;
 
+    @MockitoBean
+    private FirebaseAuth firebaseAuth;
+
     @BeforeEach
     void cleanDatabase() {
         jdbc.execute("""
             TRUNCATE TABLE
+                admin_email_outbox,
                 expense_classification_task,
                 ai_classification_batch,
                 expense_classification,
@@ -68,7 +73,7 @@ class ClassificationPipelinePostgresIntegrationTest {
     }
 
     @Test
-    void flywayCreatesV6WithJsonbPayloads() {
+    void flywayCreatesLatestSchemaWithJsonbPayloads() {
         String currentVersion = jdbc.queryForObject("""
             SELECT version
             FROM flyway_schema_history
@@ -84,7 +89,7 @@ class ClassificationPipelinePostgresIntegrationTest {
               AND column_name = 'input_payload'
             """, String.class);
 
-        assertThat(currentVersion).isEqualTo("6");
+        assertThat(currentVersion).isEqualTo("8");
         assertThat(inputType).isEqualTo("jsonb");
     }
 
@@ -143,6 +148,24 @@ class ClassificationPipelinePostgresIntegrationTest {
         assertThat(taskStatus(taskIds.getFirst())).isEqualTo("APPLIED");
         assertThat(taskStatus(taskIds.getLast())).isEqualTo("PENDING_AI");
         assertThat(secondBatchId).isNotEqualTo(firstBatch.batchId());
+    }
+
+    @Test
+    void latestAppliedTaskAllowsReprocessingDespiteOlderFailureHistory() {
+        long classificationId = insertClassification("HISTORICAL-FAILURE", null, null);
+        long failedBatchId = insertBatch("FAILED");
+        insertTask(failedBatchId, classificationId, "FAILED");
+        long appliedBatchId = insertBatch("SUCCEEDED");
+        insertTask(appliedBatchId, classificationId, "APPLIED");
+
+        assertThat(transactions.createPendingBatch()).isPresent();
+        assertThat(jdbc.queryForObject("""
+            SELECT status
+            FROM expense_classification_task
+            WHERE classification_id = ?
+            ORDER BY id DESC
+            LIMIT 1
+            """, String.class, classificationId)).isEqualTo("PENDING_AI");
     }
 
     @Test
@@ -255,7 +278,12 @@ class ClassificationPipelinePostgresIntegrationTest {
 
         assertThat(batchStatus(finalAttempt.batchId())).isEqualTo("FAILED");
         assertThat(taskStatus(taskId)).isEqualTo("FAILED");
-        assertThat(transactions.createPendingBatch()).isPresent();
+        assertThat(transactions.createPendingBatch()).isEmpty();
+        assertThat(jdbc.queryForObject("""
+            SELECT COUNT(*)
+            FROM admin_email_outbox
+            WHERE deduplication_key = ?
+            """, Integer.class, "AI_BATCH_FAILED:" + finalAttempt.batchId())).isEqualTo(1);
         assertThat(jdbc.queryForObject("""
             SELECT COUNT(*)
             FROM expense_classification_task
@@ -264,7 +292,7 @@ class ClassificationPipelinePostgresIntegrationTest {
                 FROM expense_classification_task
                 WHERE id = ?
             )
-            """, Integer.class, taskId)).isEqualTo(2);
+            """, Integer.class, taskId)).isEqualTo(1);
     }
 
     @Test
@@ -298,9 +326,9 @@ class ClassificationPipelinePostgresIntegrationTest {
         ClaimedBatch claim = createAndClaim();
         jdbc.update("""
             UPDATE ai_classification_batch
-            SET lease_expires_at = ?
+            SET lease_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 minute'
             WHERE id = ?
-            """, Instant.now().minusSeconds(60), claim.batchId());
+            """, claim.batchId());
 
         ExpiredClaim expired = transactions.findExpiredBatchClaims().getFirst();
         transactions.recoverExpiredBatch(expired);
@@ -355,6 +383,26 @@ class ClassificationPipelinePostgresIntegrationTest {
             RETURNING id
             """, Long.class, expenseName, category, source);
         return id == null ? 0 : id;
+    }
+
+    private long insertBatch(String status) {
+        Long id = jdbc.queryForObject("""
+            INSERT INTO ai_classification_batch (
+                status, input_payload, finished_at
+            )
+            VALUES (?, '{"schemaVersion":1,"items":[]}'::jsonb, CURRENT_TIMESTAMP)
+            RETURNING id
+            """, Long.class, status);
+        return id == null ? 0 : id;
+    }
+
+    private void insertTask(long batchId, long classificationId, String status) {
+        jdbc.update("""
+            INSERT INTO expense_classification_task (
+                batch_id, classification_id, status, finished_at
+            )
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            """, batchId, classificationId, status);
     }
 
     private long insertOwner() {

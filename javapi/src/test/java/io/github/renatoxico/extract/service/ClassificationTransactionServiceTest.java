@@ -25,6 +25,8 @@ import static org.mockito.Mockito.when;
 class ClassificationTransactionServiceTest {
     @Mock
     private ClassificationWorkRepository repository;
+    @Mock
+    private AdminEmailService adminEmailService;
 
     private ClassificationProperties properties;
     private ClassificationTransactionService service;
@@ -32,14 +34,19 @@ class ClassificationTransactionServiceTest {
     @BeforeEach
     void setUp() {
         properties = new ClassificationProperties();
-        service = new ClassificationTransactionService(repository, properties, new ObjectMapper());
+        service = new ClassificationTransactionService(
+            repository,
+            properties,
+            new ObjectMapper(),
+            adminEmailService
+        );
     }
 
     @Test
     void partialResponseAdvancesValidTaskAndRetriesOnlyMissingTask() {
         ClaimedBatch claim = new ClaimedBatch(7L, 1, List.of(
-            new TaskItem(11L, "FIRST"),
-            new TaskItem(12L, "SECOND")
+            new TaskItem(11L, 101L, "FIRST"),
+            new TaskItem(12L, 102L, "SECOND")
         ));
         AiProcessorService.AiResponse response = new AiProcessorService.AiResponse(
             "11|Supermercado",
@@ -71,7 +78,7 @@ class ClassificationTransactionServiceTest {
         ClaimedBatch claim = new ClaimedBatch(
             7L,
             3,
-            List.of(new TaskItem(12L, "SECOND"))
+            List.of(new TaskItem(12L, 102L, "SECOND"))
         );
         AiProcessorService.AiResponse response = new AiProcessorService.AiResponse(
             "invalid",
@@ -92,6 +99,10 @@ class ClassificationTransactionServiceTest {
                 "AI response did not contain a valid result for every task"
             )
         );
+        verify(adminEmailService).enqueueAiFailure(
+            claim,
+            "AI response did not contain a valid result for every task"
+        );
     }
 
     @Test
@@ -99,7 +110,7 @@ class ClassificationTransactionServiceTest {
         ClaimedBatch claim = new ClaimedBatch(
             7L,
             1,
-            List.of(new TaskItem(11L, "FIRST"))
+            List.of(new TaskItem(11L, 101L, "FIRST"))
         );
         AiProcessorService.AiResponse response = new AiProcessorService.AiResponse(
             "11|Supermercado",
@@ -117,18 +128,23 @@ class ClassificationTransactionServiceTest {
 
     @Test
     void thirdCatalogApplyFailureBecomesTerminal() {
-        ApplyClaim claim = new ApplyClaim(9L, 3L, "Supermercado", 3);
+        ApplyClaim claim = new ApplyClaim(
+            9L, 7L, 3L, "MARKET", "Supermercado", 3
+        );
         when(repository.lockApplyingTask(9L, 3)).thenReturn(true);
 
         service.failApplyTask(claim, "database unavailable");
 
         verify(repository).markTaskFailed(9L, "database unavailable");
+        verify(adminEmailService).enqueueApplyFailure(claim, "database unavailable");
         verify(repository, never()).markTaskApplyRetry(eq(9L), any(), any());
     }
 
     @Test
     void catalogAndTaskApplicationUseOneRepositoryOperationAfterFence() {
-        ApplyClaim claim = new ApplyClaim(9L, 3L, "Supermercado", 1);
+        ApplyClaim claim = new ApplyClaim(
+            9L, 7L, 3L, "MARKET", "Supermercado", 1
+        );
         when(repository.lockApplyingTask(9L, 1)).thenReturn(true);
 
         assertThat(service.applyCatalogSuggestion(claim)).isTrue();
