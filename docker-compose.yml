@@ -31,7 +31,7 @@ services:
       context: ./svelte-frontend
     container_name: frontend
     ports:
-      - "80:80"
+      - "127.0.0.1:3000:80"
     depends_on:
       backend-java:
         condition: service_healthy
