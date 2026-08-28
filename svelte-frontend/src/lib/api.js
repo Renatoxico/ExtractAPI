@@ -89,25 +89,3 @@ export async function processFiles(fileArray) {
 
   return json
 }
-
-export async function fetchAuthenticatedUser() {
-  const headers = await buildAuthHeaders()
-
-  if (!headers.Authorization) {
-    const err = new Error('Entre com o Google antes de testar a API.')
-    err.errorCode = 'AUTH_REQUIRED'
-    throw err
-  }
-
-  const res = await fetch(`${host}/api/auth/me`, { headers })
-
-  const json = await res.json()
-
-  if (!res.ok) {
-    const err = new Error(json.message ?? `A API respondeu com HTTP ${res.status}.`)
-    err.errorCode = json.errorCode ?? `HTTP_${res.status}`
-    throw err
-  }
-
-  return json
-}

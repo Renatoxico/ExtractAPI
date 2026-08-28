@@ -1,14 +1,11 @@
 <script>
   import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
   import { auth } from '../lib/firebase.js'
-  import { fetchAuthenticatedUser } from '../lib/api.js'
 
   const googleProvider = new GoogleAuthProvider()
 
   let { user, authReady } = $props()
   let loading = $state(false)
-  let apiLoading = $state(false)
-  let apiResult = $state('')
   let error = $state('')
 
   async function loginWithGoogle() {
@@ -38,21 +35,6 @@
       loading = false
     }
   }
-
-  async function testApiRequest() {
-    apiLoading = true
-    apiResult = ''
-    error = ''
-
-    try {
-      const authenticatedUser = await fetchAuthenticatedUser()
-      apiResult = `API confirmou ${authenticatedUser.email ?? authenticatedUser.uid}`
-    } catch (err) {
-      error = err.message
-    } finally {
-      apiLoading = false
-    }
-  }
 </script>
 
 <div class="auth-controls">
@@ -68,9 +50,6 @@
         <span>{user.email}</span>
       </div>
     </div>
-    <button class="api-test-button" type="button" onclick={testApiRequest} disabled={apiLoading}>
-      {apiLoading ? 'Testando...' : 'Testar API'}
-    </button>
     <button type="button" onclick={logout} disabled={loading}>
       {loading ? 'Saindo...' : 'Sair'}
     </button>
@@ -79,10 +58,6 @@
       <span class="google-mark" aria-hidden="true">G</span>
       {loading ? 'Entrando...' : 'Entrar com Google'}
     </button>
-  {/if}
-
-  {#if apiResult}
-    <span class="api-result">{apiResult}</span>
   {/if}
 
   {#if error}
@@ -155,18 +130,13 @@
     font-size: 0.75rem;
   }
 
-  .auth-loading,
-  .api-result {
+  .auth-loading {
     color: var(--text-muted);
     font-size: 0.75rem;
   }
 
   @media (max-width: 700px) {
     .user-text {
-      display: none;
-    }
-
-    .api-test-button {
       display: none;
     }
   }

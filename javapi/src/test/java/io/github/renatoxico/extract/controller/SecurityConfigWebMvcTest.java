@@ -1,12 +1,19 @@
 package io.github.renatoxico.extract.controller;
 
-import io.github.renatoxico.extract.config.FirebaseAuthenticationEntryPoint;
-import io.github.renatoxico.extract.config.SecurityConfig;
-import io.github.renatoxico.extract.model.AppUser;
-import io.github.renatoxico.extract.service.AppUserService;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
+import io.github.renatoxico.extract.config.AdminEmailProperties;
+import io.github.renatoxico.extract.config.FirebaseAuthenticationEntryPoint;
+import io.github.renatoxico.extract.config.SecurityConfig;
+import io.github.renatoxico.extract.model.AppUser;
+import io.github.renatoxico.extract.service.AdminEmailService;
+import io.github.renatoxico.extract.service.AppUserService;
+import io.github.renatoxico.extract.service.ExpenseReportAccessService;
+import io.github.renatoxico.extract.service.ExpenseReportingService;
+import io.github.renatoxico.extract.service.ExtractionFacade;
+import io.github.renatoxico.extract.service.ExtractorService;
+import io.github.renatoxico.extract.service.V2ReportMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -21,10 +28,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest({AuthController.class, PageController.class})
+@WebMvcTest
 @AutoConfigureMockMvc
 @Import({SecurityConfig.class, FirebaseAuthenticationEntryPoint.class})
-class AuthControllerTest {
+class SecurityConfigWebMvcTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -35,6 +42,27 @@ class AuthControllerTest {
     @MockitoBean
     private AppUserService appUserService;
 
+    @MockitoBean
+    private AdminEmailService adminEmailService;
+
+    @MockitoBean
+    private AdminEmailProperties adminEmailProperties;
+
+    @MockitoBean
+    private ExtractionFacade extractionFacade;
+
+    @MockitoBean
+    private ExtractorService extractorService;
+
+    @MockitoBean
+    private ExpenseReportingService expenseReportingService;
+
+    @MockitoBean
+    private ExpenseReportAccessService expenseReportAccessService;
+
+    @MockitoBean
+    private V2ReportMapper v2ReportMapper;
+
     @Test
     void termsIsPublic() throws Exception {
         mockMvc.perform(get("/terms"))
@@ -42,49 +70,34 @@ class AuthControllerTest {
     }
 
     @Test
-    void meWithoutTokenReturnsUnauthorized() throws Exception {
-        mockMvc.perform(get("/api/auth/me"))
+    void reportEndpointsRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/v2/extract/reports"))
             .andExpect(status().isUnauthorized())
             .andExpect(jsonPath("$.errorCode").value("AUTH_TOKEN_MISSING"));
     }
 
     @Test
-    void extractEndpointsRequireAuthentication() throws Exception {
-        mockMvc.perform(get("/extract/"))
-            .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void meWithInvalidTokenReturnsUnauthorized() throws Exception {
+    void reportEndpointsRejectInvalidTokens() throws Exception {
         FirebaseAuthException firebaseException = mock(FirebaseAuthException.class);
         when(firebaseAuth.verifyIdToken("invalid-token")).thenThrow(firebaseException);
 
-        mockMvc.perform(get("/api/auth/me")
+        mockMvc.perform(get("/v2/extract/reports")
                 .header("Authorization", "Bearer invalid-token"))
             .andExpect(status().isUnauthorized())
             .andExpect(jsonPath("$.errorCode").value("AUTH_TOKEN_INVALID"));
     }
 
     @Test
-    void meWithValidTokenReturnsAuthenticatedUser() throws Exception {
+    void removedAuthenticationDiagnosticReturnsNotFound() throws Exception {
         FirebaseToken firebaseToken = mock(FirebaseToken.class);
         AppUser appUser = mock(AppUser.class);
         when(appUser.getId()).thenReturn(42L);
         when(firebaseToken.getUid()).thenReturn("firebase-uid-123");
-        when(firebaseToken.getEmail()).thenReturn("user@example.com");
-        when(firebaseToken.getName()).thenReturn("Example User");
-        when(firebaseToken.getPicture()).thenReturn("https://example.com/photo.jpg");
-        when(firebaseToken.isEmailVerified()).thenReturn(true);
         when(firebaseAuth.verifyIdToken("valid-token")).thenReturn(firebaseToken);
         when(appUserService.synchronize(firebaseToken)).thenReturn(appUser);
 
         mockMvc.perform(get("/api/auth/me")
                 .header("Authorization", "Bearer valid-token"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.localUserId").value(42))
-            .andExpect(jsonPath("$.uid").value("firebase-uid-123"))
-            .andExpect(jsonPath("$.email").value("user@example.com"))
-            .andExpect(jsonPath("$.name").value("Example User"))
-            .andExpect(jsonPath("$.emailVerified").value(true));
+            .andExpect(status().isNotFound());
     }
 }
