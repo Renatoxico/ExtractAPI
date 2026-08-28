@@ -15,7 +15,7 @@
 	<description>API for processing expenses from pdf files</description>
 	<properties>
 		<java.version>21</java.version>
-		<postgresql.version>42.7.7</postgresql.version>
+		<postgresql.version>42.7.13</postgresql.version>
 		<firebase-admin.version>9.10.0</firebase-admin.version>
 		<testcontainers.version>1.21.4</testcontainers.version>
 	</properties>
