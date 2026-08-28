@@ -1,3 +1,5 @@
+import { FALLBACK_CATEGORY } from './formatters.js';
+
 export const CATEGORY_COLORS = {
   'Roupas / Acessórios':                          '#AF52DE',
   'E-commerce / Compras online':                  '#5856D6',
@@ -14,5 +16,5 @@ export const CATEGORY_COLORS = {
 export const DEFAULT_COLOR = '#4B5563';
 
 export function categoryColor(category) {
-  return CATEGORY_COLORS[category] ?? DEFAULT_COLOR;
+  return CATEGORY_COLORS[category || FALLBACK_CATEGORY] ?? DEFAULT_COLOR;
 }

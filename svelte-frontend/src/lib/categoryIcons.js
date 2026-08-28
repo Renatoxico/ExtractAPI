@@ -1,3 +1,5 @@
+import { FALLBACK_CATEGORY } from './formatters.js';
+
 // Inline SVG icons mapped to category names (matching iOS SF Symbols)
 // All icons are 16×16, using currentColor for easy color inheritance.
 
@@ -17,5 +19,5 @@ const ICONS = {
 const DEFAULT_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm1 17h-2v-2h2v2zm2.1-7.7l-.9.9C13.5 12.9 13 13.5 13 15h-2v-.5c0-1.1.5-2.1 1.2-2.8l1.2-1.3c.4-.4.6-.9.6-1.4 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.2 1.8-4 4-4s4 1.8 4 4c0 .9-.4 1.7-.9 2.3z"/></svg>`;
 
 export function categoryIcon(category) {
-  return ICONS[category] ?? DEFAULT_ICON;
+  return ICONS[category || FALLBACK_CATEGORY] ?? DEFAULT_ICON;
 }

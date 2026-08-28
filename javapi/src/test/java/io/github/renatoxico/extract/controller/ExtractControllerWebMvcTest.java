@@ -7,6 +7,7 @@ import io.github.renatoxico.extract.model.ExpenseData;
 import io.github.renatoxico.extract.model.ExpenseGroup;
 import io.github.renatoxico.extract.model.ReportData;
 import io.github.renatoxico.extract.model.ReportHighlights;
+import io.github.renatoxico.extract.model.ReportSummary;
 import io.github.renatoxico.extract.service.ExpenseReportAccessService;
 import io.github.renatoxico.extract.service.ExpenseReportingService;
 import io.github.renatoxico.extract.service.ExtractionFacade;
@@ -98,6 +99,36 @@ class ExtractControllerWebMvcTest {
         mockMvc.perform(multipart("/v2/extract").file(pdf))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.reportId").value("report-123"));
+    }
+
+    @Test
+    void v2ReportsReturnsAuthenticatedUsersSummaries() throws Exception {
+        when(reportingService.getReportSummaries(42L)).thenReturn(List.of(
+            new ReportSummary(
+                "report-123",
+                Instant.parse("2025-03-17T10:15:30Z"),
+                new BigDecimal("150.25"),
+                2L
+            )
+        ));
+
+        mockMvc.perform(get("/v2/extract/reports"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].reportId").value("report-123"))
+            .andExpect(jsonPath("$[0].createdAt").value("2025-03-17T10:15:30Z"))
+            .andExpect(jsonPath("$[0].total").value(150.25))
+            .andExpect(jsonPath("$[0].countExpenses").value(2));
+
+        verify(reportingService).getReportSummaries(42L);
+    }
+
+    @Test
+    void v2ReportsReturnsEmptyArrayWhenUserHasNoReports() throws Exception {
+        when(reportingService.getReportSummaries(42L)).thenReturn(List.of());
+
+        mockMvc.perform(get("/v2/extract/reports"))
+            .andExpect(status().isOk())
+            .andExpect(content().json("[]"));
     }
 
     @Test

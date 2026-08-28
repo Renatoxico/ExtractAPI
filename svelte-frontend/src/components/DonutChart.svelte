@@ -82,15 +82,16 @@
 
 <style>
   .donut-wrap {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
+    display: grid;
+    grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+    gap: 1.75rem;
     align-items: center;
   }
 
   .canvas-wrap {
     position: relative;
-    width: min(280px, 100%);
+    width: min(360px, 100%);
+    justify-self: center;
     flex-shrink: 0;
   }
 
@@ -131,15 +132,20 @@
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0;
   }
 
   .legend-item {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr) auto;
+    align-items: start;
     gap: 0.5rem;
     font-size: 0.8125rem;
+    padding: 0.48rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
   }
+
+  .legend-item:last-child { border-bottom: 0; }
 
   .legend-icon {
     display: flex;
@@ -151,16 +157,27 @@
   }
 
   .legend-name {
-    flex: 1;
     color: var(--text-muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.35;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .legend-value {
     color: var(--text-main);
     font-weight: 500;
     white-space: nowrap;
+    text-align: right;
+  }
+
+  @media (max-width: 720px) {
+    .donut-wrap {
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+
+    .canvas-wrap {
+      width: min(340px, 100%);
+    }
   }
 </style>

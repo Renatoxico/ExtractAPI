@@ -101,6 +101,7 @@ The default development URLs are `http://localhost:5173` for the frontend and `h
 The frontend consumes the v2 report contract:
 
 - `POST /v2/extract`
+- `GET /v2/extract/reports`
 - `GET /v2/extract/summary/{reportId}`
 - `GET /v2/extract/export/{reportId}`
 
@@ -109,6 +110,11 @@ V2 uses camelCase names such as `reportId`, `createdAt`, `expenses`,
 contain both `totalAmount` and `occurrenceCount`; expense dates are serialized
 as ISO `yyyy-MM-dd`. A missing category remains `null`, and the frontend alone
 applies the display label `Outros / Transferências`.
+
+The authenticated report-history endpoint returns every report owned by the
+current user, newest first. Each entry contains `reportId`, `createdAt`,
+`total`, and `countExpenses`; an account without reports receives an empty
+array.
 
 The former v1 report endpoints under `/extract` have been removed. The
 unversioned `/extract/raw-text/` diagnostic utility remains available because

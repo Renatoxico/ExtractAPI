@@ -6,10 +6,12 @@ import io.github.renatoxico.extract.api.v2.ExpenseGroupResponse;
 import io.github.renatoxico.extract.api.v2.ExpenseResponse;
 import io.github.renatoxico.extract.api.v2.ReportHighlightsResponse;
 import io.github.renatoxico.extract.api.v2.ReportResponse;
+import io.github.renatoxico.extract.api.v2.ReportSummaryResponse;
 import io.github.renatoxico.extract.exception.ProcessingException;
 import io.github.renatoxico.extract.model.DaySummary;
 import io.github.renatoxico.extract.model.ExpenseData;
 import io.github.renatoxico.extract.model.ReportData;
+import io.github.renatoxico.extract.model.ReportSummary;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
@@ -39,6 +41,15 @@ public class V2ReportMapper {
                 toDay(report.highlights().mostActiveDay()),
                 toDay(report.highlights().highestSpendingDay())
             )
+        );
+    }
+
+    public ReportSummaryResponse toSummaryResponse(ReportSummary summary) {
+        return new ReportSummaryResponse(
+            summary.reportId(),
+            summary.createdAt(),
+            summary.total(),
+            summary.countExpenses()
         );
     }
 

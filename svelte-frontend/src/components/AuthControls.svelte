@@ -1,27 +1,15 @@
 <script>
-  import { onMount } from 'svelte'
-  import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
+  import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
   import { auth } from '../lib/firebase.js'
   import { fetchAuthenticatedUser } from '../lib/api.js'
 
   const googleProvider = new GoogleAuthProvider()
 
-  let user = $state(null)
-  let authReady = $state(false)
+  let { user, authReady } = $props()
   let loading = $state(false)
   let apiLoading = $state(false)
   let apiResult = $state('')
   let error = $state('')
-
-  onMount(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      user = firebaseUser
-      authReady = true
-      apiResult = ''
-    })
-
-    return unsubscribe
-  })
 
   async function loginWithGoogle() {
     loading = true
@@ -80,7 +68,7 @@
         <span>{user.email}</span>
       </div>
     </div>
-    <button type="button" onclick={testApiRequest} disabled={apiLoading}>
+    <button class="api-test-button" type="button" onclick={testApiRequest} disabled={apiLoading}>
       {apiLoading ? 'Testando...' : 'Testar API'}
     </button>
     <button type="button" onclick={logout} disabled={loading}>
@@ -173,8 +161,12 @@
     font-size: 0.75rem;
   }
 
-  @media (max-width: 600px) {
+  @media (max-width: 700px) {
     .user-text {
+      display: none;
+    }
+
+    .api-test-button {
       display: none;
     }
   }

@@ -10,6 +10,7 @@ import io.github.renatoxico.extract.model.ExpenseData;
 import io.github.renatoxico.extract.model.ExpenseReport;
 import io.github.renatoxico.extract.model.ReportData;
 import io.github.renatoxico.extract.model.ReportHighlights;
+import io.github.renatoxico.extract.model.ReportSummary;
 import io.github.renatoxico.extract.repo.AppUserRepository;
 import io.github.renatoxico.extract.repo.ExpenseReportRepository;
 import io.github.renatoxico.extract.repo.ExpenseRepository;
@@ -78,6 +79,11 @@ public class ExpenseReportingService {
             expenseRepository.findCategorySummariesByReportId(reportId),
             buildHighlights(expenses)
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReportSummary> getReportSummaries(Long ownerId) {
+        return reportRepository.findSummariesByOwnerId(ownerId);
     }
 
     @Transactional(readOnly = true)

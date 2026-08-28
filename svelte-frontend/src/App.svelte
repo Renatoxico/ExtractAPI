@@ -1,8 +1,9 @@
 <script>
-  import { processFiles, fetchSummary } from './lib/api.js'
-  import { formatBRL, formatDate, formatCount } from './lib/formatters.js'
-  import { categoryColor } from './lib/categoryColors.js'
-  import { categoryIcon } from './lib/categoryIcons.js'
+  import { onMount } from 'svelte'
+  import { onAuthStateChanged } from 'firebase/auth'
+  import { auth } from './lib/firebase.js'
+  import { processFiles, fetchReportHistory, fetchSummary } from './lib/api.js'
+  import { formatBRL, formatCreatedAt, formatCount } from './lib/formatters.js'
   import { computeMonthWithMostTransactions } from './lib/computeStats.js'
 
   import UploadZone from './components/UploadZone.svelte'
@@ -10,9 +11,9 @@
   import LoadingSpinner from './components/LoadingSpinner.svelte'
   import ErrorBanner from './components/ErrorBanner.svelte'
   import DonutChart from './components/DonutChart.svelte'
-  import StatCard from './components/StatCard.svelte'
-  import SmartGroupTable from './components/SmartGroupTable.svelte'
-  import AllExpensesTable from './components/AllExpensesTable.svelte'
+  import EditorialHighlights from './components/EditorialHighlights.svelte'
+  import GroupedExpensesTable from './components/GroupedExpensesTable.svelte'
+  import ReportHistory from './components/ReportHistory.svelte'
   import AuthControls from './components/AuthControls.svelte'
 
   const MAX_FILES = 6
@@ -24,18 +25,76 @@
   let loading = $state(false)
   let error = $state(null)
 
-  // Derived stats
+  let user = $state(null)
+  let authReady = $state(false)
+  let history = $state([])
+  let historyLoading = $state(false)
+  let historyError = $state('')
+  let historyOpen = $state(false)
+  let loadingReportId = $state('')
+
   let monthStat = $derived(computeMonthWithMostTransactions(result?.expenses))
   let mostRecurring = $derived(
     result?.expenseGroups?.slice().sort((a, b) => b.occurrenceCount - a.occurrenceCount)[0] ?? null
   )
-  let mostExpensiveDay = $derived(
-    result?.highlights?.highestSpendingDay ?? null
+  let mostExpensiveDay = $derived(result?.highlights?.highestSpendingDay ?? null)
+  let reportTotal = $derived(
+    result?.expenses?.reduce((sum, expense) => sum + Number(expense.amount), 0) ?? 0
   )
+  let reportCount = $derived(result?.expenses?.length ?? 0)
 
   let hasOversized = $derived(files.some(f => f.size > MAX_SIZE))
-  let canSubmitFiles = $derived(files.length > 0 && files.length <= MAX_FILES && !hasOversized && !loading)
-  let canSubmitReport = $derived(reportId.trim().length > 0 && !loading)
+  let canSubmitFiles = $derived(
+    Boolean(user) && files.length > 0 && files.length <= MAX_FILES && !hasOversized && !loading
+  )
+  let canSubmitReport = $derived(Boolean(user) && reportId.trim().length > 0 && !loading)
+
+  onMount(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      user = firebaseUser
+      authReady = true
+      historyOpen = false
+
+      if (firebaseUser) {
+        refreshHistory(firebaseUser.uid)
+      } else {
+        clearPrivateState()
+      }
+    })
+
+    return unsubscribe
+  })
+
+  function clearPrivateState() {
+    history = []
+    historyLoading = false
+    historyError = ''
+    loadingReportId = ''
+    result = null
+    reportId = ''
+    files = []
+    error = null
+  }
+
+  function toUiError(err) {
+    return { errorCode: err.errorCode, message: err.message, details: err.details }
+  }
+
+  async function refreshHistory(expectedUid = auth.currentUser?.uid) {
+    if (!expectedUid) return
+    historyLoading = true
+    historyError = ''
+    try {
+      const reports = await fetchReportHistory()
+      if (auth.currentUser?.uid === expectedUid) history = reports
+    } catch (err) {
+      if (auth.currentUser?.uid === expectedUid) {
+        historyError = err.message ?? 'Não foi possível carregar o histórico.'
+      }
+    } finally {
+      if (auth.currentUser?.uid === expectedUid) historyLoading = false
+    }
+  }
 
   function handleFilesChange(newFiles) {
     const merged = [...files, ...newFiles]
@@ -60,8 +119,10 @@
     try {
       result = await processFiles(files)
       reportId = result.reportId
+      files = []
+      await refreshHistory()
     } catch (err) {
-      error = { errorCode: err.errorCode, message: err.message, details: err.details }
+      error = toUiError(err)
     } finally {
       loading = false
     }
@@ -73,10 +134,31 @@
     error = null
     try {
       result = await fetchSummary(reportId.trim())
+      reportId = result.reportId
     } catch (err) {
-      error = { errorCode: err.errorCode, message: err.message, details: err.details }
+      error = toUiError(err)
     } finally {
       loading = false
+    }
+  }
+
+  async function openHistoryReport(selectedReportId) {
+    if (loadingReportId || selectedReportId === result?.reportId) {
+      historyOpen = false
+      return
+    }
+
+    loadingReportId = selectedReportId
+    error = null
+    try {
+      const selected = await fetchSummary(selectedReportId)
+      result = selected
+      reportId = selected.reportId
+      historyOpen = false
+    } catch (err) {
+      error = toUiError(err)
+    } finally {
+      loadingReportId = ''
     }
   }
 
@@ -91,39 +173,60 @@
 <div class="app">
   <header class="app-header">
     <div class="header-inner">
-      <div class="logo">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="2" y="3" width="20" height="14" rx="2"/>
-          <path d="M8 21h8M12 17v4"/>
-          <path d="M6 9l3 3 3-3 3 3 3-3" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span>Extract</span>
+      <div class="brand-area">
+        {#if user}
+          <button
+            class="history-toggle"
+            type="button"
+            aria-label="Abrir histórico"
+            aria-expanded={historyOpen}
+            onclick={() => (historyOpen = true)}
+          >
+            <span></span><span></span><span></span>
+          </button>
+        {/if}
+        <div class="logo">
+          <span class="logo-mark" aria-hidden="true">E</span>
+          <span>Extract</span>
+        </div>
       </div>
 
       <div class="header-right">
-        <AuthControls />
+        <AuthControls {user} {authReady} />
         {#if result}
-          <button class="reset-btn" onclick={reset}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="1 4 1 10 7 10"/>
-              <path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
-            </svg>
-            Novo relatório
-          </button>
+          <button class="reset-btn" onclick={reset}>Novo relatório</button>
         {/if}
-
       </div>
     </div>
   </header>
 
-  <main class="app-main">
-    {#if !result}
-        <!-- Upload Phase -->
+  <div class="workspace" class:with-history={Boolean(user)}>
+    {#if user}
+      <div class="desktop-history">
+        <ReportHistory
+          items={history}
+          loading={historyLoading}
+          error={historyError}
+          activeReportId={result?.reportId ?? ''}
+          {loadingReportId}
+          onSelect={openHistoryReport}
+          onRetry={() => refreshHistory()}
+        />
+      </div>
+    {/if}
+
+    <main class="app-main">
+      {#if !result}
         <section class="upload-section">
           <div class="upload-header">
+            <p class="section-kicker">Leitura financeira</p>
             <h1>Relatório de Gastos</h1>
-            <p>Envie seus extratos em PDF para gerar uma análise detalhada das despesas.</p>
+            <p>Envie seus extratos em PDF para transformar lançamentos dispersos em uma leitura clara das suas despesas.</p>
           </div>
+
+          {#if !user && authReady}
+            <div class="signin-note">Entre com o Google para processar extratos e acessar seu histórico.</div>
+          {/if}
 
           {#if error}
             <ErrorBanner
@@ -146,16 +249,8 @@
                 <span class="file-counter" class:warn={files.length === MAX_FILES}>
                   {files.length} / {MAX_FILES} arquivos
                 </span>
-                <button
-                  class="submit-btn"
-                  disabled={!canSubmitFiles}
-                  onclick={handleSubmitFiles}
-                >
-                  Processar extratos
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <line x1="5" y1="12" x2="19" y2="12"/>
-                    <polyline points="12 5 19 12 12 19"/>
-                  </svg>
+                <button class="submit-btn" disabled={!canSubmitFiles} onclick={handleSubmitFiles}>
+                  Processar extratos <span aria-hidden="true">→</span>
                 </button>
               </div>
             {/if}
@@ -166,26 +261,16 @@
               <input
                 class="report-input"
                 type="text"
+                aria-label="Report ID"
                 placeholder="Report ID"
                 bind:value={reportId}
-                onkeydown={(e) => e.key === 'Enter' && handleSubmitReport()}
+                onkeydown={(event) => event.key === 'Enter' && handleSubmitReport()}
               />
-              <button
-                class="submit-btn"
-                disabled={!canSubmitReport}
-                onclick={handleSubmitReport}
-              >
-                Buscar
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <circle cx="11" cy="11" r="8"/>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
-              </button>
+              <button class="submit-btn" disabled={!canSubmitReport} onclick={handleSubmitReport}>Buscar</button>
             </div>
           {/if}
         </section>
-    {:else}
-        <!-- Report Phase -->
+      {:else}
         <section class="report-section">
           {#if error}
             <ErrorBanner
@@ -196,10 +281,37 @@
             />
           {/if}
 
-          <!-- Top row: chart + stat cards -->
+          <header class="report-heading">
+            <div>
+              <p class="section-kicker">Visão consolidada</p>
+              <h1>Seu relatório de gastos</h1>
+            </div>
+            <dl class="report-meta">
+              <div class="meta-id">
+                <dt>Report ID</dt>
+                <dd><code title={result.reportId}>{result.reportId}</code></dd>
+              </div>
+              <div>
+                <dt>Criado em</dt>
+                <dd>{formatCreatedAt(result.createdAt)}</dd>
+              </div>
+              <div>
+                <dt>Total</dt>
+                <dd>{formatBRL(reportTotal)}</dd>
+              </div>
+              <div>
+                <dt>Despesas</dt>
+                <dd>{formatCount(reportCount)}</dd>
+              </div>
+            </dl>
+          </header>
+
           <div class="top-row">
             <div class="chart-panel panel">
-              <h2 class="panel-title">Gastos por Categoria</h2>
+              <div class="panel-heading">
+                <p class="panel-index">Distribuição</p>
+                <h2>Gastos por categoria</h2>
+              </div>
               {#if result.categorySummaries?.length}
                 <DonutChart data={result.categorySummaries} />
               {:else}
@@ -207,84 +319,62 @@
               {/if}
             </div>
 
-            <div class="stats-grid">
-              {#if result.highlights?.largestExpense}
-                <StatCard
-                  label="Maior gasto único"
-                  value={formatBRL(Number(result.highlights.largestExpense.amount))}
-                  sub="{result.highlights.largestExpense.expenseName} · {formatDate(result.highlights.largestExpense.date)}"
-                  color={categoryColor(result.highlights.largestExpense.category)}
-                  icon={categoryIcon(result.highlights.largestExpense.category)}
-                />
-              {/if}
-
-              {#if monthStat}
-                <StatCard
-                  label="Mês com mais transações"
-                  value={monthStat.label}
-                  sub={formatCount(monthStat.count)}
-                  color="#10b981"
-                  icon={'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg>'}
-                />
-              {/if}
-
-              {#if mostRecurring}
-                <StatCard
-                  label="Compra mais recorrente"
-                  value={mostRecurring.expenseName}
-                  sub="{mostRecurring.occurrenceCount}× · {formatBRL(Number(mostRecurring.totalAmount))}"
-                  color={categoryColor(mostRecurring.category)}
-                  icon={categoryIcon(mostRecurring.category)}
-                />
-              {/if}
-
-              {#if mostExpensiveDay}
-                <StatCard
-                  label="Dia mais caro"
-                  value={formatDate(mostExpensiveDay.date)}
-                  sub="{formatBRL(Number(mostExpensiveDay.totalAmount))} · {mostExpensiveDay.transactionCount} transações"
-                  color="#FF3B30"
-                  icon={'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 0.7c-0.2-0.4-0.7-0.6-1.1-0.4-0.4 0.2-0.6 0.7-0.4 1.1 0 0 0 0 0 0L12 2c-3 2-5 5-5 9 0 0.5 0 1 0.1 1.5C5.8 11.1 5 9.1 5 7c0-0.4-0.3-0.8-0.8-0.8S3.5 6.6 3.5 7c0 4.1 2.7 7.6 6.5 8.7V22h4v-6.3c3.8-1.1 6.5-4.6 6.5-8.7 0-3.2-2.7-6.3-7-7.3z"/></svg>'}
-                />
-              {/if}
-            </div>
+            <EditorialHighlights
+              largestExpense={result.highlights?.largestExpense}
+              highestSpendingDay={mostExpensiveDay}
+              {mostRecurring}
+              {monthStat}
+            />
           </div>
 
-          <!-- Smart group table -->
           {#if result.expenseGroups?.length}
-            <div class="panel">
-              <h2 class="panel-title">Top Gastos por Nome</h2>
-              <SmartGroupTable items={result.expenseGroups} />
-            </div>
-          {/if}
-
-          <!-- All expenses table -->
-          {#if result.expenses?.length}
-            <div class="panel">
-              <h2 class="panel-title">Todas as Despesas</h2>
-              <AllExpensesTable items={result.expenses} />
+            <div class="panel expenses-panel">
+              <div class="panel-heading expenses-heading">
+                <div>
+                  <p class="panel-index">Inventário</p>
+                  <h2>Despesas agrupadas</h2>
+                </div>
+              </div>
+              <GroupedExpensesTable groups={result.expenseGroups} expenses={result.expenses} />
             </div>
           {/if}
         </section>
-    {/if}
-  </main>
+      {/if}
+    </main>
+  </div>
+
+  {#if user && historyOpen}
+    <button class="drawer-backdrop" type="button" aria-label="Fechar histórico" onclick={() => (historyOpen = false)}></button>
+    <div class="mobile-drawer">
+      <ReportHistory
+        items={history}
+        loading={historyLoading}
+        error={historyError}
+        activeReportId={result?.reportId ?? ''}
+        {loadingReportId}
+        onSelect={openHistoryReport}
+        onRetry={() => refreshHistory()}
+        onClose={() => (historyOpen = false)}
+      />
+    </div>
+  {/if}
 </div>
 
 <style>
   :global(*, *::before, *::after) { box-sizing: border-box; }
 
   :global(:root) {
-    --bg-page: #0f1115;
-    --panel-bg: #161920;
-    --panel-border: rgba(16, 185, 129, 0.15);
+    --bg-page: #0b0d11;
+    --panel-bg: #15181e;
+    --panel-border: rgba(16, 185, 129, 0.16);
     --primary: #10b981;
-    --primary-glow: rgba(16, 185, 129, 0.08);
-    --text-main: #e2e8f0;
-    --text-muted: #94a3b8;
-    --text-dim: #64748b;
-    --surface-1: #1e2330;
-    --surface-2: #252d3a;
-    --surface-input: #0d1017;
+    --primary-glow: rgba(16, 185, 129, 0.09);
+    --text-main: #e8edf3;
+    --text-muted: #98a4b3;
+    --text-dim: #626e7d;
+    --surface-1: #1d222b;
+    --surface-2: #222936;
+    --surface-input: #0c0f14;
     --danger: #ef4444;
     --danger-bg: rgba(239, 68, 68, 0.1);
     --warning: #f59e0b;
@@ -296,246 +386,102 @@
 
   :global(body) {
     margin: 0;
-    background: var(--bg-page);
-    color: var(--text-main);
-    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    min-width: 320px;
     min-height: 100vh;
+    background: radial-gradient(circle at 78% -10%, rgba(16,185,129,0.07), transparent 28rem), var(--bg-page);
+    color: var(--text-main);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 
-  .app {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    transition: filter 200ms ease;
-  }
+  :global(button), :global(input) { font-family: inherit; }
+  .app { min-height: 100vh; }
+  .app-header { position: sticky; top: 0; z-index: 30; border-bottom: 1px solid var(--panel-border); background: rgba(15,17,21,0.94); backdrop-filter: blur(14px); }
+  .header-inner { max-width: 1500px; height: 58px; margin: 0 auto; padding: 0 1.35rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .brand-area, .header-right, .logo { display: flex; align-items: center; }
+  .brand-area, .header-right { gap: 0.8rem; }
+  .logo { gap: 0.55rem; color: var(--text-main); font-weight: 750; letter-spacing: -0.02em; }
+  .logo-mark { width: 26px; height: 26px; display: grid; place-items: center; border: 1px solid var(--primary); border-radius: 7px; color: var(--primary); font: 700 0.82rem monospace; transform: rotate(-3deg); }
+  .history-toggle { display: none; width: 34px; height: 34px; padding: 8px; flex-direction: column; justify-content: center; gap: 4px; border: 1px solid var(--panel-border); border-radius: var(--radius-sm); background: var(--surface-1); cursor: pointer; }
+  .history-toggle span { display: block; width: 100%; height: 1px; background: var(--text-muted); }
+  .reset-btn { padding: 0.45rem 0.75rem; border: 1px solid var(--panel-border); border-radius: var(--radius-sm); background: transparent; color: var(--text-muted); font-size: 0.78rem; cursor: pointer; }
+  .reset-btn:hover { color: var(--primary); border-color: var(--primary); }
 
-  /* Header */
-  .app-header {
-    border-bottom: 1px solid var(--panel-border);
-    background: var(--panel-bg);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
+  .workspace { min-height: calc(100vh - 58px); }
+  .workspace.with-history { display: grid; grid-template-columns: 282px minmax(0, 1fr); }
+  .desktop-history { position: sticky; top: 58px; height: calc(100vh - 58px); min-width: 0; }
+  .app-main { width: 100%; max-width: 1240px; margin: 0 auto; padding: 2rem 1.5rem 3rem; min-width: 0; }
 
-  .header-inner {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 1.5rem;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 700;
-    font-size: 1.125rem;
-    color: var(--primary);
-  }
-
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .reset-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    background: none;
-    border: 1px solid var(--panel-border);
-    border-radius: var(--radius-sm);
-    color: var(--text-muted);
-    font-family: inherit;
-    font-size: 0.875rem;
-    padding: 0.375rem 0.875rem;
-    cursor: pointer;
-    transition: color var(--transition), border-color var(--transition);
-  }
-
-  .reset-btn:hover {
-    color: var(--primary);
-    border-color: var(--primary);
-  }
-
-  /* Main */
-  .app-main {
-    flex: 1;
-    max-width: 1200px;
-    width: 100%;
-    margin: 0 auto;
-    padding: 2rem 1.5rem;
-  }
-
-  /* Upload section */
-  .upload-section {
-    max-width: 640px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  .upload-header h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    margin: 0 0 0.5rem;
-    background: linear-gradient(135deg, var(--text-main) 60%, var(--primary));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .upload-header p {
-    color: var(--text-muted);
-    margin: 0;
-    font-size: 0.9375rem;
-    line-height: 1.6;
-  }
-
-  .submit-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-
-  .file-counter {
-    font-size: 0.875rem;
-    color: var(--text-muted);
-  }
-
+  .upload-section { max-width: 660px; margin: 5vh auto 0; display: flex; flex-direction: column; gap: 1.2rem; }
+  .section-kicker, .panel-index { margin: 0 0 0.45rem; color: var(--primary); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+  .upload-header h1, .report-heading h1 { margin: 0; font-size: clamp(1.65rem, 3vw, 2.25rem); letter-spacing: -0.04em; }
+  .upload-header > p:last-child { max-width: 580px; margin: 0.65rem 0 0; color: var(--text-muted); font-size: 0.92rem; line-height: 1.65; }
+  .signin-note { padding: 0.8rem 1rem; border-left: 2px solid var(--primary); background: var(--primary-glow); color: var(--text-muted); font-size: 0.82rem; }
+  .submit-row, .report-row { display: flex; align-items: center; gap: 0.75rem; }
+  .submit-row { justify-content: space-between; }
+  .file-counter { color: var(--text-muted); font-size: 0.8rem; }
   .file-counter.warn { color: var(--warning); }
-
-  .divider {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    color: var(--text-dim);
-    font-size: 0.8125rem;
-  }
-
-  .divider::before,
-  .divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--panel-border);
-  }
-
-  .report-row {
-    display: flex;
-    gap: 0.75rem;
-  }
-
-  .report-input {
-    flex: 1;
-    background: var(--surface-input);
-    border: 1px solid var(--panel-border);
-    border-radius: var(--radius-sm);
-    padding: 0.625rem 0.875rem;
-    color: var(--text-main);
-    font-size: 0.9375rem;
-    font-family: monospace;
-    outline: none;
-    transition: border-color var(--transition);
-  }
-
+  .divider { display: flex; align-items: center; gap: 0.75rem; color: var(--text-dim); font-size: 0.75rem; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--panel-border); }
+  .report-input { flex: 1; min-width: 0; padding: 0.65rem 0.85rem; border: 1px solid var(--panel-border); border-radius: var(--radius-sm); background: var(--surface-input); color: var(--text-main); font: 0.86rem monospace; outline: none; }
+  .report-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
   .report-input::placeholder { color: var(--text-dim); font-family: inherit; }
-  .report-input:focus { border-color: var(--primary); }
+  .submit-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.1rem; border: 0; border-radius: var(--radius-sm); background: var(--primary); color: #07110d; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+  .submit-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+  .submit-btn:not(:disabled):hover { filter: brightness(1.08); }
 
-  .submit-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: var(--primary);
-    border: none;
-    border-radius: var(--radius-sm);
-    color: #0f1115;
-    font-family: inherit;
-    font-size: 0.9375rem;
-    font-weight: 600;
-    padding: 0.625rem 1.25rem;
-    cursor: pointer;
-    transition: opacity var(--transition), transform var(--transition);
+  .report-section { display: flex; flex-direction: column; gap: 1.35rem; }
+  .report-heading { padding: 0.5rem 0 0.25rem; display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem; }
+  .report-meta { margin: 0; display: grid; grid-template-columns: minmax(170px, 1.5fr) repeat(3, auto); gap: 0; border-top: 1px solid var(--panel-border); border-bottom: 1px solid var(--panel-border); }
+  .report-meta div { min-width: 0; padding: 0.65rem 0.9rem; border-left: 1px solid rgba(255,255,255,0.06); }
+  .report-meta div:first-child { border-left: 0; }
+  .report-meta dt { margin-bottom: 0.25rem; color: var(--text-dim); font-size: 0.62rem; letter-spacing: 0.09em; text-transform: uppercase; }
+  .report-meta dd { margin: 0; color: var(--text-main); font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
+  .report-meta code { display: block; max-width: 180px; overflow: hidden; color: var(--text-muted); font-size: 0.69rem; text-overflow: ellipsis; }
+
+  .top-row { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(330px, 0.65fr); gap: 1.25rem; align-items: stretch; }
+  .panel { padding: 1.3rem; display: flex; flex-direction: column; gap: 1.15rem; border: 1px solid var(--panel-border); border-radius: var(--radius-lg); background: var(--panel-bg); }
+  .chart-panel { min-width: 0; }
+  .panel-heading h2 { margin: 0; font-size: 1rem; font-weight: 650; }
+  .expenses-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+  .expenses-heading > p { max-width: 340px; margin: 0; color: var(--text-muted); font-size: 0.76rem; line-height: 1.5; text-align: right; }
+  .empty { color: var(--text-dim); font-size: 0.82rem; }
+
+  .mobile-drawer { display: none; }
+  .drawer-backdrop { display: none; }
+
+  @media (max-width: 1280px) {
+    .top-row { grid-template-columns: 1fr; }
   }
 
-  .submit-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
+  @media (max-width: 1120px) {
+    .report-heading { align-items: stretch; flex-direction: column; gap: 1rem; }
+    .report-meta { width: 100%; }
   }
 
-  .submit-btn:not(:disabled):hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-  }
-
-  /* Report section */
-  .report-section {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .top-row {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 1.5rem;
-    align-items: stretch;
-  }
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-
-  .panel {
-    background: var(--panel-bg);
-    border: 1px solid var(--panel-border);
-    border-radius: var(--radius-lg);
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  .chart-panel {
-    min-width: 0;
-  }
-
-  .panel-title {
-    font-size: 1rem;
-    font-weight: 600;
-    margin: 0;
-    color: var(--text-main);
-  }
-
-  .empty {
-    color: var(--text-dim);
-    font-size: 0.875rem;
-    margin: 0;
-  }
-
-  /* Responsive */
   @media (max-width: 900px) {
-    .top-row {
-      grid-template-columns: 1fr;
-    }
-    .chart-panel {
-      max-width: 480px;
-    }
+    .workspace.with-history { display: block; }
+    .desktop-history { display: none; }
+    .history-toggle { display: flex; }
+    .chart-panel { max-width: none; }
+    .drawer-backdrop { position: fixed; inset: 58px 0 0; z-index: 39; display: block; width: 100%; border: 0; background: rgba(0,0,0,0.58); backdrop-filter: blur(2px); }
+    .mobile-drawer { position: fixed; top: 58px; bottom: 0; left: 0; z-index: 40; display: block; width: min(320px, 88vw); box-shadow: 18px 0 50px rgba(0,0,0,0.4); animation: slide-in 180ms ease-out; }
   }
 
-  @media (max-width: 600px) {
-    .app-main { padding: 1.25rem 1rem; }
-    .stats-grid { grid-template-columns: 1fr; }
-    .upload-header h1 { font-size: 1.5rem; }
+  @media (max-width: 680px) {
+    .header-inner { padding: 0 0.9rem; }
+    .app-main { padding: 1.25rem 0.9rem 2.5rem; }
+    .upload-section { margin-top: 1rem; }
+    .report-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .report-meta div:nth-child(3) { border-left: 0; border-top: 1px solid rgba(255,255,255,0.06); }
+    .report-meta div:nth-child(4) { border-top: 1px solid rgba(255,255,255,0.06); }
+    .report-meta code { max-width: 135px; }
+    .expenses-heading { align-items: flex-start; flex-direction: column; }
+    .expenses-heading > p { text-align: left; }
+    .panel { padding: 1rem; }
+    .header-right { gap: 0.45rem; }
+    .reset-btn { display: none; }
   }
+
+  @keyframes slide-in { from { transform: translateX(-100%); } }
 </style>

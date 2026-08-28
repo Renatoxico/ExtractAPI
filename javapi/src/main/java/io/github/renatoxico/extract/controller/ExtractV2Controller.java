@@ -1,6 +1,7 @@
 package io.github.renatoxico.extract.controller;
 
 import io.github.renatoxico.extract.api.v2.ReportResponse;
+import io.github.renatoxico.extract.api.v2.ReportSummaryResponse;
 import io.github.renatoxico.extract.exception.ProcessingException;
 import io.github.renatoxico.extract.model.AuthenticatedUserPrincipal;
 import io.github.renatoxico.extract.service.ExpenseReportAccessService;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/v2/extract")
@@ -67,6 +70,15 @@ public class ExtractV2Controller {
                 ex
             );
         }
+    }
+
+    @GetMapping("/reports")
+    public List<ReportSummaryResponse> getReports(
+        @AuthenticationPrincipal AuthenticatedUserPrincipal principal
+    ) {
+        return reportingService.getReportSummaries(principal.localUserId()).stream()
+            .map(mapper::toSummaryResponse)
+            .toList();
     }
 
     @GetMapping("/export/{reportId}")

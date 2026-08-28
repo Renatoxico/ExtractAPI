@@ -35,6 +35,30 @@ export async function fetchSummary(reportId) {
   return json
 }
 
+export async function fetchReportHistory() {
+  const headers = await buildAuthHeaders()
+  let res
+  try {
+    res = await fetch(`${host}/v2/extract/reports`, { headers })
+  } catch {
+    const err = new Error('Não foi possível carregar o histórico de relatórios.')
+    err.errorCode = 'NETWORK_ERROR'
+    err.details = null
+    throw err
+  }
+
+  const json = await res.json()
+
+  if (!res.ok) {
+    const err = new Error(json.message ?? 'Erro ao carregar o histórico')
+    err.errorCode = json.errorCode ?? `HTTP_${res.status}`
+    err.details = json.details ?? null
+    throw err
+  }
+
+  return json
+}
+
 export async function processFiles(fileArray) {
   const form = new FormData()
   for (const f of fileArray) form.append('file', f)
