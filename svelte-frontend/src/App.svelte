@@ -185,10 +185,9 @@
             <span></span><span></span><span></span>
           </button>
         {/if}
-        <div class="logo">
-          <span class="logo-mark" aria-hidden="true">E</span>
-          <span>Extract</span>
-        </div>
+        <a class="logo" href="/" aria-label="Somai — início">
+          <img src="/somai-logo.png" alt="Somai" />
+        </a>
       </div>
 
       <div class="header-right">
@@ -400,8 +399,8 @@
   .header-inner { max-width: 1500px; height: 58px; margin: 0 auto; padding: 0 1.35rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
   .brand-area, .header-right, .logo { display: flex; align-items: center; }
   .brand-area, .header-right { gap: 0.8rem; }
-  .logo { gap: 0.55rem; color: var(--text-main); font-weight: 750; letter-spacing: -0.02em; }
-  .logo-mark { width: 26px; height: 26px; display: grid; place-items: center; border: 1px solid var(--primary); border-radius: 7px; color: var(--primary); font: 700 0.82rem monospace; transform: rotate(-3deg); }
+  .logo { height: 40px; }
+  .logo img { display: block; width: auto; height: 34px; }
   .history-toggle { display: none; width: 34px; height: 34px; padding: 8px; flex-direction: column; justify-content: center; gap: 4px; border: 1px solid var(--panel-border); border-radius: var(--radius-sm); background: var(--surface-1); cursor: pointer; }
   .history-toggle span { display: block; width: 100%; height: 1px; background: var(--text-muted); }
   .reset-btn { padding: 0.45rem 0.75rem; border: 1px solid var(--panel-border); border-radius: var(--radius-sm); background: transparent; color: var(--text-muted); font-size: 0.78rem; cursor: pointer; }
