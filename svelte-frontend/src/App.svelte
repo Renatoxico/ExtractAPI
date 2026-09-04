@@ -167,41 +167,33 @@
     files = []
     reportId = ''
     error = null
+    historyOpen = false
   }
 </script>
 
+<svelte:window onkeydown={(event) => event.key === 'Escape' && (historyOpen = false)} />
+
 <div class="app">
-  <header class="app-header">
-    <div class="header-inner">
-      <div class="brand-area">
-        {#if user}
-          <button
-            class="history-toggle"
-            type="button"
-            aria-label="Abrir histórico"
-            aria-expanded={historyOpen}
-            onclick={() => (historyOpen = true)}
-          >
-            <span></span><span></span><span></span>
-          </button>
-        {/if}
-        <a class="logo" href="/" aria-label="Somai — início">
-          <img src="/somai-logo.png" alt="Somai" />
-        </a>
-      </div>
+  <button
+    class="sidebar-toggle"
+    type="button"
+    aria-label="Abrir menu"
+    aria-expanded={historyOpen}
+    aria-controls="app-sidebar"
+    onclick={() => (historyOpen = true)}
+  >
+    <span></span><span></span><span></span>
+  </button>
 
-      <div class="header-right">
-        <AuthControls {user} {authReady} />
-        {#if result}
-          <button class="reset-btn" onclick={reset}>Novo relatório</button>
-        {/if}
-      </div>
+  <aside id="app-sidebar" class="app-sidebar" class:open={historyOpen} aria-label="Navegação principal">
+    <div class="sidebar-brand">
+      <a class="logo" href="/" aria-label="Somai — novo relatório" onclick={(event) => { event.preventDefault(); reset() }}>
+        <img src="/somai-logo.png" alt="Somai" />
+      </a>
     </div>
-  </header>
 
-  <div class="workspace" class:with-history={Boolean(user)}>
-    {#if user}
-      <div class="desktop-history">
+    <div class="sidebar-content">
+      {#if user}
         <ReportHistory
           items={history}
           loading={historyLoading}
@@ -211,12 +203,27 @@
           onSelect={openHistoryReport}
           onRetry={() => refreshHistory()}
         />
-      </div>
-    {/if}
+      {:else}
+        <div class="sidebar-intro">
+          <p class="section-kicker">Seu espaço financeiro</p>
+          <p>Entre para manter seus relatórios organizados e acessíveis em um só lugar.</p>
+        </div>
+      {/if}
+    </div>
 
-    <main class="app-main">
+    <div class="sidebar-footer">
+      <AuthControls {user} {authReady} />
+    </div>
+  </aside>
+
+  {#if historyOpen}
+    <button class="drawer-backdrop" type="button" aria-label="Fechar menu" onclick={() => (historyOpen = false)}></button>
+  {/if}
+
+  <div class="workspace">
+    <main class="app-main" class:report-main={Boolean(result)}>
       {#if !result}
-        <section class="upload-section">
+        <section class="upload-section" class:with-files={files.length > 0}>
           <div class="upload-header">
             <p class="section-kicker">Leitura financeira</p>
             <h1>Relatório de Gastos</h1>
@@ -239,7 +246,7 @@
           {#if loading}
             <LoadingSpinner />
           {:else}
-            <UploadZone onFilesChange={handleFilesChange} />
+            <UploadZone fileCount={files.length} onFilesChange={handleFilesChange} />
 
             {#if files.length}
               <FileList {files} onRemove={removeFile} />
@@ -341,22 +348,6 @@
       {/if}
     </main>
   </div>
-
-  {#if user && historyOpen}
-    <button class="drawer-backdrop" type="button" aria-label="Fechar histórico" onclick={() => (historyOpen = false)}></button>
-    <div class="mobile-drawer">
-      <ReportHistory
-        items={history}
-        loading={historyLoading}
-        error={historyError}
-        activeReportId={result?.reportId ?? ''}
-        {loadingReportId}
-        onSelect={openHistoryReport}
-        onRetry={() => refreshHistory()}
-        onClose={() => (historyOpen = false)}
-      />
-    </div>
-  {/if}
 </div>
 
 <style>
@@ -394,24 +385,23 @@
   }
 
   :global(button), :global(input) { font-family: inherit; }
-  .app { min-height: 100vh; }
-  .app-header { position: sticky; top: 0; z-index: 30; border-bottom: 1px solid var(--panel-border); background: rgba(15,17,21,0.94); backdrop-filter: blur(14px); }
-  .header-inner { max-width: 1500px; height: 58px; margin: 0 auto; padding: 0 1.35rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-  .brand-area, .header-right, .logo { display: flex; align-items: center; }
-  .brand-area, .header-right { gap: 0.8rem; }
-  .logo { height: 40px; }
-  .logo img { display: block; width: auto; height: 34px; }
-  .history-toggle { display: none; width: 34px; height: 34px; padding: 8px; flex-direction: column; justify-content: center; gap: 4px; border: 1px solid var(--panel-border); border-radius: var(--radius-sm); background: var(--surface-1); cursor: pointer; }
-  .history-toggle span { display: block; width: 100%; height: 1px; background: var(--text-muted); }
-  .reset-btn { padding: 0.45rem 0.75rem; border: 1px solid var(--panel-border); border-radius: var(--radius-sm); background: transparent; color: var(--text-muted); font-size: 0.78rem; cursor: pointer; }
-  .reset-btn:hover { color: var(--primary); border-color: var(--primary); }
+  .app { min-height: 100vh; display: grid; grid-template-columns: 400px minmax(0, 1fr); }
+  .app-sidebar { position: sticky; top: 0; z-index: 30; min-width: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--panel-border); background: rgba(15, 17, 22, 0.97); backdrop-filter: blur(18px); }
+  .sidebar-brand { position: relative; min-height: 210px; padding: 0.5rem 0.75rem; display: flex; align-items: center; justify-content: center; }
+  .logo { width: 100%; display: flex; align-items: center; justify-content: center; }
+  .logo img { display: block; width: min(360px, calc(100% - 1.5rem)); height: auto; }
+  .sidebar-toggle { display: none; }
+  .sidebar-content { flex: 1; min-height: 0; overflow: hidden; }
+  .sidebar-intro { margin: 0 1rem; padding: 1.15rem 0.2rem; border-top: 1px solid rgba(255,255,255,0.06); }
+  .sidebar-intro > p:last-child { margin: 0; color: var(--text-muted); font-size: 0.8rem; line-height: 1.6; }
+  .sidebar-footer { padding: 1rem; border-top: 1px solid rgba(255,255,255,0.06); }
 
-  .workspace { min-height: calc(100vh - 58px); }
-  .workspace.with-history { display: grid; grid-template-columns: 282px minmax(0, 1fr); }
-  .desktop-history { position: sticky; top: 58px; height: calc(100vh - 58px); min-width: 0; }
+  .workspace { min-width: 0; min-height: 100vh; }
   .app-main { width: 100%; max-width: 1240px; margin: 0 auto; padding: 2rem 1.5rem 3rem; min-width: 0; }
+  .app-main.report-main { max-width: 1340px; padding-right: 0.75rem; padding-left: 0.75rem; }
 
-  .upload-section { max-width: 660px; margin: 5vh auto 0; display: flex; flex-direction: column; gap: 1.2rem; }
+  .upload-section { max-width: 820px; margin: 5vh auto 0; display: flex; flex-direction: column; gap: 1.2rem; }
+  .upload-section.with-files { margin-top: clamp(0.75rem, 2vh, 1.5rem); gap: 0.8rem; }
   .section-kicker, .panel-index { margin: 0 0 0.45rem; color: var(--primary); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
   .upload-header h1, .report-heading h1 { margin: 0; font-size: clamp(1.65rem, 3vw, 2.25rem); letter-spacing: -0.04em; }
   .upload-header > p:last-child { max-width: 580px; margin: 0.65rem 0 0; color: var(--text-muted); font-size: 0.92rem; line-height: 1.65; }
@@ -443,10 +433,8 @@
   .chart-panel { min-width: 0; }
   .panel-heading h2 { margin: 0; font-size: 1rem; font-weight: 650; }
   .expenses-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
-  .expenses-heading > p { max-width: 340px; margin: 0; color: var(--text-muted); font-size: 0.76rem; line-height: 1.5; text-align: right; }
   .empty { color: var(--text-dim); font-size: 0.82rem; }
 
-  .mobile-drawer { display: none; }
   .drawer-backdrop { display: none; }
 
   @media (max-width: 1280px) {
@@ -459,28 +447,26 @@
   }
 
   @media (max-width: 900px) {
-    .workspace.with-history { display: block; }
-    .desktop-history { display: none; }
-    .history-toggle { display: flex; }
+    .app { display: block; }
+    .app-sidebar { position: fixed; inset: 0 auto 0 0; width: min(320px, 88vw); height: 100vh; transform: translateX(-102%); transition: transform 180ms ease-out; box-shadow: 18px 0 50px rgba(0,0,0,0.4); }
+    .app-sidebar.open { transform: translateX(0); }
+    .sidebar-brand { min-height: 138px; padding: 0.5rem 0.75rem; }
+    .logo img { width: min(280px, calc(100% - 1rem)); }
+    .sidebar-toggle { position: fixed; top: 1rem; left: 1rem; z-index: 28; width: 42px; height: 42px; padding: 10px; display: flex; flex-direction: column; justify-content: center; gap: 5px; border: 1px solid var(--panel-border); border-radius: var(--radius-sm); background: rgba(21,24,30,0.92); box-shadow: 0 8px 24px rgba(0,0,0,0.25); backdrop-filter: blur(12px); cursor: pointer; }
+    .sidebar-toggle span { display: block; width: 100%; height: 1px; background: var(--text-muted); }
+    .app-main { padding-top: 5.25rem; }
     .chart-panel { max-width: none; }
-    .drawer-backdrop { position: fixed; inset: 58px 0 0; z-index: 39; display: block; width: 100%; border: 0; background: rgba(0,0,0,0.58); backdrop-filter: blur(2px); }
-    .mobile-drawer { position: fixed; top: 58px; bottom: 0; left: 0; z-index: 40; display: block; width: min(320px, 88vw); box-shadow: 18px 0 50px rgba(0,0,0,0.4); animation: slide-in 180ms ease-out; }
+    .drawer-backdrop { position: fixed; inset: 0; z-index: 29; display: block; width: 100%; border: 0; background: rgba(0,0,0,0.58); backdrop-filter: blur(2px); }
   }
 
   @media (max-width: 680px) {
-    .header-inner { padding: 0 0.9rem; }
-    .app-main { padding: 1.25rem 0.9rem 2.5rem; }
-    .upload-section { margin-top: 1rem; }
+    .app-main { padding: 5.25rem 0.9rem 2.5rem; }
+    .upload-section { margin-top: 0; }
     .report-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .report-meta div:nth-child(3) { border-left: 0; border-top: 1px solid rgba(255,255,255,0.06); }
     .report-meta div:nth-child(4) { border-top: 1px solid rgba(255,255,255,0.06); }
     .report-meta code { max-width: 135px; }
     .expenses-heading { align-items: flex-start; flex-direction: column; }
-    .expenses-heading > p { text-align: left; }
     .panel { padding: 1rem; }
-    .header-right { gap: 0.45rem; }
-    .reset-btn { display: none; }
   }
-
-  @keyframes slide-in { from { transform: translateX(-100%); } }
 </style>

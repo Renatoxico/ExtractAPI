@@ -41,18 +41,22 @@
   {#if !authReady}
     <span class="auth-loading">Verificando sessão...</span>
   {:else if user}
-    <div class="user-info">
-      {#if user.photoURL}
-        <img src={user.photoURL} alt="" referrerpolicy="no-referrer" />
-      {/if}
-      <div class="user-text">
-        <strong>{user.displayName ?? 'Usuário'}</strong>
-        <span>{user.email}</span>
+    <div class="user-row">
+      <div class="user-info">
+        {#if user.photoURL}
+          <img src={user.photoURL} alt="" referrerpolicy="no-referrer" />
+        {/if}
+        <div class="user-text">
+          <strong>{user.displayName ?? 'Usuário'}</strong>
+          <span>{user.email}</span>
+        </div>
       </div>
+      <button class="logout-button" type="button" aria-label="Sair" title="Sair" onclick={logout} disabled={loading}>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M10 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4M14 8l4 4-4 4M9 12h9" />
+        </svg>
+      </button>
     </div>
-    <button type="button" onclick={logout} disabled={loading}>
-      {loading ? 'Saindo...' : 'Sair'}
-    </button>
   {:else}
     <button type="button" class="google-button" onclick={loginWithGoogle} disabled={loading}>
       <span class="google-mark" aria-hidden="true">G</span>
@@ -69,8 +73,28 @@
   .auth-controls,
   .user-info {
     display: flex;
-    align-items: center;
     gap: 0.75rem;
+  }
+
+  .auth-controls {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .user-info {
+    min-width: 0;
+    align-items: center;
+  }
+
+  .user-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .user-row .user-info {
+    flex: 1;
   }
 
   .user-info img {
@@ -104,6 +128,7 @@
   button {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
     border: 1px solid var(--panel-border);
     border-radius: var(--radius-sm);
@@ -113,6 +138,33 @@
     font: inherit;
     font-size: 0.8125rem;
     cursor: pointer;
+  }
+
+  .google-button { width: 100%; }
+
+  .logout-button {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    padding: 0;
+    color: var(--text-muted);
+    background: transparent;
+  }
+
+  .logout-button:hover {
+    color: var(--primary);
+    border-color: rgba(16, 185, 129, 0.55);
+    background: var(--primary-glow);
+  }
+
+  .logout-button svg {
+    width: 17px;
+    height: 17px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
   button:disabled {
@@ -135,9 +187,4 @@
     font-size: 0.75rem;
   }
 
-  @media (max-width: 700px) {
-    .user-text {
-      display: none;
-    }
-  }
 </style>

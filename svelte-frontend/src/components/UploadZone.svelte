@@ -1,5 +1,5 @@
 <script>
-  let { onFilesChange } = $props();
+  let { fileCount = 0, onFilesChange } = $props();
 
   let dragging = $state(false);
   let inputEl;
@@ -21,6 +21,8 @@
 <div
   class="upload-zone"
   class:dragging
+  class:compact={fileCount > 0}
+  style={`--dropzone-shrink: ${Math.min(fileCount, 6) * 29}px`}
   role="button"
   tabindex="0"
   aria-label="Clique ou arraste PDFs aqui"
@@ -51,15 +53,24 @@
 
 <style>
   .upload-zone {
+    min-height: clamp(135px, calc(31.5vh - var(--dropzone-shrink)), 300px);
     border: 2px dashed var(--panel-border);
     border-radius: var(--radius-lg);
     padding: 3rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
     cursor: pointer;
-    transition: border-color var(--transition), background var(--transition);
+    transition: min-height 180ms ease, padding 180ms ease, border-color var(--transition), background var(--transition);
     background: var(--panel-bg);
     color: var(--text-muted);
     user-select: none;
+  }
+
+  .upload-zone.compact {
+    padding-block: 1rem;
   }
 
   .upload-zone:hover,
@@ -72,6 +83,10 @@
   .upload-icon {
     margin-bottom: 1rem;
     opacity: 0.6;
+  }
+
+  .upload-zone.compact .upload-icon {
+    margin-bottom: 0.5rem;
   }
 
   .upload-zone:hover .upload-icon,

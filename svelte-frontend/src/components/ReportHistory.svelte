@@ -14,7 +14,7 @@
   } = $props();
 </script>
 
-<aside class="history" class:drawer={Boolean(onClose)} aria-label="Histórico de relatórios">
+<section class="history" class:drawer={Boolean(onClose)} aria-label="Histórico de relatórios">
   <div class="history-header">
     <div>
       <p class="eyebrow">Sua biblioteca</p>
@@ -66,15 +66,14 @@
       {/each}
     </ul>
   {/if}
-</aside>
+</section>
 
 <style>
   .history {
     height: 100%;
     display: flex;
     flex-direction: column;
-    background: #11141a;
-    border-right: 1px solid var(--panel-border);
+    background: transparent;
   }
 
   .history-header {
