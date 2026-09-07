@@ -1,68 +1,73 @@
-# ExtractAPI
+<p align="center">
+  <img src="svelte-frontend/public/somai-logo.png" alt="Somai" width="280">
+</p>
 
-ExtractAPI turns expense PDFs into clear, structured financial reports. Users can sign in, upload documents, review categorized spending, explore useful summaries, revisit previous reports, and export their data for further analysis.
+<h1 align="center">Somai</h1>
 
-The project combines document processing, AI-assisted classification, secure user access, and data visualization in a complete web application.
+<p align="center">
+  <strong>From raw expense PDFs to a clear, private picture of where the money went.</strong>
+</p>
 
-## How it works
+<p align="center">
+  <a href="https://github.com/Renatoxico/ExtractAPI/actions/workflows/ci-cd.yml"><img src="https://github.com/Renatoxico/ExtractAPI/actions/workflows/ci-cd.yml/badge.svg" alt="CI/CD Pipeline"></a>
+</p>
+
+Somai is a web and iOS product for people who want useful spending insights without manually cleaning statements or building spreadsheets. A user uploads expense PDFs; Somai extracts and normalizes the transactions, classifies them with AI, and turns them into account-private reports with charts, highlights, grouped expenses, history, and CSV export.
+
+**[Open the web experience](https://somai.renatoxico.net)** · **[Explore the iOS app](https://github.com/Renatoxico/extReader)**
+
+## Product experience
+
+### Upload statements and revisit previous reports
+
+![Somai web upload and report history](Docs/images/somai-web-upload.png)
+
+### Understand the result at a glance
+
+![Somai report with categories, highlights, and grouped expenses](Docs/images/somai-web-report.png)
+
+## Engineering ownership
+
+I designed, built, and operate Somai end to end: the Svelte experience, versioned Spring Boot API, PostgreSQL model, AI-assisted processing pipeline, Firebase security boundary, automated test strategy, container delivery, and production deployment.
+
+- **Authentication and authorization** — Firebase ID tokens are verified server-side, while report access is scoped to the authenticated owner.
+- **API design** — versioned REST endpoints, request validation, stable error responses, multipart PDF ingestion, report history, and CSV export serve both clients.
+- **Reliable background work** — durable PostgreSQL-backed classification jobs use leases, retries, recovery paths, and transactional state transitions.
+- **AI with guardrails** — PDF extraction and Gemini classification sit behind validation, structured response parsing, bounded batches, and timeouts.
+- **Persistence** — PostgreSQL and Flyway provide an explicit, reviewable evolution path for reports, expenses, users, and processing state.
+- **Quality** — unit, Spring MVC, repository, transaction, and PostgreSQL Testcontainers tests run as CI gates.
+- **Production delivery** — GitHub Actions builds immutable Docker images, publishes them to GHCR, deploys them to production, and verifies service health.
+
+## Architecture
 
 ```mermaid
 flowchart LR
-    A[Sign in securely] --> B[Upload expense PDFs]
-    B --> C[Extract transaction data]
-    C --> D[Classify expenses with AI]
-    D --> E[Build and store the report]
-    E --> F[Explore insights and history]
-    F --> G[Export structured data]
+    User[User] --> Web[Svelte web app]
+    User --> iOS[SwiftUI iOS app]
+    Web --> Auth[Firebase Authentication]
+    iOS --> Auth
+    Web --> API[Spring Boot REST API]
+    iOS --> API
+    Auth -. ID token .-> API
+    API --> PDF[PDF extraction]
+    API --> DB[(PostgreSQL + Flyway)]
+    DB --> Worker[Durable classification workers]
+    Worker --> AI[Gemini]
+    Worker --> DB
 ```
-
-Each report belongs to the account that created it. After the documents are processed, the application organizes expenses into consistent categories and presents totals, grouped spending, and practical highlights through an interactive interface.
-
-## Main capabilities
-
-- Google-based authentication and account-scoped reports
-- Processing of multiple PDF expense documents
-- Extraction and normalization of transaction data
-- AI-assisted expense classification
-- Spending summaries, category breakdowns, and report highlights
-- Historical access to previously generated reports
-- CSV export for use in spreadsheets and other tools
-- Background processing designed to preserve work reliably
-- Administrative notifications for important processing events
 
 ## Technology
 
-### Frontend
+| Product surface | Technology |
+| --- | --- |
+| Web | Svelte 5, Vite, Chart.js, Nginx |
+| API | Java 21, Spring Boot, Spring Security, PDFBox |
+| Data and AI | PostgreSQL, Flyway, Gemini |
+| Identity | Firebase Authentication and Firebase Admin SDK |
+| Delivery | Docker, GitHub Actions, GHCR, Nginx, Let's Encrypt |
+| Verification | JUnit, Spring MVC tests, Testcontainers, Vitest |
 
-- Svelte 5
-- Vite
-- Chart.js
-- Firebase Authentication
+## Repositories
 
-### Backend
-
-- Java 21
-- Spring Boot and Spring Security
-- Firebase Admin SDK
-- Apache PDFBox
-- Google Gemini
-- OpenCSV
-
-### Data and delivery
-
-- PostgreSQL
-- Flyway database migrations
-- Docker
-- Automated validation and deployment workflows
-
-## Security and reliability
-
-Authentication is verified by the backend, and report access is scoped to the authenticated owner. The application does not trust user identity supplied through ordinary request data.
-
-Processing work is persisted so that temporary interruptions do not silently discard reports. External integrations are isolated from the core data flow, and failures are handled without exposing operational details to users.
-
-## Engineering highlights
-
-ExtractAPI demonstrates the design of a full-stack product that brings together secure authentication, PDF parsing, asynchronous processing, generative AI, relational data modeling, responsive visualization, automated testing, and containerized delivery.
-
-The result is a practical user experience backed by an architecture designed for maintainability, traceability, and reliable data ownership.
+- **This repository** contains the production API, web application, database migrations, automated tests, and deployment pipeline.
+- **[Somai for iOS](https://github.com/Renatoxico/extReader)** contains the native SwiftUI client and its Firebase-authenticated API integration.
