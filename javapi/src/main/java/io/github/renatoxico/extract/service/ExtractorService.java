@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import io.github.renatoxico.extract.logging.LogFields;
 
 @Service
 public class ExtractorService {
@@ -19,21 +20,20 @@ public class ExtractorService {
     public String extractText(MultipartFile pdf) {
         String output;
         try {
-            LOG.info("Extracting text from PDF: {}", pdf.getOriginalFilename());
+            LOG.debug("Extracting text from PDF: {}", LogFields.safe(pdf.getOriginalFilename()));
             PDDocument pdfDoc = Loader.loadPDF(pdf.getBytes());
             PDFTextStripper ripper = new PDFTextStripper();
             output = ripper.getText(pdfDoc);
             pdfDoc.close();
-            LOG.info("Successfully extracted {} characters from PDF", output.length());
+            LOG.debug("Successfully extracted {} characters from PDF", output.length());
             return output;
         } catch (IOException e){
-            LOG.error("Failed to extract text from PDF {}: {}", pdf.getOriginalFilename(), e.getMessage(), e);
             throw new ProcessingException(
                 "Failed to extract text from PDF: " + e.getMessage(),
                 HttpStatus.UNPROCESSABLE_ENTITY,
                 "PDF_EXTRACTION_FAILED",
                 e
-            );
+            ).withDiagnostic("filename", pdf.getOriginalFilename());
         }
     }
 }

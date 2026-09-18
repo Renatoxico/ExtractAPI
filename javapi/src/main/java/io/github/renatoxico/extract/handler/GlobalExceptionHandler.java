@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.io.IOException;
+import io.github.renatoxico.extract.logging.LogFields;
 
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -18,7 +19,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ProcessingException.class)
     public ResponseEntity<ErrorResponse> handleProcessingException(ProcessingException ex) {
-        LOG.error("Processing error [{}]: {}", ex.getErrorCode(), ex.getMessage(), ex);
+        if (ex.getHttpStatus().is4xxClientError()) {
+            LOG.warn("Processing error [{}]: {} context={}", ex.getErrorCode(),
+                LogFields.safe(ex.getMessage()), ex.getDiagnostics());
+        } else {
+            LOG.error("Processing error [{}]: {} context={}", ex.getErrorCode(),
+                LogFields.safe(ex.getMessage()), ex.getDiagnostics(), ex);
+        }
         ErrorResponse errorResponse = new ErrorResponse(ex.getErrorCode(), ex.getMessage());
         return new ResponseEntity<>(errorResponse, ex.getHttpStatus());
     }

@@ -27,7 +27,7 @@ public class V2ReportMapper {
         return new ReportResponse(
             report.reportId(),
             report.createdAt(),
-            report.expenses().stream().map(this::toExpense).toList(),
+            report.expenses().stream().map(expense -> toExpense(expense, report.reportId())).toList(),
             report.expenseGroups().stream()
                 .map(group -> new ExpenseGroupResponse(
                     group.expenseName(), group.totalAmount(), group.occurrenceCount(), group.category()))
@@ -37,9 +37,9 @@ public class V2ReportMapper {
                     summary.category(), summary.totalAmount(), summary.occurrenceCount()))
                 .toList(),
             new ReportHighlightsResponse(
-                toExpense(report.highlights().largestExpense()),
-                toDay(report.highlights().mostActiveDay()),
-                toDay(report.highlights().highestSpendingDay())
+                toExpense(report.highlights().largestExpense(), report.reportId()),
+                toDay(report.highlights().mostActiveDay(), report.reportId()),
+                toDay(report.highlights().highestSpendingDay(), report.reportId())
             )
         );
     }
@@ -53,7 +53,7 @@ public class V2ReportMapper {
         );
     }
 
-    LocalDate parseDate(String date) {
+    LocalDate parseDate(String date, String reportId, Long expenseId) {
         try {
             return LocalDate.parse(date, LEGACY_DATE);
         } catch (DateTimeParseException | NullPointerException ex) {
@@ -62,22 +62,23 @@ public class V2ReportMapper {
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "REPORT_DATA_INVALID",
                 ex
-            );
+            ).withDiagnostic("reportId", reportId)
+                .withDiagnostic("expenseId", expenseId).withDiagnostic("date", date);
         }
     }
 
-    private ExpenseResponse toExpense(ExpenseData expense) {
+    private ExpenseResponse toExpense(ExpenseData expense, String reportId) {
         if (expense == null) {
             return null;
         }
         return new ExpenseResponse(
-            expense.expenseId(), expense.expenseName(), expense.amount(), parseDate(expense.date()), expense.category());
+            expense.expenseId(), expense.expenseName(), expense.amount(), parseDate(expense.date(), reportId, expense.expenseId()), expense.category());
     }
 
-    private DaySummaryResponse toDay(DaySummary day) {
+    private DaySummaryResponse toDay(DaySummary day, String reportId) {
         if (day == null) {
             return null;
         }
-        return new DaySummaryResponse(parseDate(day.date()), day.transactionCount(), day.totalAmount());
+        return new DaySummaryResponse(parseDate(day.date(), reportId, null), day.transactionCount(), day.totalAmount());
     }
 }

@@ -95,7 +95,7 @@ public class ExpenseReportingService {
             value(expense.getExpenseName()),
             value(expense.getCategory()),
             value(expense.getAmount()),
-            V2_DATE.format(v2ReportMapper.parseDate(expense.getDate())),
+            V2_DATE.format(v2ReportMapper.parseDate(expense.getDate(), reportId, expense.getId())),
             value(expense.getReportId())
         }).toList());
     }

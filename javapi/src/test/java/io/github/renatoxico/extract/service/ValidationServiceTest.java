@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -181,7 +182,7 @@ class ValidationServiceTest {
         expenses.add(expense1);
         expenses.add(expense2);
 
-        List<Expense> result = validationService.validateExpenses(expenses);
+        List<Expense> result = validationService.validateExpenses(expenses, Map.of());
 
         assertEquals(1, result.size());
         assertEquals("Valid Expense", result.getFirst().getExpenseName());
@@ -195,7 +196,7 @@ class ValidationServiceTest {
         expense.setAmount(BigDecimal.ZERO);
         expenses.add(expense);
 
-        List<Expense> result = validationService.validateExpenses(expenses);
+        List<Expense> result = validationService.validateExpenses(expenses, Map.of());
 
         assertEquals(0, result.size());
     }
@@ -208,7 +209,7 @@ class ValidationServiceTest {
         expense.setAmount(new BigDecimal("50.00"));
         expenses.add(expense);
 
-        List<Expense> result = validationService.validateExpenses(expenses);
+        List<Expense> result = validationService.validateExpenses(expenses, Map.of());
 
         assertEquals(0, result.size());
     }
@@ -222,7 +223,7 @@ class ValidationServiceTest {
         expense.setDate("10/15/2024");
         expenses.add(expense);
 
-        List<Expense> result = validationService.validateExpenses(expenses);
+        List<Expense> result = validationService.validateExpenses(expenses, Map.of());
 
         assertEquals(1, result.size());
         assertEquals("Transporte / Auto", result.getFirst().getCategory());
@@ -237,7 +238,7 @@ class ValidationServiceTest {
         expense.setDate("10/15/2024");
         expenses.add(expense);
 
-        List<Expense> result = validationService.validateExpenses(expenses);
+        List<Expense> result = validationService.validateExpenses(expenses, Map.of());
 
         assertEquals(1, result.size());
         assertEquals("Restaurante / Lanches", result.getFirst().getCategory());
@@ -252,7 +253,7 @@ class ValidationServiceTest {
         expense.setDate("10/15/2024");
         expenses.add(expense);
 
-        List<Expense> result = validationService.validateExpenses(expenses);
+        List<Expense> result = validationService.validateExpenses(expenses, Map.of());
 
         assertEquals(1, result.size());
         assertFalse(result.getFirst().getExpenseName().contains("10/15"));
@@ -268,7 +269,7 @@ class ValidationServiceTest {
         expense.setDate("10/15/2024");
         expenses.add(expense);
 
-        List<Expense> result = validationService.validateExpenses(expenses);
+        List<Expense> result = validationService.validateExpenses(expenses, Map.of());
 
         assertEquals(1, result.size());
         assertTrue(result.getFirst().getExpenseName().length() <= 70);
@@ -283,7 +284,7 @@ class ValidationServiceTest {
         expense.setDate("10/15/2024");
         expenses.add(expense);
 
-        List<Expense> result = validationService.validateExpenses(expenses);
+        List<Expense> result = validationService.validateExpenses(expenses, Map.of());
 
         assertEquals(1, result.size());
         assertFalse(result.getFirst().getExpenseName().contains("   "));
@@ -300,7 +301,7 @@ class ValidationServiceTest {
             expenses.add(expense);
         }
 
-        List<Expense> result = validationService.validateExpenses(expenses);
+        List<Expense> result = validationService.validateExpenses(expenses, Map.of());
 
         assertEquals(5, result.size());
     }
@@ -309,7 +310,7 @@ class ValidationServiceTest {
     void testValidateExpenses_EmptyList_ReturnsEmptyList() {
         List<Expense> expenses = new ArrayList<>();
 
-        List<Expense> result = validationService.validateExpenses(expenses);
+        List<Expense> result = validationService.validateExpenses(expenses, Map.of());
 
         assertEquals(0, result.size());
     }

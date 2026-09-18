@@ -71,3 +71,5 @@ flowchart LR
 
 - **This repository** contains the production API, web application, database migrations, automated tests, and deployment pipeline.
 - **[Somai for iOS](https://github.com/Renatoxico/extReader)** contains the native SwiftUI client and its Firebase-authenticated API integration.
+
+Backend operations: [logging setup and troubleshooting](Docs/LOGGING.md).

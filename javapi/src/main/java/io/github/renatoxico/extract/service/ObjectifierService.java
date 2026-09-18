@@ -12,6 +12,10 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.IdentityHashMap;
+import io.github.renatoxico.extract.logging.ExpenseSource;
+import io.github.renatoxico.extract.logging.LogFields;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,42 +32,22 @@ public class ObjectifierService {
         this.validationService = validationService;
     }
 
-    public void process (ExpenseReport report, String inputText) {
-        String reportId = report.getId();
-        try {
-            LOG.info("Enter ObjectifierService.process for report: {}", reportId);
-
-            if (inputText == null || inputText.trim().isEmpty()) {
-                LOG.warn("Empty input text provided for report: {}", reportId);
-                return;
-            }
-
-            String[] expensesDoc = splitByLine(inputText);
-            List<String> filteredExpenses = getFilterCharges(expensesDoc);
-
-            if (filteredExpenses == null || filteredExpenses.isEmpty()) {
-                LOG.warn("No candidate expense lines found after filtering for report: {}", reportId);
-                throw new ProcessingException(
-                    "No expenses could be extracted from the provided files",
-                    HttpStatus.UNPROCESSABLE_ENTITY,
-                    "NO_EXPENSES_EXTRACTED"
-                );
-            }
-
-            List<Expense> expensesObj = objectifyExtract(report, filteredExpenses);
-
-            LOG.info("Extracted {} expenses from document for report: {}", expensesObj.size(), reportId);
-
-            expensesObj = validationService.validateExpenses(expensesObj);
-
-            LOG.info("Validated {} expenses, saving to database for report: {}", expensesObj.size(), reportId);
-            expenseRepo.saveAll(expensesObj);
-
-            LOG.info("Successfully processed {} expenses for report: {}", expensesObj.size(), reportId);
-        } catch (Exception ex) {
-            LOG.error("Error in ObjectifierService.process for report {}: {}", reportId, ex.getMessage(), ex);
-            throw ex;
+    public void process(ExpenseReport report, String inputText, String filename) {
+        if (inputText == null || inputText.trim().isEmpty()) {
+            LOG.debug("Empty input text reportId={} filename={}", report.getId(), LogFields.safe(filename));
+            return;
         }
+        List<ExpenseSource> candidates = filterSources(splitByLine(inputText), filename, report.getId());
+        if (candidates.isEmpty()) {
+            throw new ProcessingException("No expenses could be extracted from the provided files",
+                HttpStatus.UNPROCESSABLE_ENTITY, "NO_EXPENSES_EXTRACTED");
+        }
+        Map<Expense, ExpenseSource> sources = new IdentityHashMap<>();
+        List<Expense> expenses = objectifySources(report, candidates, sources);
+        expenses = validationService.validateExpenses(expenses, sources);
+        expenseRepo.saveAll(expenses);
+        LOG.info("Expense file processed reportId={} filename={} candidates={} savedExpenses={}",
+            report.getId(), LogFields.safe(filename), candidates.size(), expenses.size());
     }
 
     public String[] splitByLine (String extractText) {
@@ -72,44 +56,50 @@ public class ObjectifierService {
 
     }
 
-    public List<Expense> objectifyExtract (ExpenseReport report,List<String> expenses) {
-        String reportId = report.getId();
-        LOG.info("Enter ObjectifierService.objectifyExtract for report: {}", reportId);
+    private List<Expense> objectifySources(ExpenseReport report, List<ExpenseSource> candidates,
+                                          Map<Expense, ExpenseSource> sources) {
         List<Expense> expensesObj = new ArrayList<>();
-        expenses.forEach(line -> {
-            Matcher dateMatcher = datePattern.matcher(line);
-            Matcher valueMatcher = valuePattern.matcher(line);
+        candidates.forEach(source -> {
+            String line = source.candidate();
+            try {
+                Matcher dateMatcher = datePattern.matcher(line);
+                Matcher valueMatcher = valuePattern.matcher(line);
 
-            if (dateMatcher.find() && valueMatcher.find()){
-                String date = dateMatcher.group(1);
-                String valueStr = valueMatcher.group(1)
-                        .replace(".", "")
-                        .replace(",", ".");
-                BigDecimal value = new BigDecimal(valueStr);
-                value = value.abs();
-                if (!(valueMatcher.start()< dateMatcher.end())) {
-                    String description = line.substring(dateMatcher.end(), valueMatcher.start())
-                            .replace("|", "")
-                            .replaceAll("\\d{4,}", "")
-                            .trim();
-                    if (!description.isEmpty()
-                            && value.compareTo(BigDecimal.ZERO) != 0
-                            && description.matches(".*[a-zA-Z].*")
-                            && !(description.contains("CREDITO") || description.contains("FATURA") || description.contains("SALDO"))){
-                        mapToObj(report, expensesObj, value, description, date);
+                if (dateMatcher.find() && valueMatcher.find()){
+                    String date = dateMatcher.group(1);
+                    String valueStr = valueMatcher.group(1)
+                            .replace(".", "")
+                            .replace(",", ".");
+                    BigDecimal value = new BigDecimal(valueStr);
+                    value = value.abs();
+                    if (!(valueMatcher.start()< dateMatcher.end())) {
+                        String description = line.substring(dateMatcher.end(), valueMatcher.start())
+                                .replace("|", "")
+                                .replaceAll("\\d{4,}", "")
+                                .trim();
+                        if (!description.isEmpty()
+                                && value.compareTo(BigDecimal.ZERO) != 0
+                                && description.matches(".*[a-zA-Z].*")
+                                && !(description.contains("CREDITO") || description.contains("FATURA") || description.contains("SALDO"))){
+                            Expense expense = new Expense(report, value, description, date, null);
+                            expensesObj.add(expense);
+                            sources.put(expense, source);
+                        }
                     }
                 }
+            } catch (RuntimeException ex) {
+                throw new ProcessingException("Failed to process file: " + source.filename(),
+                    HttpStatus.INTERNAL_SERVER_ERROR, "FILE_PROCESSING_ERROR", ex)
+                    .withDiagnostics(source.diagnostics());
             }
         });
-        LOG.info("Extracted {} valid expenses from {} lines for report: {}", expensesObj.size(), expenses.size(), reportId);
         return expensesObj;
     }
     
-    public List<String> getFilterCharges (String[] inputText ) {
-        LOG.info("Enter ObjectifierService.getFilterCharges");
-        List<String> filteredCharges = new ArrayList<>();
-
-        for (String line : inputText) {
+    private List<ExpenseSource> filterSources(String[] inputText, String filename, String reportId) {
+        List<ExpenseSource> filteredCharges = new ArrayList<>();
+        for (int i = 0; i < inputText.length; i++) {
+            String line = inputText[i];
             Matcher dateMatcher = datePattern.matcher(line);
             Matcher valueMatcher = valuePattern.matcher(line);
 
@@ -118,18 +108,14 @@ public class ObjectifierService {
                 String secondMatch = line.substring(valueMatcher.end());
 
                 if (dateMatcher.find() && valueMatcher.find()) {
-                    filteredCharges.add(firstMatch);
-                    filteredCharges.add(secondMatch);
+                    filteredCharges.add(new ExpenseSource(filename, reportId, i + 1, line, firstMatch));
+                    filteredCharges.add(new ExpenseSource(filename, reportId, i + 1, line, secondMatch));
                 }
                 else
-                    filteredCharges.add(line);
+                    filteredCharges.add(new ExpenseSource(filename, reportId, i + 1, line, line));
             }
         }
         return filteredCharges;
-    }
-
-    public void mapToObj (ExpenseReport report, List<Expense> expenses, BigDecimal amount, String expenseName, String date){
-        expenses.add(new Expense(report, amount, expenseName, date, null));
     }
 
 }

@@ -131,6 +131,8 @@ jobs:
             export BACKEND_IMAGE=ghcr.io/renatoxico/javapi:${{ github.sha }}
             export FRONTEND_IMAGE=ghcr.io/renatoxico/svelte-frontend:${{ github.sha }}
             docker compose pull backend-java frontend
+            docker compose run --rm --no-deps --user root --entrypoint sh backend-java -c 'chown appuser:appuser /app/logs && chmod 0750 /app/logs' || exit 1
+            docker compose run --rm --no-deps --entrypoint sh backend-java -c 'test -w /app/logs && touch /app/logs/.write-check && rm /app/logs/.write-check' || exit 1
             docker compose up -d --no-build --remove-orphans --wait --wait-timeout 180
             curl --fail --silent --show-error http://localhost:9090/actuator/health
             curl --fail --silent --show-error http://localhost/

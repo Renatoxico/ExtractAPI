@@ -34,13 +34,13 @@ public class ClassificationPipelineService {
     }
 
     public void registerMissingCatalogEntries() {
-        int catalogEntries = catalogService.populateMissing();
-        LOG.info("Catalog registration created {} entries", catalogEntries);
+        catalogService.populateMissing();
     }
 
     public void createNextClassificationBatch() {
         Optional<Long> batchId = transactions.createPendingBatch();
-        LOG.info("Pending classification batch created={}", batchId.isPresent());
+        batchId.ifPresentOrElse(id -> LOG.info("Classification batch created batchId={}", id),
+            () -> LOG.debug("No pending classification work"));
     }
 
     public void processNextAiBatch() {
@@ -57,6 +57,8 @@ public class ClassificationPipelineService {
         try {
             AiProcessorService.AiResponse response = aiProcessorService.processWithGemini(requestItems);
             if (response.parseResult().acceptedItems().isEmpty()) {
+                LOG.warn("AI classification returned no valid items batchId={} attempt={}",
+                    claim.batchId(), claim.attempt());
                 transactions.failBatch(
                     claim,
                     response,
@@ -65,11 +67,13 @@ public class ClassificationPipelineService {
                 return;
             }
             transactions.completeBatch(claim, response);
+            LOG.info("AI classification completed batchId={} attempt={} acceptedItems={}",
+                claim.batchId(), claim.attempt(), response.parseResult().acceptedItems().size());
         } catch (Exception exception) {
             LOG.warn(
                 "AI classification batch {} attempt {} failed",
                 claim.batchId(),
-                claim.attempt()
+                claim.attempt(), exception
             );
             transactions.failBatch(claim, null, safeError(exception));
         }
@@ -87,9 +91,9 @@ public class ClassificationPipelineService {
                 transactions.applyCatalogSuggestion(claim);
             } catch (Exception exception) {
                 LOG.warn(
-                    "Catalog application task {} attempt {} failed",
-                    claim.taskId(),
-                    claim.attempt()
+                    "Catalog application task {} batch {} attempt {} failed",
+                    claim.taskId(), claim.batchId(),
+                    claim.attempt(), exception
                 );
                 transactions.failApplyTask(claim, safeError(exception));
             }
@@ -102,7 +106,7 @@ public class ClassificationPipelineService {
             try {
                 transactions.propagateCategoryToExpense(expenseId);
             } catch (Exception exception) {
-                LOG.warn("Category propagation failed for expense id {}", expenseId);
+                LOG.warn("Category propagation failed for expense id {}", expenseId, exception);
             }
         }
     }
@@ -110,12 +114,15 @@ public class ClassificationPipelineService {
     public void recoverExpiredAiBatches() {
         for (ExpiredClaim claim : transactions.findExpiredBatchClaims()) {
             transactions.recoverExpiredBatch(claim);
+            LOG.warn("Expired AI batch recovery attempted batchId={} attempt={}", claim.id(), claim.attempt());
         }
     }
 
     public void recoverExpiredApplyTasks() {
         for (ApplyClaim claim : transactions.findExpiredApplyClaims()) {
             transactions.recoverExpiredApplyTask(claim);
+            LOG.warn("Expired apply task recovery attempted taskId={} batchId={} attempt={}",
+                claim.taskId(), claim.batchId(), claim.attempt());
         }
     }
 

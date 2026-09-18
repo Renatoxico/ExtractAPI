@@ -10,6 +10,9 @@ services:
       - .env
     environment:
       GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/firebase-service-account.json
+      LOG_FILE: /app/logs/extract-api.log
+    volumes:
+      - ./logs/backend:/app/logs
     secrets:
       - source: firebase-service-account
         target: firebase-service-account.json

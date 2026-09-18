@@ -9,7 +9,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import io.github.renatoxico.extract.logging.ExpenseSource;
+import io.github.renatoxico.extract.logging.LogFields;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,11 +24,9 @@ public class ValidationService {
 
     public FileValidationResult validateFiles (MultipartFile[] files) {
         if (files.length < 1) {
-            LOG.warn("File validation failed: No files provided");
             return new FileValidationResult(false, "No files found", "NO_FILES_PROVIDED", HttpStatus.BAD_REQUEST);
         }
         if (files.length > 6) {
-            LOG.warn("File validation failed: Too many files ({})", files.length);
             return new FileValidationResult(false, "Too many files (maximum 6 allowed)", "TOO_MANY_FILES", HttpStatus.BAD_REQUEST);
         }
 
@@ -34,13 +35,12 @@ public class ValidationService {
             String contentType = file.getContentType();
             String fileName = file.getOriginalFilename();
 
-            LOG.info("Validating file: {} ({}KB, type: {})", fileName, fileSizeKB, contentType);
+            LOG.debug("Validating file: {} ({}KB, type: {})", LogFields.safe(fileName), fileSizeKB, LogFields.safe(contentType));
 
             boolean isValidType = "application/pdf".equals(contentType);
             boolean hasValidExtension = fileName != null && (fileName.toLowerCase().endsWith(".pdf"));
 
             if (fileSizeKB >= MAX_SIZE_KB / 2) {
-                LOG.warn("File {} is too large: {}KB (max: {}KB)", fileName, fileSizeKB, MAX_SIZE_KB / 2);
                 return new FileValidationResult(false,
                     "File '" + fileName + "' is too large: " + fileSizeKB + "KB (maximum 512KB)",
                     "FILE_TOO_BIG",
@@ -48,18 +48,17 @@ public class ValidationService {
             }
 
             if (!isValidType || !hasValidExtension) {
-                LOG.warn("File {} has invalid type or extension", fileName);
                 return new FileValidationResult(false,
                     "File '" + fileName + "' is not a valid PDF file",
                     "INVALID_FILE_TYPE",
                     HttpStatus.BAD_REQUEST);
             }
         }
-        LOG.info("All {} files passed validation", files.length);
+        LOG.debug("All {} files passed validation", files.length);
         return new FileValidationResult(true, "All files validated successfully", "OK", HttpStatus.OK);
     }
 
-    public List<Expense> validateExpenses (List<Expense> expenses) {
+    public List<Expense> validateExpenses(List<Expense> expenses, Map<Expense, ExpenseSource> sources) {
         expenses.removeIf(expense -> expense.getAmount().doubleValue()<=0);
         expenses.removeIf(expense -> expense.getExpenseName().isEmpty());
         expenses.forEach(expense -> {
@@ -70,7 +69,7 @@ public class ValidationService {
             expense.setExpenseName(expense.getExpenseName().substring(0,Math.min(expense.getExpenseName().length(), 70)).trim());// limita tamanho do nome
             expense = preClassifyExpenses(expense);
         });
-        setLongDate(expenses);
+        setLongDate(expenses, sources);
         return expenses;
     }
 
@@ -120,46 +119,52 @@ public class ValidationService {
             return expense;
     }
 
-    private List<Expense> setLongDate (List<Expense> expenses) {
+    private void setLongDate(List<Expense> expenses, Map<Expense, ExpenseSource> sources) {
         int currentYear = LocalDate.now().getYear();
         Integer commonYear = mostCommonYear(expenses);
         for (Expense expense : expenses) {
-            String date = expense.getDate();
-            if (date != null && date.matches("\\d{2}/\\d{2}")) {
-                String longDate;
-                if (commonYear != null) {
-                    longDate = date + "/" + commonYear;
-                    if(validateDate(longDate)){
-                        expense.setDate(longDate);
-                        continue;
-                    }
-                }
-                longDate = date + "/" + currentYear;
-                if(validateDate(longDate)) {
-                    expense.setDate(longDate);
-                }
-                else {
-                    longDate = date + "/" + (currentYear - 1);
-                    if (validateDate(longDate)) {
-                        expense.setDate(longDate);
+            String originalDate = expense.getDate();
+            List<Integer> attemptedYears = new ArrayList<>();
+            if (originalDate != null && originalDate.matches("\\d{2}/\\d{2}")) {
+                List<Integer> years = new ArrayList<>();
+                if (commonYear != null) years.add(commonYear);
+                years.add(currentYear);
+                years.add(currentYear - 1);
+                for (Integer year : years) {
+                    attemptedYears.add(year);
+                    String candidateDate = originalDate + "/" + year;
+                    if (validateDate(candidateDate)) {
+                        expense.setDate(candidateDate);
+                        break;
                     }
                 }
             }
+            if (!validateDate(expense.getDate())) {
+                Map<String, Object> fields = new LinkedHashMap<>();
+                ExpenseSource source = sources.get(expense);
+                if (source != null) fields.putAll(source.diagnostics());
+                fields.put("reportId", expense.getReportId());
+                fields.put("expenseId", expense.getId());
+                fields.put("originalDate", originalDate);
+                fields.put("attemptedYears", attemptedYears);
+                fields.put("reason", attemptedYears.isEmpty()
+                    ? "Invalid, missing, or future date" : "No valid date after year inference");
+                Map<String, String> safeFields = new LinkedHashMap<>();
+                fields.forEach((key, value) -> safeFields.put(key, LogFields.safe(value)));
+                LOG.warn("Expense date validation failed context={}", safeFields);
+            }
         }
-        return expenses;
     }
 
     private static Integer extractYear(String date) {
-        try {
-            date = date.trim();
-            String ano = date.substring(date.length() - 4);
-            int year = Integer.parseInt(ano);
-            if(year > 2000 && year < 2100)
-                return year;
-        } catch (NumberFormatException e ) {
-            LOG.error(Arrays.toString(e.getStackTrace()));
+        if (date == null) return null;
+        String trimmed = date.trim();
+        // Short dates are expected and have no explicit year to contribute.
+        if (trimmed.length() < 4 || !trimmed.substring(trimmed.length() - 4).matches("\\d{4}")) {
+            return null;
         }
-        return null;
+        int year = Integer.parseInt(trimmed.substring(trimmed.length() - 4));
+        return year > 2000 && year < 2100 ? year : null;
     }
 
     private Integer mostCommonYear (List<Expense> expenses) {
@@ -205,7 +210,6 @@ public class ValidationService {
                 return false;
             }
         } catch (java.time.DateTimeException e) {
-            LOG.error(Arrays.toString(e.getStackTrace()));
             return false;
         }
 

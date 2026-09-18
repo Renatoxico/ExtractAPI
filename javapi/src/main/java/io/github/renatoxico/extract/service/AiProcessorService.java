@@ -56,7 +56,6 @@ public class AiProcessorService {
             InputStream promptStream = this.getClass().getResourceAsStream("/cat-prompt.txt");
             return new String( promptStream.readAllBytes(), StandardCharsets.UTF_8);
         } catch (Exception ex) {
-            LOG.error("Error loading prompt template: {}", ex.getMessage(), ex);
             throw new ProcessingException(
                     "Error loading prompt template",
                     HttpStatus.INTERNAL_SERVER_ERROR,
@@ -88,13 +87,12 @@ public class AiProcessorService {
                     "EMPTY_GEMINI_RESPONSE"
                 );
             }
-            LOG.info("Received response from Gemini for {} classification tasks", expenses.size());
+            LOG.debug("Received response from Gemini for {} classification tasks", expenses.size());
             return parseResponse(rawResponse, expenses);
         } catch (Exception ex) {
             if (ex instanceof ProcessingException processingException) {
                 throw processingException;
             }
-            LOG.error("Error calling Gemini API: {}", ex.getMessage(), ex);
             throw new ProcessingException(
                 "Error calling Gemini API",
                 HttpStatus.BAD_GATEWAY,
@@ -114,7 +112,7 @@ public class AiProcessorService {
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
         try {
-            LOG.info("Calling local Ollama API for {} classification tasks", expenses.size());
+            LOG.debug("Calling local Ollama API for {} classification tasks", expenses.size());
             ResponseExtractor<String> responseExtractor = response -> {
                 StringBuilder content = new StringBuilder();
                 try (BufferedReader reader = new BufferedReader(
@@ -146,13 +144,12 @@ public class AiProcessorService {
                     "EMPTY_OLLAMA_RESPONSE"
                 );
             }
-            LOG.info("Local Ollama API completed for {} classification tasks", expenses.size());
+            LOG.debug("Local Ollama API completed for {} classification tasks", expenses.size());
             return parseResponse(rawResponse, expenses);
         } catch (Exception exception) {
             if (exception instanceof ProcessingException processingException) {
                 throw processingException;
             }
-            LOG.error("Error calling local Ollama API: {}", exception.getMessage(), exception);
             throw new ProcessingException(
                 "Error calling local Ollama API",
                 HttpStatus.BAD_GATEWAY,

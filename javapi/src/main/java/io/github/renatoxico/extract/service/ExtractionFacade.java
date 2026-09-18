@@ -51,21 +51,24 @@ public class ExtractionFacade {
                         "EMPTY_PDF_CONTENT"
                     );
                 }
-                objectifierService.process(report, pdfText);
+                objectifierService.process(report, pdfText, fileName);
             } catch (ProcessingException ex) {
+                if ("FILE_PROCESSING_ERROR".equals(ex.getErrorCode())) {
+                    throw ex.withDiagnostic("reportId", reportId).withDiagnostic("filename", fileName);
+                }
                 throw new ProcessingException(
                     "Failed to process file '" + fileName + "': " + ex.getMessage(),
                     ex.getHttpStatus(),
                     ex.getErrorCode(),
                     ex
-                );
+                ).withDiagnostic("reportId", reportId).withDiagnostic("filename", fileName);
             } catch (Exception ex) {
                 throw new ProcessingException(
                     "Failed to process file: " + fileName,
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "FILE_PROCESSING_ERROR",
                     ex
-                );
+                ).withDiagnostic("reportId", reportId).withDiagnostic("filename", fileName);
             }
         }
 

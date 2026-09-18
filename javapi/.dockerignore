@@ -6,3 +6,7 @@
 target/
 .idea/
 *.iml
+
+# Application logs, including rotated archives
+logs/
+*.log.*.gz
