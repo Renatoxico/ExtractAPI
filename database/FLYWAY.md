@@ -127,6 +127,14 @@ classification failure. Delivery claims use states, attempts, retry timestamps,
 and leases; sent notifications remain immutable, while an explicit resend
 creates a linked audit record.
 
+## Version 9 account deletion
+
+`V9__cascade_reports_on_user_delete.sql` replaces the foreign key from
+`expense_report.app_user_id` to `app_user` with the same relationship plus
+`ON DELETE CASCADE`. Deleting an account removes that user's reports, and
+version 5 already cascades those deletes to `expense`. The application still
+deletes the owner's reports explicitly before it deletes the `app_user` row.
+
 ## Verification gates before later migrations
 
 - A new empty PostgreSQL database reaches version 1 by executing V1.
@@ -138,7 +146,9 @@ creates a linked audit record.
 - V4 preserves report and expense row counts and monetary totals.
 - `expense.report_id` is non-null, indexed, and references `expense_report.id`.
 - Deleting an `expense_report` cascades only to its linked `expense` rows.
-- A clean PostgreSQL database reaches V8 and uses JSONB for durable payloads.
+- A clean PostgreSQL database reaches V9 and uses JSONB for durable payloads.
+- Deleting an `app_user` cascades to that user's `expense_report` rows, and
+  those cascade to `expense`.
 - Concurrent classification workers claim different batches and tasks.
 - A latest `FAILED` classification task blocks automatic task recreation.
 - A terminal classification transaction inserts exactly one deduplicated

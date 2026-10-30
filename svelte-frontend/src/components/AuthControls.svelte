@@ -1,12 +1,14 @@
 <script>
   import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
   import { auth } from '../lib/firebase.js'
+  import { deleteAccount } from '../lib/api.js'
 
   const googleProvider = new GoogleAuthProvider()
 
   let { user, authReady } = $props()
   let loading = $state(false)
   let error = $state('')
+  let confirmDelete = $state(false)
 
   async function loginWithGoogle() {
     loading = true
@@ -35,6 +37,36 @@
       loading = false
     }
   }
+
+  function askDelete() {
+    error = ''
+    confirmDelete = true
+  }
+
+  function cancelDelete() {
+    if (loading) return
+    confirmDelete = false
+  }
+
+  async function confirmDeleteAccount() {
+    if (loading) return
+    loading = true
+    error = ''
+    let deleted = false
+
+    try {
+      await deleteAccount()
+      deleted = true
+      await signOut(auth)
+    } catch (err) {
+      error = deleted
+        ? 'A conta foi excluída no servidor, mas a sessão deste navegador não foi encerrada. Atualize a página.'
+        : (err.message ?? 'Não foi possível excluir a conta. Sua conta continua ativa.')
+    } finally {
+      loading = false
+      if (deleted && !error) confirmDelete = false
+    }
+  }
 </script>
 
 <div class="auth-controls">
@@ -57,6 +89,37 @@
         </svg>
       </button>
     </div>
+    {#if !confirmDelete}
+      <button class="delete-account" type="button" onclick={askDelete} disabled={loading}>
+        Excluir conta
+      </button>
+    {:else}
+      <div
+        class="delete-confirm"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="delete-account-title"
+        aria-describedby="delete-account-text"
+      >
+        <p id="delete-account-title"><strong>Excluir conta permanentemente?</strong></p>
+        <div id="delete-account-text">
+          <p>Isso apaga agora e sem volta:</p>
+          <ul>
+            <li>seus relatórios e transações</li>
+            <li>seu cadastro no Somaí</li>
+            <li>seu login no Firebase</li>
+          </ul>
+          <p>O catálogo compartilhado de categorias não identifica você e permanece. E-mails operacionais já enviados, registros técnicos e backups, se existirem, também não são apagados agora.</p>
+          <p>Se a exclusão falhar, a conta continua ativa e você permanece conectado.</p>
+        </div>
+        <div class="delete-actions">
+          <button type="button" onclick={cancelDelete} disabled={loading}>Cancelar</button>
+          <button class="danger-button" type="button" onclick={confirmDeleteAccount} disabled={loading}>
+            {loading ? 'Excluindo...' : 'Excluir definitivamente'}
+          </button>
+        </div>
+      </div>
+    {/if}
   {:else}
     <button type="button" class="google-button" onclick={loginWithGoogle} disabled={loading}>
       <span class="google-mark" aria-hidden="true">G</span>
@@ -177,9 +240,66 @@
     font-weight: 700;
   }
 
+  .delete-account {
+    justify-content: flex-start;
+    padding-left: 0;
+    border-color: transparent;
+    background: transparent;
+    color: var(--danger);
+  }
+
+  .delete-account:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+
+  .delete-confirm {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 0.75rem;
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    border-radius: var(--radius-sm);
+    background: var(--danger-bg);
+  }
+
+  .delete-confirm p,
+  .delete-confirm li {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    line-height: 1.45;
+  }
+
+  .delete-confirm strong {
+    color: var(--text-main);
+    font-size: 0.8125rem;
+  }
+
+  .delete-confirm ul {
+    margin: 0;
+    padding-left: 1.1rem;
+  }
+
+  .delete-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .delete-actions button {
+    flex: 1;
+  }
+
+  .danger-button {
+    border-color: transparent;
+    background: var(--danger);
+    color: white;
+    font-weight: 700;
+  }
+
   .auth-error {
     color: var(--danger);
     font-size: 0.75rem;
+    line-height: 1.4;
   }
 
   .auth-loading {

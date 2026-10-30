@@ -31,7 +31,8 @@
 ### Authentication and administration
 
 - `AUTH_TOKEN_MISSING` — a protected endpoint was called without a Firebase ID token (401).
-- `AUTH_TOKEN_INVALID` — the supplied Firebase ID token could not be verified (401).
+- `AUTH_TOKEN_INVALID` — the supplied Firebase ID token could not be verified, or it belongs to a revoked or deleted account (401).
+- `ACCOUNT_DELETION_FAILED` — the signed-in account could not be removed from Firebase. Local reports, transactions, and the `app_user` row are left unchanged (502).
 - `ADMIN_API_KEY_INVALID` — the admin email endpoint received no valid admin API key (401).
 - `EMAIL_NOTIFICATION_NOT_FOUND` — the requested outbox notification does not exist (404).
 - `EMAIL_NOTIFICATION_BUSY` — the notification is currently being delivered and cannot be resent (409).
