@@ -2,8 +2,8 @@
 
 # Política de Privacidade do Somai
 
-**Última atualização:** [PREENCHER: data de publicação]
-**Vigência:** a partir de [PREENCHER: data]
+**Última atualização:** 31/10/2026
+**Vigência:** a partir de 31/10/2026
 
 O Somai (https://somai.renatoxico.net e app para iOS) transforma extratos bancários e faturas de cartão em PDF em um relatório de gastos por categoria. Esta Política explica, conforme a Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018, "LGPD"), quais dados pessoais tratamos, por que tratamos, com quem compartilhamos, por quanto tempo guardamos e como você exerce seus direitos.
 
@@ -11,17 +11,17 @@ O Somai (https://somai.renatoxico.net e app para iOS) transforma extratos bancá
 
 O controlador dos seus dados pessoais é:
 
-- **Nome / razão social:** [PREENCHER]
-- **CPF / CNPJ:** [PREENCHER]
-- **Endereço:** [PREENCHER: pode ser só cidade/UF, se for pessoa física e o advogado concordar]
-- **E-mail para assuntos de privacidade:** [PREENCHER] (obs.: a página atual `/terms` cita `contato@extractapp.com.br`; confirme se esse endereço existe e recebe e-mails, ou troque por um endereço do Somai)
+- **Nome:** Renato Siqueira Dias Junior
+- **CPF:** 135.4xx.xxx-x9
+- **Endereço:** São Carlos/SP
+- **E-mail para assuntos de privacidade:** diasrenato2@outlook.com
 - **Encarregado (DPO):** [PREENCHER: nome e e-mail do encarregado, ou declaração de dispensa conforme a Resolução CD/ANPD nº 2/2022 para agentes de pequeno porte, mantendo um canal de comunicação]
 
 ## 2. Quais dados tratamos
 
 ### 2.1 Dados da conta (login)
 
-O login é feito pelo **Firebase Authentication**, do Google: na web, com conta Google; no app iOS, com conta Google ou e-mail e senha. Recebemos do Firebase e guardamos no nosso banco de dados:
+O login é feito pelo **Firebase Authentication**, do Google: na web, com conta Google ou Microsoft; no app iOS, com conta Google, conta Microsoft ou e-mail e senha. Recebemos do Firebase e guardamos no nosso banco de dados:
 
 - identificador do usuário no Firebase (UID);
 - e-mail;
@@ -139,9 +139,9 @@ Você pode, a qualquer momento e sem custo:
 10. se opor a tratamento baseado em legítimo interesse, quando não cumprir a LGPD;
 11. pedir revisão de decisões tomadas só com base em tratamento automatizado (art. 20). A categorização por IA só organiza seu relatório e não gera decisões sobre você.
 
-**Exclusão da conta e dos dados:** [PREENCHER quando a função existir: "Você pode excluir sua conta em *Conta → Excluir conta*, no site ou no app."] Até lá, peça a exclusão pelo e-mail [PREENCHER]. A exclusão apaga, de forma definitiva, sua conta no Firebase, seus dados de cadastro, todos os seus relatórios e transações. Descrições já incorporadas ao catálogo de categorização (item 2.4) continuam lá, sem qualquer vínculo com você. Logs e backups são apagados quando os prazos do item 6 acabarem.
+**Exclusão da conta e dos dados:** Você pode excluir sua conta em *Conta → Excluir conta*, no site ou no app, ou pedir a exclusão pelo e-mail diasrenato2@outlook.com. A exclusão apaga, de forma definitiva, sua conta no Firebase, seus dados de cadastro, todos os seus relatórios e transações. Descrições já incorporadas ao catálogo de categorização (item 2.4) continuam lá, sem qualquer vínculo com você. Logs e backups são apagados quando os prazos do item 6 acabarem.
 
-Para exercer seus direitos, escreva para [PREENCHER: e-mail]. Respondemos em até 15 dias (art. 19, II). Se precisarmos confirmar sua identidade, pediremos que escreva a partir do e-mail da conta. Você também pode reclamar à **Agência Nacional de Proteção de Dados (ANPD)** (https://www.gov.br/anpd).
+Para exercer seus direitos, escreva para diasrenato2@outlook.com. Respondemos em até 15 dias (art. 19, II). Se precisarmos confirmar sua identidade, pediremos que escreva a partir do e-mail da conta. Você também pode reclamar à **Agência Nacional de Proteção de Dados (ANPD)** (https://www.gov.br/anpd).
 
 ## 9. Alterações desta Política
 
@@ -149,4 +149,4 @@ Podemos atualizar esta Política. A data no topo mostra a versão em vigor. Muda
 
 ## 10. Contato
 
-[PREENCHER: nome do controlador], [PREENCHER: e-mail]
+Renato Siqueira Dias Junior, diasrenato2@outlook.com
