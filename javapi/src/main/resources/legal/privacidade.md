@@ -1,5 +1,3 @@
-> **RASCUNHO, NÃO É ACONSELHAMENTO JURÍDICO.** Este rascunho foi feito a partir do código atual dos repositórios `Renatoxico/ExtractAPI` (branch `master`) e `Renatoxico/extReader` (branch `main`), lidos em 30/10/2026. Revise com um advogado antes de publicar. Todo trecho marcado **[PREENCHER]** depende de um fato que o código não mostra. Os trechos marcados **[CONFIRMAR]** foram tirados do código, mas precisam ser conferidos na infraestrutura real.
-
 # Política de Privacidade do Somai
 
 **Última atualização:** 31/10/2026
@@ -15,7 +13,7 @@ O controlador dos seus dados pessoais é:
 - **CPF:** 135.4xx.xxx-x9
 - **Endereço:** São Carlos/SP
 - **E-mail para assuntos de privacidade:** diasrenato2@outlook.com
-- **Encarregado (DPO):** [PREENCHER: nome e e-mail do encarregado, ou declaração de dispensa conforme a Resolução CD/ANPD nº 2/2022 para agentes de pequeno porte, mantendo um canal de comunicação]
+- **Encarregado (DPO):** o Somai é mantido por pessoa física de pequeno porte e, conforme a Resolução CD/ANPD nº 2/2022, não indica encarregado. O canal para assuntos de privacidade é diasrenato2@outlook.com.
 
 ## 2. Quais dados tratamos
 
@@ -33,7 +31,7 @@ Quem guarda a senha (login por e-mail no iOS) é o Firebase. Nós não temos ace
 
 - São aceitos até 6 arquivos PDF por envio, cada um com no máximo 512 KB.
 - O texto do PDF é lido **em memória** no nosso servidor. **O arquivo original não é gravado** em disco nem no banco de dados depois do processamento.
-- **O nome do arquivo** pode aparecer nos registros técnicos (logs) do servidor e em mensagens de erro. Por isso, recomendamos não colocar dados pessoais no nome do arquivo. [CONFIRMAR: tempo de guarda dos logs, ver item 6]
+- **O nome do arquivo** pode aparecer nos registros técnicos (logs) do servidor e em mensagens de erro. Por isso, recomendamos não colocar dados pessoais no nome do arquivo. Os logs são guardados pelo prazo do item 6.
 
 ### 2.3 Transações extraídas e relatórios
 
@@ -53,13 +51,9 @@ Para categorizar os gastos, mantemos um catálogo de **descrições de transaç�
 
 ### 2.5 Dados técnicos
 
-- Registros de acesso e de erro do servidor (data e hora, rota acessada, mensagens de erro, nome de arquivo). [CONFIRMAR: o proxy nginx registra endereço IP? Hoje o proxy repassa o IP ao backend (`X-Real-IP`)]
-- Não usamos cookies de publicidade nem ferramentas de analytics de terceiros. [CONFIRMAR antes de publicar, e atualizar se algum for adicionado]
+- Registros de acesso e de erro do servidor (data e hora, endereço IP, rota acessada, mensagens de erro, nome de arquivo).
+- Não usamos cookies de publicidade nem ferramentas de analytics de terceiros.
 - O Firebase Authentication guarda o estado de login no navegador ou no aparelho (armazenamento local).
-
-### 2.6 Dados de pagamento
-
-[PREENCHER quando houver planos pagos: nome do processador de pagamento, por exemplo Stripe ou Mercado Pago. Os dados do cartão são tratados pelo processador e não passam pelos nossos servidores. Guardamos apenas o status da assinatura/compra e identificadores da transação.]
 
 Não tratamos dados de menores de 18 anos. O serviço é destinado apenas a maiores de idade.
 
@@ -72,7 +66,6 @@ Não tratamos dados de menores de 18 anos. O serviço é destinado apenas a maio
 | Categorizar gastos com IA e manter o catálogo de categorias | Descrições das transações | Execução de contrato (inciso V) e legítimo interesse em melhorar a precisão do serviço (inciso IX) |
 | Monitorar falhas, segurança e funcionamento | Logs, descrições envolvidas em falhas | Legítimo interesse (inciso IX) |
 | Cumprir obrigações legais e regulatórias e exercer direitos em processos | Dados necessários ao caso | Obrigação legal (inciso II) e exercício regular de direitos (inciso VI) |
-| Cobrança de planos pagos | [PREENCHER] | Execução de contrato (inciso V) e obrigação legal/fiscal (inciso II) |
 | Comunicações sobre o serviço (por exemplo, convite de teste ou pesquisa de feedback) | E-mail | Legítimo interesse (inciso IX), com opção de sair a qualquer momento; consentimento (inciso I) para envios de marketing |
 
 Dados financeiros não são "dados pessoais sensíveis" na definição do art. 5º, II, da LGPD. Mesmo assim, tratamos esses dados com cuidado redobrado e **não vendemos nem alugamos dados pessoais ou financeiros**.
@@ -80,16 +73,15 @@ Dados financeiros não são "dados pessoais sensíveis" na definição do art. 5
 ## 4. Com quem compartilhamos (operadores)
 
 - **Google Firebase Authentication (Google LLC):** login e gestão de contas.
-- **Google Gemini API (Google LLC):** sugere a categoria de cada gasto. **Enviamos apenas as descrições das transações** (por exemplo, "PADARIA SAO JOSE") e um número interno de tarefa. **Não enviamos** o arquivo PDF, valores, datas, seu e-mail nem identificadores da sua conta. O modelo usado atualmente é da família Gemini Flash. [PREENCHER/CONFIRMAR: a chave da API está em um projeto com faturamento ativo (nível pago)? Pelos termos da Gemini API, o Google pode usar o conteúdo enviado no nível gratuito para melhorar seus produtos, com possível revisão humana, e não pode no nível pago. Recomenda-se usar o nível pago e declarar aqui que "o Google não usa esses dados para treinar modelos".]
+- **Google Gemini API (Google LLC):** sugere a categoria de cada gasto. **Enviamos apenas as descrições das transações** (por exemplo, "PADARIA SAO JOSE") e um número interno de tarefa. **Não enviamos** o arquivo PDF, valores, datas, seu e-mail nem identificadores da sua conta. O modelo usado atualmente é da família Gemini Flash. A chave da API usada pelo Somai está no nível pago da Gemini API, em que o Google não usa esses dados para melhorar ou treinar seus modelos.
 - **Provedor de e-mail (Gmail/Google Workspace, via SMTP):** envia alertas operacionais **somente para os administradores**. Esses alertas podem conter descrições de transações cuja categorização falhou. Usuários não recebem esses e-mails.
-- **Provedor de hospedagem (servidor/VPS):** [PREENCHER: nome do provedor e país do data center] hospeda a aplicação e o banco de dados PostgreSQL. [CONFIRMAR: se o banco fica no mesmo servidor ou em outro provedor]
+- **Provedor de hospedagem (servidor/VPS):** Hostinger, com servidor no Brasil, hospeda a aplicação e o banco de dados PostgreSQL.
 - **GitHub (GitHub, Inc.):** guarda o código e as imagens da aplicação (GHCR). **Não recebe dados de usuários.** Mencionado aqui apenas para transparência; pode ser removido.
-- **Processador de pagamento:** [PREENCHER quando houver cobrança]
 - **Autoridades públicas:** quando exigido por lei ou ordem judicial.
 
 ## 5. Transferência internacional de dados
 
-O Google (Firebase Authentication e Gemini API) pode tratar dados em servidores fora do Brasil, inclusive nos Estados Unidos. Isso inclui seus dados de conta e as descrições das transações enviadas para categorização. Essa transferência é necessária para prestar o serviço e é feita conforme o art. 33 da LGPD, com base em [PREENCHER: mecanismo, por exemplo cláusulas-padrão contratuais aprovadas pela ANPD (Resolução CD/ANPD nº 19/2024) incorporadas aos termos de tratamento de dados do Google Cloud/Firebase. Confirme com o advogado e nos termos aceitos no console do Google]. [PREENCHER: se o provedor de hospedagem ficar fora do Brasil, inclua-o aqui também.]
+O Google (Firebase Authentication e Gemini API) pode tratar dados em servidores fora do Brasil, inclusive nos Estados Unidos. Isso inclui seus dados de conta e as descrições das transações enviadas para categorização. Essa transferência é necessária para prestar o serviço e é feita conforme o art. 33 da LGPD, com base nas cláusulas contratuais de proteção de dados que o Google oferece em seus termos de tratamento de dados do Google Cloud e do Firebase. A aplicação e o banco de dados ficam no Brasil.
 
 ## 6. Por quanto tempo guardamos
 
@@ -97,11 +89,10 @@ O Google (Firebase Authentication e Gemini API) pode tratar dados em servidores 
 |---|---|
 | Arquivo PDF | Não é armazenado. Fica em memória só durante o processamento |
 | Dados da conta, transações e relatórios | Enquanto sua conta existir. Excluídos quando você exclui a conta ou o relatório (ver item 8) |
-| Catálogo de descrições e categorias (sem vínculo com a conta) | Por tempo indeterminado, como parte do funcionamento do serviço. [PREENCHER/decidir: prazo ou limpeza periódica] |
-| Histórico das tarefas de classificação por IA | [PREENCHER: por exemplo, 90 dias. Hoje não há limpeza automática] |
-| Logs do servidor | [PREENCHER: por exemplo, 6 meses. Se o controlador for pessoa jurídica, o Marco Civil da Internet (art. 15) exige guardar registros de acesso por 6 meses] |
-| Cópias de segurança (backup) | [PREENCHER: existe backup do banco? Por quanto tempo as cópias ficam guardadas?] |
-| Dados de pagamento e fiscais | [PREENCHER: prazo legal, normalmente 5 anos] |
+| Catálogo de descrições e categorias (sem vínculo com a conta) | Por tempo indeterminado, como parte do funcionamento do serviço. |
+| Histórico das tarefas de classificação por IA | Por tempo indeterminado, sem vínculo com a conta, junto com o catálogo de categorias |
+| Logs do servidor | Até 6 meses |
+| Cópias de segurança (backup) | Cópias (snapshots) do servidor feitas pelo provedor de hospedagem, substituídas periodicamente pelas mais novas. Dados excluídos somem das cópias quando as anteriores à exclusão são substituídas |
 
 Depois desses prazos, os dados são excluídos ou anonimizados, salvo as hipóteses do art. 16 da LGPD.
 
@@ -119,7 +110,7 @@ Medidas que usamos hoje:
 - credenciais do servidor guardadas como segredos fora do código;
 - cabeçalhos de segurança no servidor web.
 
-[PREENCHER/CONFIRMAR: o banco de dados ou o disco são criptografados? Existe backup? Quem tem acesso ao servidor? Só cite essas medidas depois de implementá-las.]
+Também mantemos cópias de segurança (snapshots) do servidor pelo provedor de hospedagem, e o acesso administrativo ao servidor é restrito ao responsável pelo Somai.
 
 Nenhum sistema é 100% seguro. Se houver um incidente de segurança com risco ou dano relevante, comunicaremos a você e a ANPD, conforme o art. 48 da LGPD.
 

@@ -16,23 +16,22 @@ class LegalDocumentServiceTest {
     private final LegalDocumentService documents = new LegalDocumentService();
 
     @Test
-    void termsKeepTheDraftAndExposeEveryBlank() {
+    void termsRenderPublishedVersion() {
         RenderedLegalDocument terms = documents.terms();
         String text = stripTags(terms.html());
 
         assertThat(text).contains("Termos de Uso do Somai");
         assertThat(text).contains("O Somai lê extratos bancários e faturas de cartão de crédito em PDF enviados por você.");
-        assertThat(text).contains("nome antigo");
-        assertThat(text).contains("Extract");
+        assertThat(text).doesNotContain("RASCUNHO");
+        assertThat(text).contains("comarca de São Carlos/SP");
         assertThat(text).doesNotContain("contato@extractapp.com.br");
         assertThat(terms.html()).contains("href=\"/privacy\"");
         assertThat(terms.html()).doesNotContain("href=\"PREENCHER-link\"");
-        assertThat(terms.html()).contains("<table");
         assertPlaceholdersMatchSource("legal/termos.md", terms);
     }
 
     @Test
-    void privacyKeepsTheDraftAndExposeEveryBlank() {
+    void privacyRendersPublishedVersion() {
         RenderedLegalDocument privacy = documents.privacy();
         String text = stripTags(privacy.html());
 
@@ -40,6 +39,8 @@ class LegalDocumentServiceTest {
         assertThat(text).contains("Não tratamos dados de menores de 18 anos. O serviço é destinado apenas a maiores de idade.");
         assertThat(text).contains("Lei nº 13.709/2018");
         assertThat(privacy.html()).contains("<table");
+        assertThat(text).doesNotContain("RASCUNHO");
+        assertThat(text).contains("diasrenato2@outlook.com");
         assertPlaceholdersMatchSource("legal/privacidade.md", privacy);
     }
 

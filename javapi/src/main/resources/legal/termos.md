@@ -1,5 +1,3 @@
-> **RASCUNHO, NÃO É ACONSELHAMENTO JURÍDICO.** Este rascunho substitui a página atual `/terms` (`javapi/src/main/resources/templates/terms.html`, de 26/08/2026), que ainda usa o nome antigo "Extract" e diz que é preciso ter conta Google. O app iOS também aceita login por e-mail. Revise com um advogado antes de publicar. Itens **[PREENCHER]** dependem de você. Os preços estão marcados como **provisórios**.
-
 # Termos de Uso do Somai
 
 **Última atualização:** 31/10/2026
@@ -43,22 +41,9 @@ Você concorda em usar o Somai apenas para fins pessoais e lícitos. É proibido
 
 Podemos suspender ou encerrar contas que violem estes Termos. Em casos graves, sem aviso prévio.
 
-## 6. Planos e pagamentos (PROVISÓRIO)
+## 6. Preço
 
-> **Provisório:** os valores abaixo estão em teste e podem mudar antes do lançamento dos planos pagos. Hoje o Somai está em fase de testes gratuitos.
-
-| Plano | Preço | O que inclui |
-|---|---|---|
-| Gratuito | R$ 0 | Primeiro relatório grátis |
-| Avulso | R$ 9,90 por relatório | Um relatório (até 6 PDFs por envio) |
-| Mensal | R$ 14,90/mês | [PREENCHER: relatórios ilimitados ou limite mensal] |
-| Anual | R$ 119/ano | Mesmo que o mensal, pago uma vez por ano |
-
-- Os pagamentos são processados por [PREENCHER: processador]. Não guardamos dados do seu cartão.
-- **Renovação:** os planos mensal e anual renovam automaticamente até você cancelar. Você pode cancelar a qualquer momento em [PREENCHER: onde]. O cancelamento vale ao fim do período já pago.
-- **Arrependimento:** em compras feitas pela internet, você pode desistir em até **7 dias** da contratação e receber o reembolso integral (art. 49 do Código de Defesa do Consumidor). Para isso, escreva para diasrenato2@outlook.com.
-- **Reajustes:** mudanças de preço serão avisadas com pelo menos 30 dias de antecedência e valem a partir da renovação seguinte.
-- **Compras no app iOS:** se forem oferecidas, seguem também as regras da App Store da Apple. [PREENCHER/decidir]
+No momento, o Somai é gratuito. Se planos pagos forem lançados, estes Termos serão atualizados antes, com os preços, a forma de pagamento, as regras de renovação e cancelamento e o direito de arrependimento de 7 dias (art. 49 do Código de Defesa do Consumidor).
 
 ## 7. Disponibilidade
 
@@ -85,7 +70,7 @@ Na medida permitida pela lei, incluindo o Código de Defesa do Consumidor:
 - o serviço é oferecido "no estado em que se encontra", sem garantia de funcionamento ininterrupto ou de resultados livres de erro;
 - não respondemos por decisões financeiras tomadas com base nos relatórios, nem por erros de extração ou categorização que você poderia ter identificado conferindo o extrato original;
 - não respondemos por falhas causadas por terceiros (seu banco, provedores de internet, serviços do Google) ou por uso indevido da sua conta por falta de cuidado com o acesso;
-- [PREENCHER/advogado: se nossa responsabilidade for reconhecida, o limite é o valor pago por você nos 12 meses anteriores. Em relações de consumo, essa cláusula pode não valer integralmente.]
+- Se nossa responsabilidade for reconhecida, ela fica limitada ao valor que você nos pagou nos 12 meses anteriores, exceto quando a lei, em especial o Código de Defesa do Consumidor, não permitir essa limitação.
 
 Nada nestes Termos limita direitos que a lei garante ao consumidor e que não podem ser renunciados.
 
