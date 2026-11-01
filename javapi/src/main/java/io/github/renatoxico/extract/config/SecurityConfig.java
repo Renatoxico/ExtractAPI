@@ -43,7 +43,7 @@ public class SecurityConfig {
             .exceptionHandling(exception -> exception.authenticationEntryPoint(authenticationEntryPoint))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/terms", "/actuator/health").permitAll()
+                .requestMatchers("/terms", "/privacy", "/actuator/health").permitAll()
                 .requestMatchers(
                     HttpMethod.POST,
                     "/api/admin/email-notifications/*/resend"
@@ -59,7 +59,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(corsAllowedOrigin));
-        config.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of(
             "Content-Type",
             "Authorization",

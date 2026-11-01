@@ -61,7 +61,9 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            FirebaseToken firebaseToken = firebaseAuth.verifyIdToken(idToken);
+            // Revoked and deleted accounts must fail here, or a still-valid ID token
+            // would be accepted and the filter would recreate the local user.
+            FirebaseToken firebaseToken = firebaseAuth.verifyIdToken(idToken, true);
             AppUser appUser = appUserService.synchronize(firebaseToken);
             AuthenticatedUserPrincipal principal = new AuthenticatedUserPrincipal(
                 appUser.getId(),

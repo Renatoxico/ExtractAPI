@@ -4,6 +4,7 @@ import io.github.renatoxico.extract.config.FirebaseAuthenticationEntryPoint;
 import io.github.renatoxico.extract.config.SecurityConfig;
 import io.github.renatoxico.extract.model.AppUser;
 import io.github.renatoxico.extract.service.AppUserService;
+import io.github.renatoxico.extract.service.LegalDocumentService;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
@@ -17,13 +18,16 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest({AuthController.class, PageController.class})
 @AutoConfigureMockMvc
-@Import({SecurityConfig.class, FirebaseAuthenticationEntryPoint.class})
+@Import({SecurityConfig.class, FirebaseAuthenticationEntryPoint.class, LegalDocumentService.class})
 class AuthControllerTest {
 
     @Autowired
@@ -38,7 +42,24 @@ class AuthControllerTest {
     @Test
     void termsIsPublic() throws Exception {
         mockMvc.perform(get("/terms"))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("Termos de Uso — Somaí")))
+            .andExpect(content().string(containsString("Termos de Uso do Somai")))
+            .andExpect(content().string(containsString("href=\"/privacy\"")))
+            .andExpect(content().string(containsString("PREENCHER-link")))
+            .andExpect(content().string(containsString("class=\"placeholder\"")))
+            .andExpect(content().string(not(containsString("contato@extractapp.com.br"))))
+            .andExpect(content().string(not(containsString("href=\"PREENCHER-link\""))));
+    }
+
+    @Test
+    void privacyIsPublic() throws Exception {
+        mockMvc.perform(get("/privacy"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("Política de Privacidade — Somaí")))
+            .andExpect(content().string(containsString("Política de Privacidade do Somai")))
+            .andExpect(content().string(containsString("id=\"placeholder-1\"")))
+            .andExpect(content().string(containsString("[PREENCHER")));
     }
 
     @Test
@@ -57,7 +78,7 @@ class AuthControllerTest {
     @Test
     void meWithInvalidTokenReturnsUnauthorized() throws Exception {
         FirebaseAuthException firebaseException = mock(FirebaseAuthException.class);
-        when(firebaseAuth.verifyIdToken("invalid-token")).thenThrow(firebaseException);
+        when(firebaseAuth.verifyIdToken("invalid-token", true)).thenThrow(firebaseException);
 
         mockMvc.perform(get("/api/auth/me")
                 .header("Authorization", "Bearer invalid-token"))
@@ -75,7 +96,7 @@ class AuthControllerTest {
         when(firebaseToken.getName()).thenReturn("Example User");
         when(firebaseToken.getPicture()).thenReturn("https://example.com/photo.jpg");
         when(firebaseToken.isEmailVerified()).thenReturn(true);
-        when(firebaseAuth.verifyIdToken("valid-token")).thenReturn(firebaseToken);
+        when(firebaseAuth.verifyIdToken("valid-token", true)).thenReturn(firebaseToken);
         when(appUserService.synchronize(firebaseToken)).thenReturn(appUser);
 
         mockMvc.perform(get("/api/auth/me")

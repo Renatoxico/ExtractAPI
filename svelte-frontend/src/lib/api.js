@@ -1,4 +1,5 @@
 import { auth } from './firebase.js'
+import { describeAccountDeletionFailure } from './accountDeletion.js'
 
 export const host = import.meta.env.VITE_API_URL
 
@@ -88,4 +89,46 @@ export async function processFiles(fileArray) {
   }
 
   return json
+}
+
+export async function deleteAccount() {
+  const headers = await buildAuthHeaders()
+  if (!headers.Authorization) {
+    throw accountDeletionError(
+      'AUTH_TOKEN_MISSING',
+      'É preciso estar autenticado para excluir a conta. Sua conta continua ativa.'
+    )
+  }
+
+  let response
+  try {
+    response = await fetch(`${host}/v2/account`, {
+      method: 'DELETE',
+      headers,
+      redirect: 'error',
+      cache: 'no-store'
+    })
+  } catch {
+    throw accountDeletionError(
+      'NETWORK_ERROR',
+      'Não foi possível conectar ao servidor. Sua conta não foi excluída e continua ativa.'
+    )
+  }
+
+  if (response.status === 204) return
+
+  let body = null
+  try {
+    body = await response.json()
+  } catch {
+    body = null
+  }
+  const failure = describeAccountDeletionFailure(response.status, body)
+  throw accountDeletionError(failure.errorCode, failure.message)
+}
+
+function accountDeletionError(errorCode, message) {
+  const error = new Error(message)
+  error.errorCode = errorCode
+  return error
 }

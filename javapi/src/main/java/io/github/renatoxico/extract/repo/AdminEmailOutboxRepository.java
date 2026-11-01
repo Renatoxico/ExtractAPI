@@ -22,6 +22,41 @@ public class AdminEmailOutboxRepository {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Clears email and display name for one local user inside weekly-report
+     * copies. The outbox row and the numeric user id stay. Messages already
+     * delivered to administrators are not recalled.
+     */
+    public int redactUser(long userId) {
+        String id = Long.toString(userId);
+        return jdbc.update("""
+            UPDATE admin_email_outbox
+            SET payload = jsonb_set(
+                    payload,
+                    '{perUser}',
+                    COALESCE((
+                        SELECT jsonb_agg(
+                            CASE
+                                WHEN item->>'userId' = ?
+                                THEN item || '{"email": null, "displayName": null}'::jsonb
+                                ELSE item
+                            END
+                            ORDER BY ordinality
+                        )
+                        FROM jsonb_array_elements(payload->'perUser')
+                            WITH ORDINALITY AS listed(item, ordinality)
+                    ), '[]'::jsonb)
+                ),
+                updated_at = CURRENT_TIMESTAMP
+            WHERE jsonb_typeof(payload->'perUser') = 'array'
+              AND EXISTS (
+                  SELECT 1
+                  FROM jsonb_array_elements(payload->'perUser') AS item
+                  WHERE item->>'userId' = ?
+              )
+            """, id, id);
+    }
+
     public Optional<Long> enqueue(
         String type,
         String deduplicationKey,

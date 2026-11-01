@@ -213,6 +213,10 @@
 
     <div class="sidebar-footer">
       <AuthControls {user} {authReady} />
+      <nav class="legal-links" aria-label="Documentos legais">
+        <a href="/terms">Termos</a>
+        <a href="/privacy">Privacidade</a>
+      </nav>
     </div>
   </aside>
 
@@ -232,6 +236,9 @@
 
           {#if !user && authReady}
             <div class="signin-note">Entre com o Google para processar extratos e acessar seu histórico.</div>
+            <p class="consent-note">
+              Ao entrar, você concorda com os <a href="/terms">Termos</a> e a <a href="/privacy">Política de Privacidade</a>.
+            </p>
           {/if}
 
           {#if error}
@@ -395,6 +402,9 @@
   .sidebar-intro { margin: 0 1rem; padding: 1.15rem 0.2rem; border-top: 1px solid rgba(255,255,255,0.06); }
   .sidebar-intro > p:last-child { margin: 0; color: var(--text-muted); font-size: 0.8rem; line-height: 1.6; }
   .sidebar-footer { padding: 1rem; border-top: 1px solid rgba(255,255,255,0.06); }
+  .legal-links { display: flex; gap: 0.9rem; margin-top: 0.75rem; }
+  .legal-links a { color: var(--text-dim); font-size: 0.75rem; text-decoration: none; }
+  .legal-links a:hover { color: var(--primary); }
 
   .workspace { min-width: 0; min-height: 100vh; }
   .app-main { width: 100%; max-width: 1240px; margin: 0 auto; padding: 2rem 1.5rem 3rem; min-width: 0; }
@@ -406,6 +416,8 @@
   .upload-header h1, .report-heading h1 { margin: 0; font-size: clamp(1.65rem, 3vw, 2.25rem); letter-spacing: -0.04em; }
   .upload-header > p:last-child { max-width: 580px; margin: 0.65rem 0 0; color: var(--text-muted); font-size: 0.92rem; line-height: 1.65; }
   .signin-note { padding: 0.8rem 1rem; border-left: 2px solid var(--primary); background: var(--primary-glow); color: var(--text-muted); font-size: 0.82rem; }
+  .consent-note { margin: -0.35rem 0 0; color: var(--text-dim); font-size: 0.75rem; line-height: 1.5; }
+  .consent-note a { color: var(--primary); }
   .submit-row, .report-row { display: flex; align-items: center; gap: 0.75rem; }
   .submit-row { justify-content: space-between; }
   .file-counter { color: var(--text-muted); font-size: 0.8rem; }

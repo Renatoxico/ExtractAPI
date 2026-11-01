@@ -89,7 +89,7 @@ class ClassificationPipelinePostgresIntegrationTest {
               AND column_name = 'input_payload'
             """, String.class);
 
-        assertThat(currentVersion).isEqualTo("8");
+        assertThat(currentVersion).isEqualTo("9");
         assertThat(inputType).isEqualTo("jsonb");
     }
 
