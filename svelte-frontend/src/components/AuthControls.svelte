@@ -1,24 +1,47 @@
 <script>
-  import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
+  import { GoogleAuthProvider, OAuthProvider, linkWithCredential, signInWithPopup, signOut } from 'firebase/auth'
   import { auth } from '../lib/firebase.js'
   import { deleteAccount } from '../lib/api.js'
 
   const googleProvider = new GoogleAuthProvider()
+  const microsoftProvider = new OAuthProvider('microsoft.com')
+  microsoftProvider.setCustomParameters({ prompt: 'select_account' })
+  microsoftProvider.addScope('email')
+
+  let pending = null
 
   let { user, authReady } = $props()
   let loading = $state(false)
   let error = $state('')
   let confirmDelete = $state(false)
 
-  async function loginWithGoogle() {
+  async function loginWith(provider) {
     loading = true
     error = ''
 
     try {
-      await signInWithPopup(auth, googleProvider)
+      await signInWithPopup(auth, provider)
+
+      if (provider === googleProvider && pending) {
+        try {
+          await linkWithCredential(auth.currentUser, pending)
+          pending = null
+        } catch (err) {
+          if (err.code === 'auth/provider-already-linked') {
+            pending = null
+          } else {
+            error = 'Não foi possível entrar com a Microsoft.'
+          }
+        }
+      }
     } catch (err) {
-      if (err.code !== 'auth/popup-closed-by-user') {
-        error = 'Não foi possível entrar com o Google.'
+      if (err.code === 'auth/account-exists-with-different-credential') {
+        pending = OAuthProvider.credentialFromError(err)
+        error = 'Este e-mail já está cadastrado com Google. Entre com Google para vincular a conta Microsoft.'
+      } else if (!['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(err.code)) {
+        error = provider === googleProvider
+          ? 'Não foi possível entrar com o Google.'
+          : 'Não foi possível entrar com a Microsoft.'
       }
     } finally {
       loading = false
@@ -121,10 +144,21 @@
       </div>
     {/if}
   {:else}
-    <button type="button" class="google-button" onclick={loginWithGoogle} disabled={loading}>
-      <span class="google-mark" aria-hidden="true">G</span>
-      {loading ? 'Entrando...' : 'Entrar com Google'}
-    </button>
+    <div class="login-buttons">
+      <button type="button" class="google-button" onclick={() => loginWith(googleProvider)} disabled={loading}>
+        <span class="google-mark" aria-hidden="true">G</span>
+        {loading ? 'Entrando...' : 'Entrar com Google'}
+      </button>
+      <button type="button" class="microsoft-button" onclick={() => loginWith(microsoftProvider)} disabled={loading}>
+        <svg class="microsoft-mark" viewBox="0 0 21 21" aria-hidden="true">
+          <rect width="10" height="10" fill="#f25022" />
+          <rect x="11" width="10" height="10" fill="#7fba00" />
+          <rect y="11" width="10" height="10" fill="#00a4ef" />
+          <rect x="11" y="11" width="10" height="10" fill="#ffb900" />
+        </svg>
+        {loading ? 'Entrando...' : 'Entrar com Microsoft'}
+      </button>
+    </div>
   {/if}
 
   {#if error}
@@ -203,7 +237,22 @@
     cursor: pointer;
   }
 
-  .google-button { width: 100%; }
+  .login-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .google-button,
+  .microsoft-button {
+    flex: 1 0 auto;
+  }
+
+  .microsoft-mark {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
 
   .logout-button {
     width: 34px;
