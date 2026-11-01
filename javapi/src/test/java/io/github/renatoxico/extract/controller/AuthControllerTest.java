@@ -46,8 +46,8 @@ class AuthControllerTest {
             .andExpect(content().string(containsString("Termos de Uso — Somaí")))
             .andExpect(content().string(containsString("Termos de Uso do Somai")))
             .andExpect(content().string(containsString("href=\"/privacy\"")))
-            .andExpect(content().string(containsString("PREENCHER-link")))
-            .andExpect(content().string(containsString("class=\"placeholder\"")))
+            .andExpect(content().string(not(containsString("id=\"placeholder-1\""))))
+            .andExpect(content().string(not(containsString("class=\"pending-banner\""))))
             .andExpect(content().string(not(containsString("contato@extractapp.com.br"))))
             .andExpect(content().string(not(containsString("href=\"PREENCHER-link\""))));
     }
@@ -58,8 +58,9 @@ class AuthControllerTest {
             .andExpect(status().isOk())
             .andExpect(content().string(containsString("Política de Privacidade — Somaí")))
             .andExpect(content().string(containsString("Política de Privacidade do Somai")))
-            .andExpect(content().string(containsString("id=\"placeholder-1\"")))
-            .andExpect(content().string(containsString("[PREENCHER")));
+            .andExpect(content().string(containsString("diasrenato2@outlook.com")))
+            .andExpect(content().string(not(containsString("id=\"placeholder-1\""))))
+            .andExpect(content().string(not(containsString("class=\"pending-banner\""))));
     }
 
     @Test
