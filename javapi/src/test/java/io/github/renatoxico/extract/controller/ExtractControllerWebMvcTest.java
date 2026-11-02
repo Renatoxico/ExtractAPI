@@ -46,6 +46,7 @@ class ExtractControllerWebMvcTest {
     @MockitoBean ExtractionFacade extractionFacade;
     @MockitoBean ExpenseReportingService reportingService;
     @MockitoBean ExpenseReportAccessService accessService;
+    @MockitoBean io.github.renatoxico.extract.service.ErrorRecorder errorRecorder;
     @MockitoBean ExtractorService extractorService;
 
     private AuthenticatedUserPrincipal principal;
@@ -58,6 +59,17 @@ class ExtractControllerWebMvcTest {
         SecurityContextHolder.getContext().setAuthentication(
             new UsernamePasswordAuthenticationToken(principal, null, List.of()));
         pdf = new MockMultipartFile("file", "test.pdf", "application/pdf", "pdf".getBytes());
+    }
+
+    @Test
+    void emptyAfterValidationReturnsSpecific422() throws Exception {
+        when(extractionFacade.process(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(42L)))
+            .thenThrow(new io.github.renatoxico.extract.exception.ProcessingException(
+                "All candidate transactions were rejected by validation",
+                org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY, "NO_VALID_EXPENSES"));
+        mockMvc.perform(multipart("/v2/extract").file(pdf))
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.errorCode").value("NO_VALID_EXPENSES"));
     }
 
     @AfterEach

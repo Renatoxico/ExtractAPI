@@ -18,12 +18,10 @@ public class ExtractorService {
 
     public String extractText(MultipartFile pdf) {
         String output;
-        try {
+        try (PDDocument pdfDoc = Loader.loadPDF(pdf.getBytes())) {
             LOG.info("Extracting text from PDF: {}", pdf.getOriginalFilename());
-            PDDocument pdfDoc = Loader.loadPDF(pdf.getBytes());
             PDFTextStripper ripper = new PDFTextStripper();
             output = ripper.getText(pdfDoc);
-            pdfDoc.close();
             LOG.info("Successfully extracted {} characters from PDF", output.length());
             return output;
         } catch (IOException e){

@@ -94,7 +94,7 @@ class ValidationServiceTest {
 
     @Test
     void testValidateFiles_FileTooLarge_ReturnsFILE_TOO_BIG() {
-        byte[] largeContent = new byte[530000];
+        byte[] largeContent = new byte[1048577];
         MultipartFile file = new MockMultipartFile(
             "file",
             "large.pdf",
@@ -166,7 +166,7 @@ class ValidationServiceTest {
 
 
     @Test
-    void testValidateExpenses_RemovesNegativeValues() {
+    void testValidateExpenses_PreservesNegativeValues() {
         List<Expense> expenses = new ArrayList<>();
         Expense expense1 = new Expense();
         expense1.setExpenseName("Valid Expense");
@@ -183,7 +183,8 @@ class ValidationServiceTest {
 
         List<Expense> result = validationService.validateExpenses(expenses);
 
-        assertEquals(1, result.size());
+        assertEquals(2, result.size());
+        assertEquals(new BigDecimal("-10.00"), result.get(1).getAmount());
         assertEquals("Valid Expense", result.getFirst().getExpenseName());
     }
 
@@ -219,7 +220,7 @@ class ValidationServiceTest {
         Expense expense = new Expense();
         expense.setExpenseName("UBER TRIP 10/15");
         expense.setAmount(new BigDecimal("25.50"));
-        expense.setDate("10/15/2024");
+        expense.setDate("15/10/2024");
         expenses.add(expense);
 
         List<Expense> result = validationService.validateExpenses(expenses);
@@ -234,7 +235,7 @@ class ValidationServiceTest {
         Expense expense = new Expense();
         expense.setExpenseName("IFOOD RESTAURANT");
         expense.setAmount(new BigDecimal("35.00"));
-        expense.setDate("10/15/2024");
+        expense.setDate("15/10/2024");
         expenses.add(expense);
 
         List<Expense> result = validationService.validateExpenses(expenses);
@@ -244,49 +245,49 @@ class ValidationServiceTest {
     }
 
     @Test
-    void testValidateExpenses_RemovesDateFormats() {
+    void testValidateExpenses_PreservesInstallmentMarkers() {
         List<Expense> expenses = new ArrayList<>();
         Expense expense = new Expense();
         expense.setExpenseName("PURCHASE 10/15 ITEM NAME");
         expense.setAmount(new BigDecimal("50.00"));
-        expense.setDate("10/15/2024");
+        expense.setDate("15/10/2024");
         expenses.add(expense);
 
         List<Expense> result = validationService.validateExpenses(expenses);
 
         assertEquals(1, result.size());
-        assertFalse(result.getFirst().getExpenseName().contains("10/15"));
+        assertTrue(result.getFirst().getExpenseName().contains("10/15"));
     }
 
     @Test
-    void testValidateExpenses_LimitNameLength() {
+    void testValidateExpenses_PreservesFullDescription() {
         List<Expense> expenses = new ArrayList<>();
         Expense expense = new Expense();
         String longName = "A".repeat(100);
         expense.setExpenseName(longName);
         expense.setAmount(new BigDecimal("50.00"));
-        expense.setDate("10/15/2024");
+        expense.setDate("15/10/2024");
         expenses.add(expense);
 
         List<Expense> result = validationService.validateExpenses(expenses);
 
         assertEquals(1, result.size());
-        assertTrue(result.getFirst().getExpenseName().length() <= 70);
+        assertEquals(longName, result.getFirst().getExpenseName());
     }
 
     @Test
-    void testValidateExpenses_RemovesExtraSpaces() {
+    void testValidateExpenses_PreservesDescriptionSpacing() {
         List<Expense> expenses = new ArrayList<>();
         Expense expense = new Expense();
         expense.setExpenseName("PURCHASE   WITH   EXTRA   SPACES");
         expense.setAmount(new BigDecimal("50.00"));
-        expense.setDate("10/15/2024");
+        expense.setDate("15/10/2024");
         expenses.add(expense);
 
         List<Expense> result = validationService.validateExpenses(expenses);
 
         assertEquals(1, result.size());
-        assertFalse(result.getFirst().getExpenseName().contains("   "));
+        assertTrue(result.getFirst().getExpenseName().contains("   "));
     }
 
     @Test
@@ -296,7 +297,7 @@ class ValidationServiceTest {
             Expense expense = new Expense();
             expense.setExpenseName("Expense " + i);
             expense.setAmount(new BigDecimal(String.valueOf(10 + i * 5)));
-            expense.setDate("10/15/2024");
+            expense.setDate("15/10/2024");
             expenses.add(expense);
         }
 

@@ -1,0 +1,15 @@
+{
+  "rawText": "Itau - DEMONSTRATIVO SINTETICO\nLancamentos: compras e saques\n27/12 BAZAR FICTICIO PARC 03/10 1234,56\n05/01/2025 ESTORNO BAZAR FICTICIO -34,56\n",
+  "transactions": [
+    {
+      "date": "27/12/2024",
+      "description": "BAZAR FICTICIO PARC 03/10",
+      "amount": "1234.56"
+    },
+    {
+      "date": "05/01/2025",
+      "description": "ESTORNO BAZAR FICTICIO",
+      "amount": "-34.56"
+    }
+  ]
+}

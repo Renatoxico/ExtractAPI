@@ -21,7 +21,7 @@ import java.time.format.DateTimeParseException;
 
 @Component
 public class V2ReportMapper {
-    private static final DateTimeFormatter LEGACY_DATE = DateTimeFormatter.ofPattern("dd/MM/uuuu");
+    private static final DateTimeFormatter LEGACY_DATE = DateTimeFormatter.ofPattern("dd/MM/uuuu").withResolverStyle(java.time.format.ResolverStyle.STRICT);
 
     public ReportResponse toResponse(ReportData report) {
         return new ReportResponse(

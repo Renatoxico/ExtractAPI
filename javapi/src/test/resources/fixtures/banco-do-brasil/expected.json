@@ -1,0 +1,15 @@
+{
+  "rawText": "Banco do Brasil - OUROCARD SINTETICO\nData Descricao da despesa Valor R$\n31/12 HOSTGATOR FICTICIO PARC 03/10 2.345,67\n02/01/2025 DEVOLUCAO FICTICIA -345,67\n",
+  "transactions": [
+    {
+      "date": "31/12/2024",
+      "description": "HOSTGATOR FICTICIO PARC 03/10",
+      "amount": "2345.67"
+    },
+    {
+      "date": "02/01/2025",
+      "description": "DEVOLUCAO FICTICIA",
+      "amount": "-345.67"
+    }
+  ]
+}

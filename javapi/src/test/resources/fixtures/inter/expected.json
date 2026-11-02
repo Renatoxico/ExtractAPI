@@ -1,0 +1,15 @@
+{
+  "rawText": "Inter - FATURA SINTETICA\nMovimentacoes - compras nacionais\n30/12 MERCADO FICTICIO 03/10 1000,00\n04/01/2025 CREDITO FICTICIO -100,00\n",
+  "transactions": [
+    {
+      "date": "30/12/2024",
+      "description": "MERCADO FICTICIO 03/10",
+      "amount": "1000.00"
+    },
+    {
+      "date": "04/01/2025",
+      "description": "CREDITO FICTICIO",
+      "amount": "-100.00"
+    }
+  ]
+}

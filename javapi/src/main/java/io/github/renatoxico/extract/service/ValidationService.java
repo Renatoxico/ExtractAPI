@@ -9,15 +9,35 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.time.Clock;
+import java.time.DateTimeException;
+import java.time.format.DateTimeFormatter;
+import java.time.format.ResolverStyle;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.web.servlet.MultipartProperties;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class ValidationService {
     private static final Logger LOG = LoggerFactory.getLogger(ValidationService.class);
-    private static final long MAX_SIZE_KB = 1024;
+    private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/uuuu")
+        .withResolverStyle(ResolverStyle.STRICT);
+    private final long maxFileBytes;
+    private final Clock clock;
+
+    public ValidationService() {
+        this(Clock.systemDefaultZone(), 1024 * 1024);
+    }
+
+    @Autowired
+    public ValidationService(MultipartProperties multipart) {
+        this(Clock.systemDefaultZone(), multipart.getMaxFileSize().toBytes());
+    }
+
+    ValidationService(Clock clock, long maxFileBytes) {
+        this.clock = clock;
+        this.maxFileBytes = maxFileBytes;
+    }
 
     public FileValidationResult validateFiles (MultipartFile[] files) {
         if (files.length < 1) {
@@ -39,10 +59,10 @@ public class ValidationService {
             boolean isValidType = "application/pdf".equals(contentType);
             boolean hasValidExtension = fileName != null && (fileName.toLowerCase().endsWith(".pdf"));
 
-            if (fileSizeKB >= MAX_SIZE_KB / 2) {
-                LOG.warn("File {} is too large: {}KB (max: {}KB)", fileName, fileSizeKB, MAX_SIZE_KB / 2);
+            if (file.getSize() > maxFileBytes) {
+                LOG.warn("File {} is too large: {}KB (max: {}KB)", fileName, fileSizeKB, maxFileBytes / 1024);
                 return new FileValidationResult(false,
-                    "File '" + fileName + "' is too large: " + fileSizeKB + "KB (maximum 512KB)",
+                    "File '" + fileName + "' is too large: " + fileSizeKB + "KB (maximum " + maxFileBytes / 1024 + "KB)",
                     "FILE_TOO_BIG",
                     HttpStatus.BAD_REQUEST);
             }
@@ -60,15 +80,11 @@ public class ValidationService {
     }
 
     public List<Expense> validateExpenses (List<Expense> expenses) {
-        expenses.removeIf(expense -> expense.getAmount().doubleValue()<=0);
-        expenses.removeIf(expense -> expense.getExpenseName().isEmpty());
+        expenses.removeIf(expense -> expense.getAmount() == null || expense.getAmount().signum() == 0
+            || expense.getExpenseName() == null || expense.getExpenseName().isBlank());
         expenses.forEach(expense -> {
-            expense.setExpenseName(expense.getExpenseName().replaceAll("\\d{2}/\\d{2}", "").trim());// remove datas no formato dd/mm
-            expense.setExpenseName(expense.getExpenseName().replaceAll("\\s+", " ").trim());// remove espaços extras
-            expense.setExpenseName(expense.getExpenseName().replace("."," ").trim());// remove pontos
-            expense.setExpenseName(expense.getExpenseName().replace("*"," ").trim());// remove asteriscos;
-            expense.setExpenseName(expense.getExpenseName().substring(0,Math.min(expense.getExpenseName().length(), 70)).trim());// limita tamanho do nome
-            expense = preClassifyExpenses(expense);
+            expense.setExpenseName(expense.getExpenseName().trim());
+            preClassifyExpenses(expense);
         });
         setLongDate(expenses);
         return expenses;
@@ -100,9 +116,12 @@ public class ValidationService {
             }
             else if (expName.contains("PAGAMENTO DE BOLETO") || expName.contains("TARIFA MENSALIDADE")
                     || expName.contains("PGTO CONTA") || expName.contains("MENSALIDADE DE SEGURO")
-                    || expName.contains("HOSTGATOR") || expName.contains("SEGURO VIDA") || expName.contains("SEGUROVIDA")
+                    || expName.contains("SEGURO VIDA") || expName.contains("SEGUROVIDA")
                     || expName.contains("APPLECOM/BILL")){
                 expense.setCategory("Moradia / Contas");
+            }
+            else if (expName.contains("HOSTGATOR")) {
+                expense.setCategory("Investimentos / Assinaturas profissionais");
             }
             else if (expName.contains("RENNER") || expName.contains("HERING")
                     || expName.contains("NIKEECOMMER")){
@@ -120,101 +139,43 @@ public class ValidationService {
             return expense;
     }
 
-    private List<Expense> setLongDate (List<Expense> expenses) {
-        int currentYear = LocalDate.now().getYear();
-        Integer commonYear = mostCommonYear(expenses);
-        for (Expense expense : expenses) {
-            String date = expense.getDate();
-            if (date != null && date.matches("\\d{2}/\\d{2}")) {
-                String longDate;
-                if (commonYear != null) {
-                    longDate = date + "/" + commonYear;
-                    if(validateDate(longDate)){
-                        expense.setDate(longDate);
-                        continue;
+    private void setLongDate(List<Expense> expenses) {
+        LocalDate today = LocalDate.now(clock);
+        // Explicit transaction dates anchor historical uploads. No statement-period inference yet.
+        LocalDate explicitAnchor = expenses.stream().map(Expense::getDate).map(this::parseFullDate)
+            .filter(java.util.Objects::nonNull).max(LocalDate::compareTo).orElse(null);
+        LocalDate anchor = explicitAnchor == null ? today : explicitAnchor;
+        expenses.removeIf(expense -> {
+            String value = expense.getDate();
+            LocalDate parsed = parseFullDate(value);
+            if (value != null && value.matches("\\d{2}/\\d{2}")) {
+                try {
+                    int month = Integer.parseInt(value.substring(3));
+                    int year = anchor.getYear();
+                    if (explicitAnchor == null) {
+                        java.time.MonthDay day = java.time.MonthDay.of(month, Integer.parseInt(value.substring(0, 2)));
+                        if (day.isAfter(java.time.MonthDay.from(today))) year--;
+                    } else {
+                        if (month - anchor.getMonthValue() > 6) year--;
+                        if (anchor.getMonthValue() - month > 6) year++;
                     }
-                }
-                longDate = date + "/" + currentYear;
-                if(validateDate(longDate)) {
-                    expense.setDate(longDate);
-                }
-                else {
-                    longDate = date + "/" + (currentYear - 1);
-                    if (validateDate(longDate)) {
-                        expense.setDate(longDate);
-                    }
+                    parsed = LocalDate.parse(value + "/" + year, DATE);
+                } catch (DateTimeException ex) {
+                    return true;
                 }
             }
-        }
-        return expenses;
+            if (parsed == null) return true;
+            expense.setDate(DATE.format(parsed));
+            return false;
+        });
     }
 
-    private static Integer extractYear(String date) {
+    private LocalDate parseFullDate(String value) {
+        if (value == null || !value.matches("\\d{2}/\\d{2}/\\d{4}")) return null;
         try {
-            date = date.trim();
-            String ano = date.substring(date.length() - 4);
-            int year = Integer.parseInt(ano);
-            if(year > 2000 && year < 2100)
-                return year;
-        } catch (NumberFormatException e ) {
-            LOG.error(Arrays.toString(e.getStackTrace()));
-        }
-        return null;
-    }
-
-    private Integer mostCommonYear (List<Expense> expenses) {
-        if(expenses == null || expenses.isEmpty())
+            return LocalDate.parse(value, DATE);
+        } catch (DateTimeException ex) {
             return null;
-        Map<Integer, Integer> freqMap = new HashMap<>();
-        for(Expense expense : expenses) {
-            Integer year = extractYear(expense.getDate());
-            if(year != null) {
-                freqMap.merge(year, 1, Integer::sum);
-            }
         }
-        if (freqMap.isEmpty())
-            return null;
-        return freqMap.entrySet().stream()
-                .max(Map.Entry.comparingByValue())
-                .map(Map.Entry::getKey)
-                .orElse(null);
-    }
-
-    private boolean validateDate(String date) {
-        if (date == null || !date.matches("\\d{2}/\\d{2}/\\d{4}")) {
-            return false;
-        }
-        String[] parts = date.split("/");
-        int day = Integer.parseInt(parts[0]);
-        int month = Integer.parseInt(parts[1]);
-        int year = Integer.parseInt(parts[2]);
-
-        if (month < 1 || month > 12) {
-            return false;
-        }
-
-        int[] daysInMonth = {31, (isLeapYear(year) ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-        if (day < 1 || day > daysInMonth[month - 1]) {
-            return false;
-        }
-
-        try {
-            LocalDate parsed = LocalDate.of(year, month, day);
-            LocalDate now = LocalDate.now();
-            if (parsed.isAfter(now)) {
-                return false;
-            }
-        } catch (java.time.DateTimeException e) {
-            LOG.error(Arrays.toString(e.getStackTrace()));
-            return false;
-        }
-
-        return true;
-    }
-
-    private boolean isLeapYear(int year) {
-        if (year <= 0)
-            return false;
-        return (year % 4 == 0) && (year % 100 != 0 || year % 400 == 0);
     }
 }

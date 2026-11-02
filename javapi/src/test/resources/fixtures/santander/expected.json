@@ -1,0 +1,15 @@
+{
+  "rawText": "Santander - FATURA SINTETICA\nDetalhamento da fatura - compras\n26/12 LOJA FICTICIA PARC 03/10 9.876,54\n06/01/2025 ESTORNO FICTICIO -876,54\n",
+  "transactions": [
+    {
+      "date": "26/12/2024",
+      "description": "LOJA FICTICIA PARC 03/10",
+      "amount": "9876.54"
+    },
+    {
+      "date": "06/01/2025",
+      "description": "ESTORNO FICTICIO",
+      "amount": "-876.54"
+    }
+  ]
+}
