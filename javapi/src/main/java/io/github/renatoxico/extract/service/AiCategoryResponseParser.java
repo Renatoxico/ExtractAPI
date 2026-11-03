@@ -25,6 +25,10 @@ public class AiCategoryResponseParser {
         "Moradia / Contas"
     );
 
+    public static boolean isValidCategory(String category) {
+        return category != null && VALID_CATEGORIES.contains(category);
+    }
+
     public ParseResult parse(String aiResponse, Set<Long> expectedTaskIds) {
         List<String> diagnostics = new ArrayList<>();
         Map<Long, String> candidates = new HashMap<>();

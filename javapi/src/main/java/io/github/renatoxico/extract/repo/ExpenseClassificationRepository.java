@@ -28,6 +28,8 @@ public interface ExpenseClassificationRepository extends JpaRepository<ExpenseCl
                 CURRENT_TIMESTAMP
             FROM expense expense
             WHERE report_id = :reportId
+              AND expense.category_source <> 'USER'
+              AND expense.source = 'EXTRACTED'
             ON CONFLICT (expense_name) DO NOTHING
             """, nativeQuery = true)
     int populateFromReport(@Param("reportId") String reportId);
@@ -52,6 +54,8 @@ public interface ExpenseClassificationRepository extends JpaRepository<ExpenseCl
                 CURRENT_TIMESTAMP
             FROM expense expense
             WHERE expense.expense_name IS NOT NULL
+              AND expense.category_source <> 'USER'
+              AND expense.source = 'EXTRACTED'
               AND NOT EXISTS (
                   SELECT 1
                   FROM expense_classification classification
@@ -64,11 +68,12 @@ public interface ExpenseClassificationRepository extends JpaRepository<ExpenseCl
     @Modifying
     @Query(value = """
             UPDATE expense AS expense
-            SET category = classification.category
+            SET category = classification.category, category_source = 'CATALOG'
             FROM expense_classification classification
             WHERE classification.expense_name = expense.expense_name
               AND expense.report_id = :reportId
               AND expense.category IS NULL
+              AND expense.category_source <> 'USER'
               AND NULLIF(classification.category, '') IS NOT NULL
             """, nativeQuery = true)
     int applyCategoriesToReport(@Param("reportId") String reportId);

@@ -69,7 +69,9 @@ class ExtractControllerWebMvcTest {
                 org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY, "NO_VALID_EXPENSES"));
         mockMvc.perform(multipart("/v2/extract").file(pdf))
             .andExpect(status().isUnprocessableEntity())
-            .andExpect(jsonPath("$.errorCode").value("NO_VALID_EXPENSES"));
+            .andExpect(jsonPath("$.errorCode").value("NO_VALID_EXPENSES"))
+            .andExpect(jsonPath("$.message").value("All candidate transactions were rejected by validation"))
+            .andExpect(jsonPath("$.timestamp").exists());
     }
 
     @AfterEach

@@ -71,7 +71,8 @@ public class V2ReportMapper {
             return null;
         }
         return new ExpenseResponse(
-            expense.expenseId(), expense.expenseName(), expense.amount(), parseDate(expense.date()), expense.category());
+            expense.expenseId(), expense.expenseName(), expense.amount(), parseDate(expense.date()), expense.category(),
+            expense.categorySource(), expense.source());
     }
 
     private DaySummaryResponse toDay(DaySummary day) {
