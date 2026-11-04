@@ -15,6 +15,8 @@
   import GroupedExpensesTable from './components/GroupedExpensesTable.svelte'
   import ReportHistory from './components/ReportHistory.svelte'
   import AuthControls from './components/AuthControls.svelte'
+  import Landing from './components/Landing.svelte'
+  import { resolveView } from './lib/route.js'
 
   const MAX_FILES = 6
   const MAX_SIZE = 512 * 1024
@@ -27,6 +29,12 @@
 
   let user = $state(null)
   let authReady = $state(false)
+  let path = $state(window.location.pathname)
+  let view = $derived(resolveView({ authReady, user, path }))
+
+  $effect(() => {
+    if (view === 'app') document.documentElement.lang = 'pt-BR'
+  })
   let history = $state([])
   let historyLoading = $state(false)
   let historyError = $state('')
@@ -51,7 +59,12 @@
 
   onMount(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      const signedOut = Boolean(user) && !firebaseUser
       user = firebaseUser
+      if (signedOut || (firebaseUser && window.location.pathname === '/entrar')) {
+        window.history.replaceState(null, '', '/')
+      }
+      path = window.location.pathname
       authReady = true
       historyOpen = false
 
@@ -64,6 +77,22 @@
 
     return unsubscribe
   })
+
+  function syncPath() {
+    if (user && window.location.pathname === '/entrar') {
+      window.history.replaceState(null, '', '/')
+    }
+    path = window.location.pathname
+    historyOpen = false
+  }
+
+  function navigate(event) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    event.preventDefault()
+    window.history.pushState(null, '', event.currentTarget.getAttribute('href'))
+    syncPath()
+    window.scrollTo(0, 0)
+  }
 
   function clearPrivateState() {
     history = []
@@ -171,8 +200,13 @@
   }
 </script>
 
-<svelte:window onkeydown={(event) => event.key === 'Escape' && (historyOpen = false)} />
+<svelte:window onpopstate={syncPath} onkeydown={(event) => event.key === 'Escape' && (historyOpen = false)} />
 
+{#if view === 'pending'}
+  <div class="auth-pending"></div>
+{:else if view === 'landing'}
+  <Landing onNavigate={navigate} />
+{:else}
 <div class="app">
   <button
     class="sidebar-toggle"
@@ -226,6 +260,9 @@
 
   <div class="workspace">
     <main class="app-main" class:report-main={Boolean(result)}>
+      {#if !user}
+        <a class="back-link" href="/" onclick={navigate}>← Voltar</a>
+      {/if}
       {#if !result}
         <section class="upload-section" class:with-files={files.length > 0}>
           <div class="upload-header">
@@ -357,6 +394,8 @@
   </div>
 </div>
 
+{/if}
+
 <style>
   :global(*, *::before, *::after) { box-sizing: border-box; }
 
@@ -392,6 +431,9 @@
   }
 
   :global(button), :global(input) { font-family: inherit; }
+  .auth-pending { min-height: 100vh; background: var(--bg-page); }
+  .back-link { display: inline-block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem; }
+  .back-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 5px; }
   .app { min-height: 100vh; display: grid; grid-template-columns: 400px minmax(0, 1fr); }
   .app-sidebar { position: sticky; top: 0; z-index: 30; min-width: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--panel-border); background: rgba(15, 17, 22, 0.97); backdrop-filter: blur(18px); }
   .sidebar-brand { position: relative; min-height: 210px; padding: 0.5rem 0.75rem; display: flex; align-items: center; justify-content: center; }
