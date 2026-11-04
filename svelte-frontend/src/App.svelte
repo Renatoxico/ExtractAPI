@@ -12,7 +12,7 @@
   import ErrorBanner from './components/ErrorBanner.svelte'
   import DonutChart from './components/DonutChart.svelte'
   import EditorialHighlights from './components/EditorialHighlights.svelte'
-  import GroupedExpensesTable from './components/GroupedExpensesTable.svelte'
+  import ExpenseEditing from './components/ExpenseEditing.svelte'
   import ReportHistory from './components/ReportHistory.svelte'
   import AuthControls from './components/AuthControls.svelte'
 
@@ -281,7 +281,6 @@
               />
               <button class="submit-btn" disabled={!canSubmitReport} onclick={handleSubmitReport}>Buscar</button>
             </div>
-          {/if}
         </section>
       {:else}
         <section class="report-section">
@@ -340,17 +339,22 @@
             />
           </div>
 
-          {#if result.expenseGroups?.length}
-            <div class="panel expenses-panel">
-              <div class="panel-heading expenses-heading">
-                <div>
-                  <p class="panel-index">Inventário</p>
-                  <h2>Despesas agrupadas</h2>
-                </div>
+          <div class="panel expenses-panel">
+            <div class="panel-heading expenses-heading">
+              <div>
+                <p class="panel-index">Inventário</p>
+                <h2>Despesas agrupadas</h2>
               </div>
-              <GroupedExpensesTable groups={result.expenseGroups} expenses={result.expenses} />
             </div>
-          {/if}
+            {#key result.reportId}
+              <ExpenseEditing report={result} onUpdate={(updated) => {
+                if (user && result?.reportId === updated.reportId) {
+                  result = updated
+                  refreshHistory()
+                }
+              }} />
+            {/key}
+          </div>
         </section>
       {/if}
     </main>

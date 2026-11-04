@@ -4,7 +4,7 @@
   import { buildExpenseGroups, filterExpenseGroups } from '../lib/expenseGroups.js';
   import { formatBRL, formatCategory, formatDate } from '../lib/formatters.js';
 
-  let { groups = [], expenses = [] } = $props();
+  let { groups = [], expenses = [], onCategory, onDelete, disabled = false } = $props();
 
   let filter = $state('');
   let sortKey = $state('totalAmount');
@@ -102,9 +102,15 @@
                     {#each group.instances as expense, index (expense.expenseId)}
                       <div class="instance">
                         <span class="instance-index">{String(index + 1).padStart(2, '0')}</span>
-                        <span class="instance-name">Lançamento <code>#{expense.expenseId}</code></span>
+                        <span class="instance-name">Lançamento <code>#{expense.expenseId}</code>
+                          {#if expense.source === 'MANUAL'}<small> · Manual</small>{/if}
+                        </span>
                         <time datetime={expense.date}>{formatDate(expense.date)}</time>
                         <strong>{formatBRL(Number(expense.amount))}</strong>
+                        <div class="instance-actions">
+                          <button type="button" {disabled} onclick={() => onCategory?.(expense)} aria-label={`Alterar categoria de ${expense.expenseName}`}>Categoria</button>
+                          <button type="button" class="delete-action" {disabled} onclick={() => onDelete?.(expense)} aria-label={`Excluir ${expense.expenseName}, ${formatDate(expense.date)}, ${formatBRL(Number(expense.amount))}`}>Excluir</button>
+                        </div>
                       </div>
                     {/each}
                   {:else}
@@ -165,7 +171,11 @@
 
   .instances-row td { padding: 0; background: #101319; }
   .instances { padding: 0.45rem 1rem 0.55rem 2.75rem; box-shadow: inset 3px 0 0 var(--primary); }
-  .instance { min-height: 38px; display: grid; grid-template-columns: 28px minmax(140px, 1fr) 110px 110px; align-items: center; gap: 0.75rem; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.77rem; }
+  .instance { min-height: 38px; display: grid; grid-template-columns: 28px minmax(100px, 1fr) 90px 100px; align-items: center; gap: 0.75rem; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.77rem; }
+  .instance-actions { grid-column: 2 / -1; display: flex; justify-content: flex-end; gap: 0.5rem; padding-bottom: 0.5rem; }
+  .instance-actions button { min-height: 36px; padding: 0.4rem 0.7rem; border: 1px solid var(--panel-border); border-radius: var(--radius-sm); background: var(--surface-1); color: var(--text-main); cursor: pointer; }
+  .instance-actions .delete-action { color: #fca5a5; }
+  .instance-actions button:disabled { opacity: 0.45; cursor: wait; }
   .instance:last-child { border-bottom: 0; }
   .instance-index { color: var(--text-dim); font: 0.66rem monospace; }
   .instance-name code { color: var(--text-dim); }
@@ -179,8 +189,15 @@
     .toolbar { align-items: stretch; flex-direction: column; gap: 0.55rem; }
     .count { align-self: flex-end; }
     th:nth-child(2), td:nth-child(2) { display: none; }
+    th:nth-child(3), td:nth-child(3) { display: none; }
+    .td-name { min-width: 130px; }
+    td, th button { padding: 0.65rem 0.5rem; }
     .instances { padding-left: 1rem; }
-    .instance { grid-template-columns: 24px minmax(90px, 1fr) auto; }
-    .instance time { display: none; }
+    .instance { grid-template-columns: minmax(0, 1fr) auto; padding-top: 0.6rem; }
+    .instance-index { display: none; }
+    .instance-name { grid-column: 1 / -1; }
+    .instance time { grid-column: 1; text-align: left; }
+    .instance strong { grid-column: 2; }
+    .instance-actions { grid-column: 1 / -1; flex-wrap: wrap; }
   }
 </style>

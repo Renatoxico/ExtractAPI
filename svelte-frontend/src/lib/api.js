@@ -1,7 +1,45 @@
 import { auth } from './firebase.js'
 import { describeAccountDeletionFailure } from './accountDeletion.js'
+import { expenseEditingError } from './expenseEditing.js'
 
 export const host = import.meta.env.VITE_API_URL
+
+async function editExpenses(reportId, path, method, body) {
+  let failureStatus
+  try {
+    const headers = await buildAuthHeaders()
+    if (!headers.Authorization) {
+      failureStatus = 401
+      throw new Error()
+    }
+    const response = await fetch(`${host}/v2/reports/${encodeURIComponent(reportId)}/expenses${path}`, {
+      method,
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) })
+    })
+    if (!response.ok) {
+      failureStatus = response.status
+      throw new Error()
+    }
+    return await response.json()
+  } catch {
+    // Never expose backend validation text (which is in English) to the form.
+    throw new Error(expenseEditingError(failureStatus))
+  }
+}
+
+export function changeExpenseCategory(reportId, expenseName, newCategory) {
+  return editExpenses(reportId, '/category', 'PATCH', { expenseName, newCategory })
+}
+
+export function deleteExpense(reportId, expenseId) {
+  return editExpenses(reportId, `/${encodeURIComponent(expenseId)}`, 'DELETE')
+}
+
+export function addManualExpense(reportId, expense) {
+  const { name, amount, date, category } = expense
+  return editExpenses(reportId, '', 'POST', { name, amount, date, category })
+}
 
 async function buildAuthHeaders() {
   const user = auth.currentUser
