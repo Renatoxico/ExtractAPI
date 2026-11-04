@@ -281,6 +281,7 @@
               />
               <button class="submit-btn" disabled={!canSubmitReport} onclick={handleSubmitReport}>Buscar</button>
             </div>
+          {/if}
         </section>
       {:else}
         <section class="report-section">
