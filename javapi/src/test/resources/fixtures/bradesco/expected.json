@@ -1,0 +1,15 @@
+{
+  "rawText": "Bradesco - FATURA SINTETICA\nDespesas nacionais - Data Estabelecimento Valor\n29/02/2024 PAG*STEAM FICTICIO 1.000,00\n01/03/2024 CREDITO AJUSTE FICTICIO -10,00\n",
+  "transactions": [
+    {
+      "date": "29/02/2024",
+      "description": "PAG*STEAM FICTICIO",
+      "amount": "1000.00"
+    },
+    {
+      "date": "01/03/2024",
+      "description": "CREDITO AJUSTE FICTICIO",
+      "amount": "-10.00"
+    }
+  ]
+}

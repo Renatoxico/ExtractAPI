@@ -21,7 +21,7 @@ import java.time.format.DateTimeParseException;
 
 @Component
 public class V2ReportMapper {
-    private static final DateTimeFormatter LEGACY_DATE = DateTimeFormatter.ofPattern("dd/MM/uuuu");
+    private static final DateTimeFormatter LEGACY_DATE = DateTimeFormatter.ofPattern("dd/MM/uuuu").withResolverStyle(java.time.format.ResolverStyle.STRICT);
 
     public ReportResponse toResponse(ReportData report) {
         return new ReportResponse(
@@ -71,7 +71,8 @@ public class V2ReportMapper {
             return null;
         }
         return new ExpenseResponse(
-            expense.expenseId(), expense.expenseName(), expense.amount(), parseDate(expense.date()), expense.category());
+            expense.expenseId(), expense.expenseName(), expense.amount(), parseDate(expense.date()), expense.category(),
+            expense.categorySource(), expense.source());
     }
 
     private DaySummaryResponse toDay(DaySummary day) {

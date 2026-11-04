@@ -18,8 +18,8 @@ import java.util.regex.Pattern;
 @Service
 public class ObjectifierService {
     private static final Logger LOG = LoggerFactory.getLogger(ObjectifierService.class);
-    private static final Pattern datePattern = Pattern.compile("\\b(\\d{2}/\\d{2}(?:/\\d{4})?)\\b");
-    private static final Pattern valuePattern = Pattern.compile("(-?\\d{1,3}(?:\\.\\d{3})*,\\d{2})");
+    private static final Pattern datePattern = Pattern.compile("(?<![\\d/])(\\d{2}/\\d{2}(?:/\\d{4})?)(?![\\d/])");
+    private static final Pattern valuePattern = Pattern.compile("(?<![\\d.,-])(-?(?:\\d{1,3}(?:\\.\\d{3})+|\\d+),\\d{2})(?![\\d.,])");
     private final ExpenseRepository expenseRepo;
     private final ValidationService validationService;
 
@@ -56,6 +56,11 @@ public class ObjectifierService {
 
             expensesObj = validationService.validateExpenses(expensesObj);
 
+            if (expensesObj.isEmpty()) {
+                throw new ProcessingException("All candidate transactions were rejected by validation",
+                    HttpStatus.UNPROCESSABLE_ENTITY, "NO_VALID_EXPENSES");
+            }
+
             LOG.info("Validated {} expenses, saving to database for report: {}", expensesObj.size(), reportId);
             expenseRepo.saveAll(expensesObj);
 
@@ -86,16 +91,13 @@ public class ObjectifierService {
                         .replace(".", "")
                         .replace(",", ".");
                 BigDecimal value = new BigDecimal(valueStr);
-                value = value.abs();
                 if (!(valueMatcher.start()< dateMatcher.end())) {
                     String description = line.substring(dateMatcher.end(), valueMatcher.start())
-                            .replace("|", "")
-                            .replaceAll("\\d{4,}", "")
                             .trim();
                     if (!description.isEmpty()
                             && value.compareTo(BigDecimal.ZERO) != 0
                             && description.matches(".*[a-zA-Z].*")
-                            && !(description.contains("CREDITO") || description.contains("FATURA") || description.contains("SALDO"))){
+                            && !(description.contains("FATURA") || description.contains("SALDO"))){
                         mapToObj(report, expensesObj, value, description, date);
                     }
                 }

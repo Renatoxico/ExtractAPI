@@ -366,6 +366,7 @@ public class ClassificationWorkRepository {
             JOIN expense_classification classification
               ON classification.expense_name = expense.expense_name
             WHERE expense.category IS NULL
+              AND expense.category_source <> 'USER'
               AND NULLIF(classification.category, '') IS NOT NULL
             ORDER BY expense.id
             LIMIT ?
@@ -375,10 +376,11 @@ public class ClassificationWorkRepository {
     public int propagateCategoryToExpense(long expenseId) {
         return jdbc.update("""
             UPDATE expense target
-            SET category = classification.category
+            SET category = classification.category, category_source = 'CATALOG'
             FROM expense_classification classification
             WHERE target.id = ?
               AND target.category IS NULL
+              AND target.category_source <> 'USER'
               AND classification.expense_name = target.expense_name
               AND NULLIF(classification.category, '') IS NOT NULL
             """, expenseId);

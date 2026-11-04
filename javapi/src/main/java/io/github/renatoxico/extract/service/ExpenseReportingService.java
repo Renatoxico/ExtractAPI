@@ -67,10 +67,6 @@ public class ExpenseReportingService {
         ExpenseReport report = reportRepository.findById(reportId)
             .orElseThrow(this::reportNotFound);
         List<ExpenseData> expenses = expenseRepository.findExpenseDataByReportId(reportId);
-        if (expenses.isEmpty()) {
-            throw reportNotFound();
-        }
-
         return new ReportData(
             reportId,
             report.getCreatedAt(),
@@ -118,12 +114,12 @@ public class ExpenseReportingService {
             .max(Comparator.comparing(DaySummary::totalAmount)
                 .thenComparingLong(DaySummary::transactionCount))
             .orElse(null);
-        return new ReportHighlights(expenses.getFirst(), mostActive, highestSpending);
+        return new ReportHighlights(expenses.isEmpty() ? null : expenses.getFirst(), mostActive, highestSpending);
     }
 
     private List<Expense> requireExpenses(String reportId) {
         List<Expense> expenses = expenseRepository.findAllByReport_IdOrderByAmountDescIdAsc(reportId);
-        if (expenses.isEmpty()) {
+        if (expenses.isEmpty() && !reportRepository.existsById(reportId)) {
             throw reportNotFound();
         }
         return expenses;

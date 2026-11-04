@@ -4,7 +4,12 @@ import io.github.renatoxico.extract.exception.ProcessingException;
 import io.github.renatoxico.extract.model.ErrorResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.TypeMismatchException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -15,6 +20,26 @@ import java.io.IOException;
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private static final Logger LOG = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(
+        HttpMessageNotReadableException ex,
+        HttpHeaders headers, HttpStatusCode status,
+        WebRequest request
+    ) {
+        return new ResponseEntity<>(new ErrorResponse("INVALID_REQUEST", "Request body is missing or invalid"),
+            headers, status);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleTypeMismatch(
+        TypeMismatchException ex,
+        HttpHeaders headers, HttpStatusCode status,
+        WebRequest request
+    ) {
+        return new ResponseEntity<>(new ErrorResponse("INVALID_REQUEST", "Request parameter has an invalid value"),
+            headers, status);
+    }
 
     @ExceptionHandler(ProcessingException.class)
     public ResponseEntity<ErrorResponse> handleProcessingException(ProcessingException ex) {

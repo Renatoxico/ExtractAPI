@@ -8,5 +8,7 @@ public record ExpenseResponse(
     String expenseName,
     BigDecimal amount,
     LocalDate date,
-    String category
+    String category,
+    String categorySource,
+    String source
 ) {}

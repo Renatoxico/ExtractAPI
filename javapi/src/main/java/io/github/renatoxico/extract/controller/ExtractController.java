@@ -3,6 +3,8 @@ package io.github.renatoxico.extract.controller;
 import io.github.renatoxico.extract.exception.ProcessingException;
 import io.github.renatoxico.extract.service.ExtractionFacade;
 import io.github.renatoxico.extract.service.ExtractorService;
+import io.github.renatoxico.extract.service.ErrorRecorder;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -19,8 +21,10 @@ import java.util.Map;
 public class ExtractController {
     private final ExtractionFacade extractionFacade;
     private final ExtractorService extractorService;
+    private final ErrorRecorder errorRecorder;
 
-    public ExtractController(ExtractionFacade extractionFacade, ExtractorService extractorService) {
+    public ExtractController(ExtractionFacade extractionFacade, ExtractorService extractorService, ErrorRecorder errorRecorder) {
+        this.errorRecorder = errorRecorder;
         this.extractionFacade = extractionFacade;
         this.extractorService = extractorService;
     }
@@ -33,6 +37,7 @@ public class ExtractController {
     @PostMapping("/raw-text/")
     public ResponseEntity<Map<String, String>> extractRawText(@RequestParam("file") MultipartFile[] files) {
         extractionFacade.requireValid(files);
+        UUID correlationId = UUID.randomUUID();
         StringBuilder combinedText = new StringBuilder();
         for (MultipartFile file : files) {
             try {
@@ -41,8 +46,10 @@ public class ExtractController {
                     combinedText.append(pdfText).append('\n');
                 }
             } catch (ProcessingException ex) {
+                errorRecorder.record(ex.getErrorCode(), ErrorRecorder.Stage.RAW_TEXT, null, correlationId, Map.of());
                 throw ex;
             } catch (Exception ex) {
+                errorRecorder.record("TEXT_EXTRACTION_ERROR", ErrorRecorder.Stage.RAW_TEXT, null, correlationId, Map.of());
                 throw new ProcessingException(
                     "Failed to extract text from file: " + file.getOriginalFilename(),
                     HttpStatus.INTERNAL_SERVER_ERROR,
@@ -52,6 +59,7 @@ public class ExtractController {
             }
         }
         if (combinedText.isEmpty()) {
+            errorRecorder.record("NO_TEXT_EXTRACTED", ErrorRecorder.Stage.RAW_TEXT, null, correlationId, Map.of());
             throw new ProcessingException(
                 "No text could be extracted from the provided files",
                 HttpStatus.UNPROCESSABLE_ENTITY,

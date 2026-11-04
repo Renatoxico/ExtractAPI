@@ -1,0 +1,4 @@
+Santander - FATURA SINTETICA
+Detalhamento da fatura - compras
+26/12 LOJA FICTICIA PARC 03/10 9.876,54
+06/01/2025 ESTORNO FICTICIO -876,54

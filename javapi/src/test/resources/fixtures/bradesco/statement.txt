@@ -1,0 +1,4 @@
+Bradesco - FATURA SINTETICA
+Despesas nacionais - Data Estabelecimento Valor
+29/02/2024 PAG*STEAM FICTICIO 1.000,00
+01/03/2024 CREDITO AJUSTE FICTICIO -10,00

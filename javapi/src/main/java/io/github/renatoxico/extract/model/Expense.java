@@ -29,6 +29,12 @@ public class Expense {
     @Column(name = "category")
     private String category;
 
+    @Column(name = "category_source", nullable = false, columnDefinition = "varchar(16) default 'RULE'")
+    private String categorySource = "RULE";
+
+    @Column(name = "source", nullable = false, columnDefinition = "varchar(16) default 'EXTRACTED'")
+    private String source = "EXTRACTED";
+
     @Column(name = "date")
     private String date;
 
@@ -76,6 +82,22 @@ public class Expense {
 
     public void setCategory(String category) {
         this.category = category;
+    }
+
+    public String getCategorySource() {
+        return categorySource;
+    }
+
+    public void setCategorySource(String categorySource) {
+        this.categorySource = categorySource;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
     }
 
     public String getDate() {

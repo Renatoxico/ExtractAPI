@@ -54,6 +54,12 @@ class ClassificationPipelinePostgresIntegrationTest {
     @Autowired
     private ClassificationTransactionService transactions;
 
+    @Autowired
+    private io.github.renatoxico.extract.repo.ExpenseClassificationRepository catalog;
+
+    @Autowired
+    private org.springframework.transaction.PlatformTransactionManager transactionManager;
+
     @MockitoBean
     private FirebaseAuth firebaseAuth;
 
@@ -89,7 +95,7 @@ class ClassificationPipelinePostgresIntegrationTest {
               AND column_name = 'input_payload'
             """, String.class);
 
-        assertThat(currentVersion).isEqualTo("9");
+        assertThat(currentVersion).isEqualTo("11");
         assertThat(inputType).isEqualTo("jsonb");
     }
 
@@ -361,6 +367,43 @@ class ClassificationPipelinePostgresIntegrationTest {
             jdbc.execute("DROP TRIGGER reject_broken_expense ON expense");
             jdbc.execute("DROP FUNCTION reject_broken_expense_category()");
         }
+    }
+
+    @Test
+    void userCategoriesSurviveQueuedWorkerAndReportCatalogUpdates() {
+        long owner = insertOwner();
+        insertReport("protected", owner);
+        long userExpense = insertExpense("protected", "SHOP", null);
+        long pendingExpense = insertExpense("protected", "SHOP", null);
+        insertClassification("SHOP", "Supermercado", "AI");
+        assertThat(transactions.findExpenseIdsReadyForPropagation()).contains(userExpense, pendingExpense);
+        jdbc.update("UPDATE expense SET category_source = 'USER' WHERE id = ?", userExpense);
+        assertThat(transactions.propagateCategoryToExpense(userExpense)).isZero();
+        assertThat(transactions.propagateCategoryToExpense(pendingExpense)).isEqualTo(1);
+        // Also protect a null USER category in the synchronous catalog path.
+        new org.springframework.transaction.support.TransactionTemplate(transactionManager)
+            .executeWithoutResult(status -> assertThat(catalog.applyCategoriesToReport("protected")).isZero());
+        assertThat(expenseCategory(userExpense)).isNull();
+        assertThat(expenseCategory(pendingExpense)).isEqualTo("Supermercado");
+    }
+
+    @Test
+    void catalogRegistrationNeverPublishesManualOrCorrectedCategories() {
+        long owner = insertOwner();
+        insertReport("private", owner);
+        long corrected = insertExpense("private", "USER-PRIVATE", "Supermercado");
+        long manual = insertExpense("private", "MANUAL-PRIVATE", "Moradia / Contas");
+        insertExpense("private", "EXTRACTED-PUBLIC", "Transporte / Auto");
+        jdbc.update("UPDATE expense SET category_source = 'USER' WHERE id = ?", corrected);
+        // Exclude MANUAL independently of category_source as defense in depth.
+        jdbc.update("UPDATE expense SET source = 'MANUAL' WHERE id = ?", manual);
+        new org.springframework.transaction.support.TransactionTemplate(transactionManager)
+            .executeWithoutResult(status -> {
+                assertThat(catalog.populateFromReport("private")).isEqualTo(1);
+                assertThat(catalog.populateMissing()).isZero();
+            });
+        assertThat(jdbc.queryForList("SELECT expense_name FROM expense_classification", String.class))
+            .containsExactly("EXTRACTED-PUBLIC");
     }
 
     private ClaimedBatch createAndClaim() {
